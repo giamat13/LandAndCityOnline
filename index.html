@@ -6,11 +6,7 @@
 <title>ארץ עיר אונליין</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-SN0STQDDYT"></script>
-<script>
-  window.dataLayer=window.dataLayer||[];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js',new Date());gtag('config','G-SN0STQDDYT');
-</script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SN0STQDDYT');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -18,6 +14,14 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(233,69,96,.07) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(76,201,240,.07) 0%,transparent 50%);pointer-events:none;z-index:0}
+
+/* Loading */
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:16px;transition:opacity .3s}
+#loading.hide{opacity:0;pointer-events:none}
+#load-status{color:var(--muted);font-size:.9rem;margin-top:4px;text-align:center;padding:0 20px}
+#load-emoji{font-size:3.5rem}
+
+/* App */
 #app{position:relative;z-index:1;min-height:100vh}
 .screen{display:none;min-height:100vh;padding:24px 16px;max-width:600px;margin:0 auto;flex-direction:column}
 .screen.active{display:flex}
@@ -54,10 +58,9 @@ input[type=text]::placeholder{color:var(--muted)}
 .cc-tag{background:rgba(76,201,240,.15);border:1px solid rgba(76,201,240,.3);color:var(--blue);padding:4px 12px;border-radius:100px;font-size:.8rem;cursor:pointer;transition:all .2s}
 .cc-tag:hover{background:rgba(233,69,96,.15);border-color:var(--red);color:var(--red)}
 .cc-tag::after{content:' ×';opacity:.7}
-/* time buttons - renamed to time-btn to avoid conflict */
-.time-btn{padding:8px 16px;font-size:.9rem;width:auto;border-radius:8px;background:var(--s2);color:var(--muted);border:1.5px solid var(--border);font-family:'Heebo',sans-serif;font-weight:600;cursor:pointer;transition:all .2s}
+.time-btn{padding:8px 18px;font-size:.9rem;width:auto;border-radius:8px;background:var(--s2);color:var(--muted);border:1.5px solid var(--border);font-family:'Heebo',sans-serif;font-weight:600;cursor:pointer;transition:all .2s}
 .time-btn:hover{border-color:var(--blue);color:var(--blue)}
-.time-btn.active{border-color:var(--red);color:var(--red);background:rgba(233,69,96,.1)}
+.time-btn.sel{border-color:var(--red);color:var(--red);background:rgba(233,69,96,.1)}
 .code-box{text-align:center;background:var(--s2);border:2px dashed rgba(76,201,240,.3);border-radius:var(--r);padding:20px;margin-bottom:16px;cursor:pointer}
 .code-box .lbl{color:var(--muted);font-size:.8rem;margin-bottom:8px}
 .code-box .code{font-size:2.5rem;font-weight:900;letter-spacing:.2em;color:var(--blue)}
@@ -71,13 +74,12 @@ input[type=text]::placeholder{color:var(--muted)}
 .cats-prev{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
 .cb{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.25);color:var(--muted);padding:4px 10px;border-radius:100px;font-size:.78rem}
 .r-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.ltr-display{text-align:center;margin-bottom:24px}
+.ltr-disp{text-align:center;margin-bottom:24px}
 .big-l{font-size:6rem;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:lp .4s cubic-bezier(.34,1.56,.64,1)}
 @keyframes lp{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
-/* timer bar - kept as timer-bar, no class conflict */
-.timer-bar-wrap{background:var(--s2);border-radius:100px;height:8px;margin-bottom:20px;overflow:hidden}
-.timer-bar{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--green),var(--blue));transition:width 1s linear,background .5s}
-.timer-bar.warn{background:linear-gradient(90deg,var(--orange),var(--red))}
+.tmr-wrap{background:var(--s2);border-radius:100px;height:8px;margin-bottom:20px;overflow:hidden}
+.tmr-bar{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--green),var(--blue));transition:width 1s linear,background .5s}
+.tmr-bar.warn{background:linear-gradient(90deg,var(--orange),var(--red))}
 .ans-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
 .ans-row{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:12px;padding:10px 14px}
 .ans-row .cl{font-size:.8rem;color:var(--muted);width:80px;flex-shrink:0;font-weight:600}
@@ -86,7 +88,7 @@ input[type=text]::placeholder{color:var(--muted)}
 .ans-row input:disabled{opacity:.5}
 .rt-wrap{overflow-x:auto;margin-bottom:16px}
 .rt{width:100%;border-collapse:collapse;font-size:.88rem}
-.rt th{background:var(--s2);padding:10px 12px;text-align:right;color:var(--muted);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.rt th{background:var(--s2);padding:10px 12px;text-align:right;color:var(--muted);font-weight:700;font-size:.75rem;text-transform:uppercase;white-space:nowrap}
 .rt td{padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
 .rt tr:last-child td{border-bottom:none}
 .unique{color:var(--green);font-weight:700}.shared{color:var(--muted)}.empty{color:var(--red);opacity:.5;font-style:italic}
@@ -108,188 +110,201 @@ input[type=text]::placeholder{color:var(--muted)}
 .wait p{color:var(--muted);font-size:.95rem}
 .sdot{width:10px;height:10px;border-radius:50%;background:var(--muted);transition:background .3s}
 .sdot.done{background:var(--green)}
-#loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:16px}
-#loading-screen .spin{border-top-color:var(--red)}
-#loading-screen p{color:var(--muted);font-size:.9rem}
 @media(max-width:400px){.big-l{font-size:5rem}.logo h1{font-size:2.5rem}}
 </style>
 </head>
 <body>
 
-<!-- Loading -->
-<div id="loading-screen">
-  <div style="font-size:3rem">🌍</div>
-  <div class="spin"></div>
-  <p>מתחבר...</p>
+<div id="loading">
+  <div id="load-emoji">🌍</div>
+  <div class="spin" style="border-top-color:var(--red)"></div>
+  <div id="load-status">מתחבר לשרת...</div>
 </div>
 
 <div id="app">
 
-<div id="screen-home" class="screen">
-  <div class="logo"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
-  <div class="card"><h3>📛 שם שחקן</h3><input type="text" id="player-name" placeholder="השם שלך..." maxlength="20"></div>
-  <div class="home-actions">
-    <button class="btn btn-p" onclick="showCreate()">✨ צור חדר חדש</button>
-    <div class="divider">או הצטרף לחדר קיים</div>
-    <div style="display:flex;gap:10px;">
-      <input type="text" id="join-code" placeholder="קוד חדר..." maxlength="6"
-        style="text-transform:uppercase;letter-spacing:.15em;font-size:1.2rem;text-align:center;"
-        oninput="this.value=this.value.toUpperCase()">
-      <button class="btn btn-s" style="width:auto;padding:14px 22px;" onclick="joinRoom()">הצטרף</button>
-    </div>
-  </div>
-</div>
-
-<div id="screen-create" class="screen">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <button class="btn btn-s btn-sm" style="width:auto" onclick="showScreen('home')">← חזור</button>
-    <h2 style="font-size:1.3rem;font-weight:800;">הגדרות חדר</h2>
-  </div>
-  <div class="card">
-    <h3>📋 קטגוריות</h3>
-    <div class="cats-grid" id="cats-grid"></div>
-    <div style="margin-top:16px;">
-      <h3>➕ קטגוריה מותאמת</h3>
-      <div class="cc-row">
-        <input type="text" id="cc-inp" placeholder="לדוגמה: סרט, ספורטאי..." maxlength="20">
-        <button class="btn btn-s btn-sm" onclick="addCC()">הוסף</button>
+  <div id="screen-home" class="screen active">
+    <div class="logo"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
+    <div class="card"><h3>📛 שם שחקן</h3><input type="text" id="player-name" placeholder="השם שלך..." maxlength="20"></div>
+    <div class="home-actions">
+      <button class="btn btn-p" onclick="showCreate()">✨ צור חדר חדש</button>
+      <div class="divider">או הצטרף לחדר קיים</div>
+      <div style="display:flex;gap:10px;">
+        <input type="text" id="join-code" placeholder="קוד חדר..." maxlength="6"
+          style="text-transform:uppercase;letter-spacing:.15em;font-size:1.2rem;text-align:center;"
+          oninput="this.value=this.value.toUpperCase()">
+        <button class="btn btn-s" style="width:auto;padding:14px 22px;" onclick="joinRoom()">הצטרף</button>
       </div>
-      <div class="cc-tags" id="cc-tags"></div>
     </div>
   </div>
-  <div class="card">
-    <h3>⏱️ זמן לסיבוב</h3>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;" id="time-btns">
-      <button class="time-btn" data-v="60" onclick="selTime(this)">60 שנ'</button>
-      <button class="time-btn active" data-v="90" onclick="selTime(this)">90 שנ'</button>
-      <button class="time-btn" data-v="120" onclick="selTime(this)">120 שנ'</button>
-      <button class="time-btn" data-v="180" onclick="selTime(this)">180 שנ'</button>
+
+  <div id="screen-create" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+      <button class="btn btn-s btn-sm" style="width:auto" onclick="showScreen('home')">← חזור</button>
+      <h2 style="font-size:1.3rem;font-weight:800;">הגדרות חדר</h2>
+    </div>
+    <div class="card">
+      <h3>📋 קטגוריות</h3>
+      <div class="cats-grid" id="cats-grid"></div>
+      <div style="margin-top:16px;">
+        <h3>➕ קטגוריה מותאמת</h3>
+        <div class="cc-row">
+          <input type="text" id="cc-inp" placeholder="לדוגמה: סרט, ספורטאי..." maxlength="20">
+          <button class="btn btn-s btn-sm" onclick="addCC()">הוסף</button>
+        </div>
+        <div class="cc-tags" id="cc-tags"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>⏱️ זמן לסיבוב</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="time-btn" data-v="60" onclick="selTime(this)">60 שנ'</button>
+        <button class="time-btn sel" data-v="90" onclick="selTime(this)">90 שנ'</button>
+        <button class="time-btn" data-v="120" onclick="selTime(this)">120 שנ'</button>
+        <button class="time-btn" data-v="180" onclick="selTime(this)">180 שנ'</button>
+      </div>
+    </div>
+    <button class="btn btn-p" onclick="createRoom()">🚀 צור חדר</button>
+  </div>
+
+  <div id="screen-lobby" class="screen">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <button class="btn btn-s btn-sm" style="width:auto" onclick="leaveRoom()">← עזוב</button>
+      <span class="sp"><span class="dot"></span>ממתין לשחקנים</span>
+    </div>
+    <div class="code-box" onclick="copyCode()">
+      <div class="lbl">📤 שתף עם חברים</div>
+      <div class="code" id="lobby-code">------</div>
+      <div class="hint">לחץ להעתקה 📋</div>
+    </div>
+    <div class="card"><h3>🎮 קטגוריות</h3><div class="cats-prev" id="lobby-cats"></div></div>
+    <div class="card">
+      <h3>👥 שחקנים (<span id="pl-count">0</span>)</h3>
+      <div class="pl-list" id="pl-list"></div>
+    </div>
+    <div id="host-ctrl" style="display:none;">
+      <button class="btn btn-g" id="start-btn" onclick="startGame()" disabled>🎯 התחל משחק</button>
+      <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
+    </div>
+    <div id="guest-wait" style="display:none;">
+      <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
     </div>
   </div>
-  <button class="btn btn-p" onclick="createRoom()">🚀 צור חדר</button>
-</div>
 
-<div id="screen-lobby" class="screen">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-    <button class="btn btn-s btn-sm" style="width:auto" onclick="leaveRoom()">← עזוב</button>
-    <span class="sp"><span class="dot"></span>ממתין לשחקנים</span>
-  </div>
-  <div class="code-box" onclick="copyCode()">
-    <div class="lbl">📤 שתף עם חברים</div>
-    <div class="code" id="lobby-code">------</div>
-    <div class="hint">לחץ להעתקה 📋</div>
-  </div>
-  <div class="card"><h3>🎮 קטגוריות</h3><div class="cats-prev" id="lobby-cats"></div></div>
-  <div class="card">
-    <h3>👥 שחקנים (<span id="pl-count">0</span>)</h3>
-    <div class="pl-list" id="pl-list"></div>
-  </div>
-  <div id="host-ctrl" style="display:none;">
-    <button class="btn btn-g" id="start-btn" onclick="startGame()" disabled>🎯 התחל משחק</button>
-    <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
-  </div>
-  <div id="guest-wait" style="display:none;">
-    <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
-  </div>
-</div>
-
-<div id="screen-game" class="screen">
-  <div class="r-hdr">
-    <span class="rbadge">סיבוב <span id="rnd-num">1</span></span>
-    <span id="timer-txt" style="font-size:1.3rem;font-weight:900;color:var(--orange);">90</span>
-  </div>
-  <div class="ltr-display"><div class="big-l" id="cur-letter">א</div></div>
-  <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
-  <div class="ans-grid" id="ans-grid"></div>
-  <div id="stop-wrap" style="text-align:center;">
-    <button class="btn btn-p" onclick="playerStop()">⛔ סטופ!</button>
-  </div>
-  <div id="wait-others" style="display:none;">
-    <div class="wait">
-      <div class="spin"></div>
-      <p id="wait-txt">ממתין לשאר השחקנים...</p>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;" id="sdots"></div>
+  <div id="screen-game" class="screen">
+    <div class="r-hdr">
+      <span class="rbadge">סיבוב <span id="rnd-num">1</span></span>
+      <span id="tmr-txt" style="font-size:1.3rem;font-weight:900;color:var(--orange);">90</span>
+    </div>
+    <div class="ltr-disp"><div class="big-l" id="cur-letter">א</div></div>
+    <div class="tmr-wrap"><div class="tmr-bar" id="tmr-bar" style="width:100%"></div></div>
+    <div class="ans-grid" id="ans-grid"></div>
+    <div id="stop-wrap" style="text-align:center;">
+      <button class="btn btn-p" onclick="playerStop()">⛔ סטופ!</button>
+    </div>
+    <div id="wait-others" style="display:none;">
+      <div class="wait">
+        <div class="spin"></div>
+        <p id="wait-txt">ממתין לשאר השחקנים...</p>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;" id="sdots"></div>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="screen-results" class="screen">
-  <div style="text-align:center;margin-bottom:24px;padding-top:10px;">
-    <div style="font-size:3rem;margin-bottom:8px;">🏆</div>
-    <h2 style="font-size:1.8rem;font-weight:900;">תוצאות סיבוב <span id="res-rnd">1</span></h2>
-    <p style="color:var(--muted);font-size:.9rem;margin-top:4px;">
-      האות: <span id="res-letter" style="font-weight:900;color:var(--red);font-size:1.1rem;"></span>
-    </p>
+  <div id="screen-results" class="screen">
+    <div style="text-align:center;margin-bottom:24px;padding-top:10px;">
+      <div style="font-size:3rem;margin-bottom:8px;">🏆</div>
+      <h2 style="font-size:1.8rem;font-weight:900;">תוצאות סיבוב <span id="res-rnd">1</span></h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-top:4px;">
+        האות: <span id="res-letter" style="font-weight:900;color:var(--red);font-size:1.1rem;"></span>
+      </p>
+    </div>
+    <div id="res-cats"></div>
+    <div class="card"><h3>🏅 ניקוד</h3><div class="sb" id="scoreboard"></div></div>
+    <div id="host-next" style="display:none;">
+      <button class="btn btn-p" onclick="nextRound()">▶️ סיבוב הבא</button>
+      <button class="btn btn-s" style="margin-top:10px;" onclick="endGame()">🏁 סיים משחק</button>
+    </div>
+    <div id="guest-next" style="display:none;">
+      <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל סיבוב הבא...</p></div>
+    </div>
   </div>
-  <div id="res-cats"></div>
-  <div class="card"><h3>🏅 ניקוד</h3><div class="sb" id="scoreboard"></div></div>
-  <div id="host-next" style="display:none;">
-    <button class="btn btn-p" onclick="nextRound()">▶️ סיבוב הבא</button>
-    <button class="btn btn-s" style="margin-top:10px;" onclick="endGame()">🏁 סיים משחק</button>
-  </div>
-  <div id="guest-next" style="display:none;">
-    <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל סיבוב הבא...</p></div>
-  </div>
-</div>
 
-<div id="screen-final" class="screen">
-  <div style="text-align:center;margin-bottom:32px;padding-top:20px;">
-    <div style="font-size:4rem;margin-bottom:12px;">🎊</div>
-    <h2 style="font-size:2rem;font-weight:900;">המשחק הסתיים!</h2>
+  <div id="screen-final" class="screen">
+    <div style="text-align:center;margin-bottom:32px;padding-top:20px;">
+      <div style="font-size:4rem;margin-bottom:12px;">🎊</div>
+      <h2 style="font-size:2rem;font-weight:900;">המשחק הסתיים!</h2>
+    </div>
+    <div class="card"><h3>🏆 תוצאות סופיות</h3><div class="sb" id="final-sb"></div></div>
+    <button class="btn btn-p" onclick="goHome()" style="margin-top:8px;">🏠 חזור לתפריט</button>
   </div>
-  <div class="card"><h3>🏆 תוצאות סופיות</h3><div class="sb" id="final-sb"></div></div>
-  <button class="btn btn-p" onclick="goHome()" style="margin-top:8px;">🏠 חזור לתפריט</button>
-</div>
 
 </div>
 <div id="toast"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-import {
-  getDatabase,ref,set,get,update,onValue,off,remove
-} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+import { initializeApp }        from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getAnalytics }         from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
+import { getAuth, signInAnonymously, onAuthStateChanged }
+                                from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import { getDatabase, ref, set, get, update, onValue, off, remove }
+                                from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
+// ── Firebase init ──
 const fbApp = initializeApp({
-  apiKey:"AIzaSyAnUco7dP5UlbIQLzDXaGO1rEeu1LiLvEc",
-  authDomain:"landandcityonline.firebaseapp.com",
-  databaseURL:"https://landandcityonline-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:"landandcityonline",
-  storageBucket:"landandcityonline.firebasestorage.app",
-  messagingSenderId:"43193861650",
-  appId:"1:43193861650:web:6fe52a843227455a8bbacb",
-  measurementId:"G-E04CF3R7D8"
+  apiKey:            "AIzaSyAnUco7dP5UlbIQLzDXaGO1rEeu1LiLvEc",
+  authDomain:        "landandcityonline.firebaseapp.com",
+  databaseURL:       "https://landandcityonline-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "landandcityonline",
+  storageBucket:     "landandcityonline.firebasestorage.app",
+  messagingSenderId: "43193861650",
+  appId:             "1:43193861650:web:6fe52a843227455a8bbacb",
+  measurementId:     "G-E04CF3R7D8"
 });
 getAnalytics(fbApp);
 const auth = getAuth(fbApp);
 const db   = getDatabase(fbApp);
 
-// ── Sign in anonymously first, then show app ──
-signInAnonymously(auth).catch(err => {
-  console.error('Auth error:', err);
-  toast('שגיאת התחברות: ' + err.message);
-});
+// ── Auth ──
+function setLoadStatus(msg) {
+  document.getElementById('load-status').textContent = msg;
+}
+
+function hideLoader() {
+  const el = document.getElementById('loading');
+  el.classList.add('hide');
+  setTimeout(() => el.style.display = 'none', 300);
+}
+
+setLoadStatus('מתחבר...');
+try {
+  await signInAnonymously(auth);
+} catch(e) {
+  setLoadStatus('שגיאת התחברות: ' + e.code);
+  console.error('signInAnonymously failed:', e);
+}
 
 onAuthStateChanged(auth, user => {
   if (user) {
     S.uid = user.uid;
-    document.getElementById('loading-screen').style.display = 'none';
+    setLoadStatus('מחובר ✓');
+    hideLoader();
+  } else {
+    setLoadStatus('לא מחובר — רענן את הדף');
   }
 });
 
 // ── Constants ──
 const LETTERS = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
 const DCATS = [
-  {id:'country', name:'ארץ',     emoji:'🌍', on:true},
-  {id:'city',    name:'עיר',     emoji:'🏙️', on:true},
-  {id:'animal',  name:'חי',      emoji:'🐾', on:true},
-  {id:'plant',   name:'צומח',    emoji:'🌿', on:true},
-  {id:'object',  name:'דומם',    emoji:'📦', on:true},
-  {id:'job',     name:'מקצוע',   emoji:'💼', on:true},
-  {id:'name',    name:'שם פרטי', emoji:'👤', on:true},
-  {id:'food',    name:'אוכל',    emoji:'🍕', on:false},
+  { id:'country', name:'ארץ',     emoji:'🌍', on:true  },
+  { id:'city',    name:'עיר',     emoji:'🏙️', on:true  },
+  { id:'animal',  name:'חי',      emoji:'🐾', on:true  },
+  { id:'plant',   name:'צומח',    emoji:'🌿', on:true  },
+  { id:'object',  name:'דומם',    emoji:'📦', on:true  },
+  { id:'job',     name:'מקצוע',   emoji:'💼', on:true  },
+  { id:'name',    name:'שם פרטי', emoji:'👤', on:true  },
+  { id:'food',    name:'אוכל',    emoji:'🍕', on:false },
 ];
 const AVC = ['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#f97316','#06b6d4'];
 
@@ -310,8 +325,7 @@ window.showScreen = id => {
 
 function toast(m) {
   const t = document.getElementById('toast');
-  t.textContent = m;
-  t.classList.add('show');
+  t.textContent = m; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
@@ -327,13 +341,12 @@ function avc(name) {
   return AVC[Math.abs(h) % AVC.length];
 }
 
-function addL(r, fn) { onValue(r, fn); S.listeners.push({r, fn}); }
-function detach() { S.listeners.forEach(({r,fn}) => off(r,'value',fn)); S.listeners = []; }
+function addL(r, fn) { onValue(r, fn); S.listeners.push({ r, fn }); }
+function detach()     { S.listeners.forEach(({ r, fn }) => off(r, 'value', fn)); S.listeners = []; }
 
 // ── Category grid ──
-function initGrid() {
+(function initGrid() {
   const g = document.getElementById('cats-grid');
-  g.innerHTML = '';
   DCATS.forEach(c => {
     const el = document.createElement('div');
     el.className = 'cat-tog' + (c.on ? ' active' : '');
@@ -342,8 +355,7 @@ function initGrid() {
     el.onclick = () => el.classList.toggle('active');
     g.appendChild(el);
   });
-}
-initGrid();
+})();
 
 window.addCC = () => {
   const inp = document.getElementById('cc-inp');
@@ -353,7 +365,7 @@ window.addCC = () => {
   S.cCats.push(v); inp.value = '';
   renderCCTags();
 };
-document.getElementById('cc-inp').onkeydown = e => { if (e.key==='Enter') window.addCC(); };
+document.getElementById('cc-inp').onkeydown = e => { if (e.key === 'Enter') window.addCC(); };
 
 function renderCCTags() {
   const w = document.getElementById('cc-tags');
@@ -361,14 +373,14 @@ function renderCCTags() {
   S.cCats.forEach((c, i) => {
     const el = document.createElement('div');
     el.className = 'cc-tag'; el.textContent = c;
-    el.onclick = () => { S.cCats.splice(i,1); renderCCTags(); };
+    el.onclick = () => { S.cCats.splice(i, 1); renderCCTags(); };
     w.appendChild(el);
   });
 }
 
 window.selTime = btn => {
-  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
   S.rTime = parseInt(btn.dataset.v);
 };
 
@@ -376,39 +388,28 @@ window.selTime = btn => {
 window.showCreate = () => {
   const n = document.getElementById('player-name').value.trim();
   if (!n) { toast('נא להזין שם שחקן'); return; }
-  if (!S.uid) { toast('עדיין מתחבר, נסה שוב...'); return; }
+  if (!S.uid) { toast('עדיין מתחבר, נסה שנייה...'); return; }
   S.pName = n;
   showScreen('create');
 };
 
 // ── Create room ──
 window.createRoom = async () => {
-  const active = [...document.querySelectorAll('.cat-tog.active')].map(el => {
-    const c = DCATS.find(x => x.id === el.dataset.id);
-    return c ? {id:c.id, name:c.name, emoji:c.emoji} : null;
-  }).filter(Boolean);
-  S.cCats.forEach((name,i) => active.push({id:'cc_'+i, name, emoji:'⭐'}));
+  const active = [...document.querySelectorAll('.cat-tog.active')]
+    .map(el => { const c = DCATS.find(x => x.id === el.dataset.id); return c ? { id:c.id, name:c.name, emoji:c.emoji } : null; })
+    .filter(Boolean);
+  S.cCats.forEach((name, i) => active.push({ id:'cc_'+i, name, emoji:'⭐' }));
   if (!active.length) { toast('בחר לפחות קטגוריה אחת'); return; }
 
   S.cats = active; S.isHost = true; S.totScores = {};
 
   let roomId, tries = 0;
-  do {
-    roomId = gid(6);
-    const s = await get(ref(db, 'rooms/' + roomId));
-    if (!s.exists()) break;
-  } while (++tries < 5);
+  do { roomId = gid(6); } while ((await get(ref(db, 'rooms/'+roomId))).exists() && ++tries < 5);
   S.roomId = roomId;
 
-  // uid is the player id — matches Firebase Auth
-  await set(ref(db, 'rooms/' + roomId), {
-    host: S.uid,
-    status: 'lobby',
-    roundTime: S.rTime,
-    categories: active,
-    round: 0,
-    letter: '',
-    createdAt: Date.now(),
+  await set(ref(db, 'rooms/'+roomId), {
+    host: S.uid, status: 'lobby', roundTime: S.rTime, categories: active,
+    round: 0, letter: '', createdAt: Date.now(),
     players: { [S.uid]: { name: S.pName, score: 0, joinedAt: Date.now() } }
   });
   enterLobby();
@@ -418,11 +419,11 @@ window.createRoom = async () => {
 window.joinRoom = async () => {
   const n = document.getElementById('player-name').value.trim();
   if (!n) { toast('נא להזין שם שחקן'); return; }
-  if (!S.uid) { toast('עדיין מתחבר, נסה שוב...'); return; }
+  if (!S.uid) { toast('עדיין מתחבר...'); return; }
   const code = document.getElementById('join-code').value.trim().toUpperCase();
   if (code.length !== 6) { toast('קוד חדר לא תקין'); return; }
 
-  const snap = await get(ref(db, 'rooms/' + code));
+  const snap = await get(ref(db, 'rooms/'+code));
   if (!snap.exists()) { toast('חדר לא נמצא 😕'); return; }
   const room = snap.val();
   if (room.status !== 'lobby') { toast('המשחק כבר התחיל'); return; }
@@ -437,27 +438,29 @@ window.joinRoom = async () => {
 // ── Lobby ──
 function enterLobby() {
   document.getElementById('lobby-code').textContent = S.roomId;
-  document.getElementById('host-ctrl').style.display = S.isHost ? 'block' : 'none';
-  document.getElementById('guest-wait').style.display = S.isHost ? 'none' : 'block';
+  document.getElementById('host-ctrl').style.display  = S.isHost ? 'block' : 'none';
+  document.getElementById('guest-wait').style.display = S.isHost ? 'none'  : 'block';
   document.getElementById('lobby-cats').innerHTML =
     S.cats.map(c => `<span class="cb">${c.emoji} ${c.name}</span>`).join('');
   showScreen('lobby');
 
   addL(ref(db, `rooms/${S.roomId}/players`), snap => {
-    const ps = snap.val() || {};
+    const ps  = snap.val() || {};
     const cnt = Object.keys(ps).length;
     document.getElementById('pl-count').textContent = cnt;
     const list = document.getElementById('pl-list');
     list.innerHTML = '';
-    Object.entries(ps).sort((a,b) => (a[1].joinedAt||0)-(b[1].joinedAt||0)).forEach(([uid, p]) => {
-      const c = avc(p.name);
-      const el = document.createElement('div');
-      el.className = 'pl-item';
-      el.innerHTML = `<div class="pl-av" style="background:${c}22;color:${c}">${p.name.charAt(0)}</div>
-        <span class="pl-name">${p.name}</span>
-        ${uid === S.uid ? '<span class="you-b">אתה</span>' : ''}`;
-      list.appendChild(el);
-    });
+    Object.entries(ps)
+      .sort((a, b) => (a[1].joinedAt||0) - (b[1].joinedAt||0))
+      .forEach(([uid, p]) => {
+        const c  = avc(p.name);
+        const el = document.createElement('div');
+        el.className = 'pl-item';
+        el.innerHTML = `<div class="pl-av" style="background:${c}22;color:${c}">${p.name.charAt(0)}</div>
+          <span class="pl-name">${p.name}</span>
+          ${uid === S.uid ? '<span class="you-b">אתה</span>' : ''}`;
+        list.appendChild(el);
+      });
     const btn = document.getElementById('start-btn');
     if (btn) btn.disabled = cnt < 2;
   });
@@ -466,13 +469,11 @@ function enterLobby() {
     const st = snap.val();
     if (st === 'playing') loadRound();
     else if (st === 'results') showResults();
-    else if (st === 'ended') showFinal();
+    else if (st === 'ended')   showFinal();
   });
 }
 
-window.copyCode = () => {
-  navigator.clipboard.writeText(S.roomId).then(() => toast('קוד הועתק! 📋'));
-};
+window.copyCode = () => navigator.clipboard.writeText(S.roomId).then(() => toast('קוד הועתק! 📋'));
 
 window.leaveRoom = async () => {
   clearInterval(S.timerInt); detach();
@@ -491,12 +492,11 @@ window.startGame = async () => {
   const letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
   S.letter = letter; S.rNum = 1;
   await update(ref(db, `rooms/${S.roomId}`), {
-    status:'playing', round:1, letter,
-    roundStartedAt:Date.now(), answers:null, stopped:null
+    status:'playing', round:1, letter, roundStartedAt:Date.now(), answers:null, stopped:null
   });
 };
 
-// ── Load round ──
+// ── Load & start round ──
 async function loadRound() {
   const snap = await get(ref(db, `rooms/${S.roomId}`));
   const r = snap.val();
@@ -509,7 +509,7 @@ async function loadRound() {
 
 function startRound() {
   detach();
-  document.getElementById('rnd-num').textContent = S.rNum;
+  document.getElementById('rnd-num').textContent   = S.rNum;
   document.getElementById('cur-letter').textContent = S.letter;
 
   const grid = document.getElementById('ans-grid');
@@ -522,7 +522,7 @@ function startRound() {
     grid.appendChild(row);
   });
 
-  document.getElementById('stop-wrap').style.display = 'block';
+  document.getElementById('stop-wrap').style.display   = 'block';
   document.getElementById('wait-others').style.display = 'none';
   showScreen('game');
   startTimer();
@@ -535,7 +535,7 @@ function startRound() {
   });
   addL(ref(db, `rooms/${S.roomId}/status`), snap => {
     if (snap.val() === 'results') showResults();
-    if (snap.val() === 'ended') showFinal();
+    if (snap.val() === 'ended')   showFinal();
   });
 }
 
@@ -550,10 +550,10 @@ function startTimer() {
 
 function updateTimer() {
   const pct = (S.timeLeft / S.rTime) * 100;
-  document.getElementById('timer-txt').textContent = S.timeLeft;
-  const bar = document.getElementById('timer-bar');
+  document.getElementById('tmr-txt').textContent = S.timeLeft;
+  const bar = document.getElementById('tmr-bar');
   bar.style.width = pct + '%';
-  bar.className = 'timer-bar' + (pct < 30 ? ' warn' : '');
+  bar.className   = 'tmr-bar' + (pct < 30 ? ' warn' : '');
 }
 
 window.playerStop = async () => {
@@ -567,7 +567,7 @@ async function submitAnswers() {
   if (S.submitting) return;
   S.submitting = true;
   clearInterval(S.timerInt);
-  document.getElementById('stop-wrap').style.display = 'none';
+  document.getElementById('stop-wrap').style.display   = 'none';
   document.getElementById('wait-others').style.display = 'block';
   document.querySelectorAll('#ans-grid input').forEach(i => i.disabled = true);
 
@@ -577,7 +577,6 @@ async function submitAnswers() {
     ans[cat.id] = inp ? inp.value.trim() : '';
   });
 
-  // uid matches Firebase Auth → rules allow writing to answers/$uid
   await set(ref(db, `rooms/${S.roomId}/answers/${S.uid}`), {
     name: S.pName, answers: ans, submittedAt: Date.now()
   });
@@ -588,17 +587,19 @@ async function submitAnswers() {
 function waitAll() {
   const aRef = ref(db, `rooms/${S.roomId}/answers`);
   const fn = async snap => {
-    const sub = snap.val() || {};
-    const cnt = Object.keys(sub).length;
-    const psn = await get(ref(db, `rooms/${S.roomId}/players`));
+    const sub   = snap.val() || {};
+    const cnt   = Object.keys(sub).length;
+    const psn   = await get(ref(db, `rooms/${S.roomId}/players`));
     const total = Object.keys(psn.val() || {}).length;
+
     const dots = document.getElementById('sdots');
     if (dots && psn.val()) {
-      dots.innerHTML = Object.entries(psn.val()).map(([uid, p]) =>
-        `<div class="sdot ${sub[uid] ? 'done' : ''}" title="${p.name}"></div>`
-      ).join('');
+      dots.innerHTML = Object.entries(psn.val())
+        .map(([uid, p]) => `<div class="sdot ${sub[uid]?'done':''}" title="${p.name}"></div>`)
+        .join('');
     }
     document.getElementById('wait-txt').textContent = `הגיש ${cnt} מתוך ${total}...`;
+
     if (cnt >= total) {
       off(aRef, 'value', fn);
       await update(ref(db, `rooms/${S.roomId}`), { status: 'results' });
@@ -610,12 +611,12 @@ function waitAll() {
 // ── Results ──
 async function showResults() {
   clearInterval(S.timerInt); detach();
-  const snap = await get(ref(db, `rooms/${S.roomId}`));
-  const room = snap.val();
-  const answers = room.answers || {};
-  const cats = room.categories || S.cats;
+  const snap  = await get(ref(db, `rooms/${S.roomId}`));
+  const room  = snap.val();
+  const answers = room.answers   || {};
+  const cats    = room.categories || S.cats;
 
-  document.getElementById('res-rnd').textContent = room.round;
+  document.getElementById('res-rnd').textContent    = room.round;
   document.getElementById('res-letter').textContent = room.letter;
 
   const rScores = {};
@@ -639,8 +640,8 @@ async function showResults() {
     });
 
     const rows = Object.entries(answers).map(([uid, d]) => {
-      const a = ca[uid];
-      const u = a && counts[a.toLowerCase()] === 1;
+      const a   = ca[uid];
+      const u   = a && counts[a.toLowerCase()] === 1;
       const cls = !a ? 'empty' : (u ? 'unique' : 'shared');
       const pts = !a ? 0 : (u ? 10 : 5);
       return `<tr>
@@ -660,35 +661,26 @@ async function showResults() {
     bycat.appendChild(card);
   });
 
-  // accumulate scores
+  // accumulate & save own score
   Object.entries(rScores).forEach(([uid, pts]) => {
     S.totScores[uid] = (S.totScores[uid] || 0) + pts;
   });
+  await update(ref(db, `rooms/${S.roomId}/players/${S.uid}`), { score: S.totScores[S.uid] || 0 });
 
-  // write scores back — each player writes their own score
-  const psSnap = await get(ref(db, `rooms/${S.roomId}/players`));
-  const players = psSnap.val() || {};
+  // small delay so all players write their scores
+  await new Promise(r => setTimeout(r, 600));
 
-  // only update own score (matches rules: auth.uid == $playerId)
-  if (S.totScores[S.uid] !== undefined) {
-    await update(ref(db, `rooms/${S.roomId}/players/${S.uid}`), {
-      score: S.totScores[S.uid]
-    });
-  }
-
-  // wait a moment for all players to write their scores
-  await new Promise(r => setTimeout(r, 500));
   const ps2 = await get(ref(db, `rooms/${S.roomId}/players`));
   renderSB('scoreboard', ps2.val() || {});
 
   document.getElementById('host-next').style.display = S.isHost ? 'block' : 'none';
-  document.getElementById('guest-next').style.display = S.isHost ? 'none' : 'block';
+  document.getElementById('guest-next').style.display = S.isHost ? 'none'  : 'block';
   showScreen('results');
 
   if (!S.isHost) {
     addL(ref(db, `rooms/${S.roomId}/status`), snap => {
       if (snap.val() === 'playing') loadRound();
-      if (snap.val() === 'ended') showFinal();
+      if (snap.val() === 'ended')   showFinal();
     });
   }
 }
@@ -708,13 +700,12 @@ window.nextRound = async () => {
   const letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
   S.rNum++; S.letter = letter; S.submitting = false;
   await update(ref(db, `rooms/${S.roomId}`), {
-    status:'playing', round:S.rNum, letter,
-    roundStartedAt:Date.now(), answers:null, stopped:null
+    status:'playing', round:S.rNum, letter, roundStartedAt:Date.now(), answers:null, stopped:null
   });
 };
 
 window.endGame = async () => {
-  await update(ref(db, `rooms/${S.roomId}`), { status: 'ended' });
+  await update(ref(db, `rooms/${S.roomId}`), { status:'ended' });
 };
 
 async function showFinal() {
