@@ -209,9 +209,6 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <div class="ltr"><div class="big-l" id="cur-letter">א</div></div>
   <div class="tb-wrap"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
 
-  <!-- stop banner: shown to everyone when someone called stop -->
-  <div id="stop-banner" style="display:none;background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.3);border-radius:12px;padding:10px 16px;margin-bottom:12px;text-align:center;font-weight:700;color:var(--red);font-size:.92rem;"></div>
-
   <!-- answer area (shown while playing) -->
   <div id="answer-area">
     <div class="cat-answer-card">
@@ -225,9 +222,8 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
       <div class="sub-pips" id="sub-pips-live"></div>
       <span class="sub-label" id="sub-label-live"></span>
     </div>
-    <div style="margin-top:14px;display:flex;gap:10px;">
+    <div style="margin-top:14px;">
       <button class="btn btn-g" id="submit-btn" onclick="submitCatAnswer()">✅ שלח תשובה</button>
-      <button class="btn btn-p" id="stop-btn" onclick="callStop()" style="width:auto;padding:14px 20px;">⛔ סטופ</button>
     </div>
   </div>
 
@@ -570,7 +566,7 @@ window.startGame=async()=>{
   await update(ref(db,`rooms/${S.roomId}`),{
     status:'playing',round:1,letter,
     catStartedAt:Date.now(),currentCatIndex:0,
-    catAnswers:null,catStopped:null,lastActivity:Date.now()
+    catAnswers:null,lastActivity:Date.now()
   });
 };
 
@@ -617,8 +613,6 @@ function startCat(roomData){
     document.getElementById('answer-area').style.display='block';
     document.getElementById('wait-others').style.display='none';
     document.getElementById('submit-btn').disabled=false;
-    const sb=document.getElementById('stop-btn');if(sb)sb.style.display='';
-    const bn=document.getElementById('stop-banner');if(bn)bn.style.display='none';
     setTimeout(()=>inp.focus(),150);
   }
   showScreen('game');
@@ -642,20 +636,6 @@ function startCat(roomData){
       S.currentCatIndex=newIdx;S.catSubmitted=false;
       clearInterval(S.timerInt);
       await loadRound();
-    }
-  });
-
-  // Listen: catStopped — freeze timer, show banner, others still answer
-  addL(ref(db,`rooms/${S.roomId}/catStopped`),snap=>{
-    const stopper=snap.val();
-    const banner=document.getElementById('stop-banner');
-    if(stopper&&banner){
-      banner.style.display='block';
-      banner.textContent=`⛔ ${stopper} עצר! סיים/י את התשובה שלך`;
-      const sb=document.getElementById('stop-btn');
-      if(sb)sb.style.display='none';
-    } else if(banner){
-      banner.style.display='none';
     }
   });
 
@@ -711,15 +691,6 @@ function updateTimer(){
   bar.className='tbar'+(pct<30?' warn':'');
 }
 
-// ─── STOP (freeze timer for all, still wait for everyone) ────────
-window.callStop=async()=>{
-  if(S.catSubmitted)return;
-  // Write stopper name so everyone sees the banner
-  await update(ref(db,`rooms/${S.roomId}`),{catStopped:S.pName,lastActivity:Date.now()});
-  // Submit own answer immediately
-  await doSubmit(document.getElementById('cat-answer').value.trim());
-};
-
 // ─── SUBMIT ANSWER ────────────────────────────────────────────────
 window.submitCatAnswer=()=>doSubmit(document.getElementById('cat-answer').value.trim());
 
@@ -746,7 +717,7 @@ async function advanceCat(){
     await update(ref(db,`rooms/${S.roomId}`),{status:'results',lastActivity:Date.now()});
   }else{
     await update(ref(db,`rooms/${S.roomId}`),{
-      currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now(),catStopped:null
+      currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now()
     });
   }
 }
@@ -845,7 +816,7 @@ window.nextRound=async()=>{
   await update(ref(db,`rooms/${S.roomId}`),{
     status:'playing',round:S.rNum,letter,
     catStartedAt:Date.now(),currentCatIndex:0,
-    catAnswers:null,catStopped:null,lastActivity:Date.now()
+    catAnswers:null,lastActivity:Date.now()
   });
 };
 
