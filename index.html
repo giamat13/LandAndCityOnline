@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ארץ עיר אונליין</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-SN0STQDDYT"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SN0STQDDYT');</script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js',new Date());gtag('config','G-SN0STQDDYT');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -14,14 +17,6 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(233,69,96,.07) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(76,201,240,.07) 0%,transparent 50%);pointer-events:none;z-index:0}
-
-/* Loading */
-#loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:16px;transition:opacity .3s}
-#loading.hide{opacity:0;pointer-events:none}
-#load-status{color:var(--muted);font-size:.9rem;margin-top:4px;text-align:center;padding:0 20px}
-#load-emoji{font-size:3.5rem}
-
-/* App */
 #app{position:relative;z-index:1;min-height:100vh}
 .screen{display:none;min-height:100vh;padding:24px 16px;max-width:600px;margin:0 auto;flex-direction:column}
 .screen.active{display:flex}
@@ -59,9 +54,6 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 .cc-tag{background:rgba(76,201,240,.15);border:1px solid rgba(76,201,240,.3);color:var(--blue);padding:4px 12px;border-radius:100px;font-size:.8rem;cursor:pointer;transition:all .2s}
 .cc-tag:hover{background:rgba(233,69,96,.15);border-color:var(--red);color:var(--red)}
 .cc-tag::after{content:' ×';opacity:.7}
-.time-btn{padding:8px 18px;font-size:.9rem;width:auto;border-radius:8px;background:var(--s2);color:var(--muted);border:1.5px solid var(--border);font-family:'Heebo',sans-serif;font-weight:600;cursor:pointer;transition:all .2s}
-.time-btn:hover{border-color:var(--blue);color:var(--blue)}
-.time-btn.sel{border-color:var(--red);color:var(--red);background:rgba(233,69,96,.1)}
 .code-box{text-align:center;background:var(--s2);border:2px dashed rgba(76,201,240,.3);border-radius:var(--r);padding:20px;margin-bottom:16px;cursor:pointer}
 .code-box .lbl{color:var(--muted);font-size:.8rem;margin-bottom:8px}
 .code-box .code{font-size:2.5rem;font-weight:900;letter-spacing:.2em;color:var(--blue)}
@@ -106,7 +98,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 /* results/scoreboard */
 .rt-wrap{overflow-x:auto;margin-bottom:16px}
 .rt{width:100%;border-collapse:collapse;font-size:.88rem}
-.rt th{background:var(--s2);padding:10px 12px;text-align:right;color:var(--muted);font-weight:700;font-size:.75rem;text-transform:uppercase;white-space:nowrap}
+.rt th{background:var(--s2);padding:10px 12px;text-align:right;color:var(--muted);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
 .rt td{padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
 .rt tr:last-child td{border-bottom:none}
 .unique{color:var(--green);font-weight:700}.shared{color:var(--muted)}.empty{color:var(--red);opacity:.5;font-style:italic}
@@ -130,13 +122,6 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 </style>
 </head>
 <body>
-
-<div id="loading">
-  <div id="load-emoji">🌍</div>
-  <div class="spin" style="border-top-color:var(--red)"></div>
-  <div id="load-status">מתחבר לשרת...</div>
-</div>
-
 <div id="app">
 
 <!-- HOME -->
@@ -181,8 +166,9 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
       <button class="time-btn active" data-v="60" onclick="selTime(this)">60 שנ'</button>
       <button class="time-btn" data-v="90" onclick="selTime(this)">90 שנ'</button>
     </div>
-    <button class="btn btn-p" onclick="createRoom()">🚀 צור חדר</button>
   </div>
+  <button class="btn btn-p" onclick="createRoom()">🚀 צור חדר</button>
+</div>
 
 <!-- LOBBY -->
 <div id="screen-lobby" class="screen">
@@ -223,6 +209,9 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <div class="ltr"><div class="big-l" id="cur-letter">א</div></div>
   <div class="tb-wrap"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
 
+  <!-- stop banner: shown to everyone when someone called stop -->
+  <div id="stop-banner" style="display:none;background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.3);border-radius:12px;padding:10px 16px;margin-bottom:12px;text-align:center;font-weight:700;color:var(--red);font-size:.92rem;"></div>
+
   <!-- answer area (shown while playing) -->
   <div id="answer-area">
     <div class="cat-answer-card">
@@ -236,8 +225,9 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
       <div class="sub-pips" id="sub-pips-live"></div>
       <span class="sub-label" id="sub-label-live"></span>
     </div>
-    <div style="margin-top:14px;">
+    <div style="margin-top:14px;display:flex;gap:10px;">
       <button class="btn btn-g" id="submit-btn" onclick="submitCatAnswer()">✅ שלח תשובה</button>
+      <button class="btn btn-p" id="stop-btn" onclick="callStop()" style="width:auto;padding:14px 20px;">⛔ סטופ</button>
     </div>
   </div>
 
@@ -302,61 +292,29 @@ import {
   getDatabase,ref,set,get,update,onValue,off,remove
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
-// ── Firebase init ──
-const fbApp = initializeApp({
-  apiKey:            "AIzaSyAnUco7dP5UlbIQLzDXaGO1rEeu1LiLvEc",
-  authDomain:        "landandcityonline.firebaseapp.com",
-  databaseURL:       "https://landandcityonline-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:         "landandcityonline",
-  storageBucket:     "landandcityonline.firebasestorage.app",
-  messagingSenderId: "43193861650",
-  appId:             "1:43193861650:web:6fe52a843227455a8bbacb",
-  measurementId:     "G-E04CF3R7D8"
+const fb = initializeApp({
+  apiKey:"AIzaSyAnUco7dP5UlbIQLzDXaGO1rEeu1LiLvEc",
+  authDomain:"landandcityonline.firebaseapp.com",
+  databaseURL:"https://landandcityonline-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"landandcityonline",
+  storageBucket:"landandcityonline.firebasestorage.app",
+  messagingSenderId:"43193861650",
+  appId:"1:43193861650:web:6fe52a843227455a8bbacb",
+  measurementId:"G-E04CF3R7D8"
 });
-getAnalytics(fbApp);
-const auth = getAuth(fbApp);
-const db   = getDatabase(fbApp);
+getAnalytics(fb);
+const db = getDatabase(fb);
 
-// ── Auth ──
-function setLoadStatus(msg) {
-  document.getElementById('load-status').textContent = msg;
-}
-
-function hideLoader() {
-  const el = document.getElementById('loading');
-  el.classList.add('hide');
-  setTimeout(() => el.style.display = 'none', 300);
-}
-
-setLoadStatus('מתחבר...');
-try {
-  await signInAnonymously(auth);
-} catch(e) {
-  setLoadStatus('שגיאת התחברות: ' + e.code);
-  console.error('signInAnonymously failed:', e);
-}
-
-onAuthStateChanged(auth, user => {
-  if (user) {
-    S.uid = user.uid;
-    setLoadStatus('מחובר ✓');
-    hideLoader();
-  } else {
-    setLoadStatus('לא מחובר — רענן את הדף');
-  }
-});
-
-// ── Constants ──
-const LETTERS = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
-const DCATS = [
-  { id:'country', name:'ארץ',     emoji:'🌍', on:true  },
-  { id:'city',    name:'עיר',     emoji:'🏙️', on:true  },
-  { id:'animal',  name:'חי',      emoji:'🐾', on:true  },
-  { id:'plant',   name:'צומח',    emoji:'🌿', on:true  },
-  { id:'object',  name:'דומם',    emoji:'📦', on:true  },
-  { id:'job',     name:'מקצוע',   emoji:'💼', on:true  },
-  { id:'name',    name:'שם פרטי', emoji:'👤', on:true  },
-  { id:'food',    name:'אוכל',    emoji:'🍕', on:false },
+const LETTERS='אבגדהוזחטיכלמנסעפצקרשת'.split('');
+const DCATS=[
+  {id:'country',name:'ארץ',emoji:'🌍',on:true},
+  {id:'city',name:'עיר',emoji:'🏙️',on:true},
+  {id:'animal',name:'חי',emoji:'🐾',on:true},
+  {id:'plant',name:'צומח',emoji:'🌿',on:true},
+  {id:'object',name:'דומם',emoji:'📦',on:true},
+  {id:'job',name:'מקצוע',emoji:'💼',on:true},
+  {id:'name',name:'שם פרטי',emoji:'👤',on:true},
+  {id:'food',name:'אוכל',emoji:'🍕',on:false},
 ];
 const AVC=['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#f97316','#06b6d4'];
 const INACTIVITY_MS = 10 * 60 * 1000;
@@ -484,15 +442,15 @@ function initGrid(){
     el.onclick=()=>el.classList.toggle('active');
     g.appendChild(el);
   });
-})();
+}
+initGrid();
 
-window.addCC = () => {
-  const inp = document.getElementById('cc-inp');
-  const v = inp.value.trim();
-  if (!v) return;
-  if (S.cCats.includes(v)) { toast('קטגוריה כבר קיימת'); return; }
-  S.cCats.push(v); inp.value = '';
-  renderCCTags();
+window.addCC=()=>{
+  const inp=document.getElementById('cc-inp');
+  const v=inp.value.trim();
+  if(!v)return;
+  if(S.cCats.includes(v)){toast('קטגוריה כבר קיימת');return;}
+  S.cCats.push(v);inp.value='';renderCCTags();
 };
 document.getElementById('cc-inp').onkeydown=e=>{if(e.key==='Enter')window.addCC();};
 function renderCCTags(){
@@ -590,13 +548,15 @@ function enterLobby(){
   });
 }
 
-window.copyCode = () => navigator.clipboard.writeText(S.roomId).then(() => toast('קוד הועתק! 📋'));
+window.copyCode=()=>{
+  navigator.clipboard.writeText(S.roomId).then(()=>toast('קוד הועתק! 📋'));
+};
 
-window.leaveRoom = async () => {
-  clearInterval(S.timerInt); detach();
-  if (S.roomId && S.uid) {
-    await remove(ref(db, `rooms/${S.roomId}/players/${S.uid}`));
-    if (S.isHost) await remove(ref(db, `rooms/${S.roomId}`));
+window.leaveRoom=async()=>{
+  clearInterval(S.timerInt);detach();
+  if(S.roomId&&S.pId){
+    await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
+    if(S.isHost)await remove(ref(db,`rooms/${S.roomId}`));
   }
   clearSession();S.roomId='';S.isHost=false;showScreen('home');
 };
@@ -610,7 +570,7 @@ window.startGame=async()=>{
   await update(ref(db,`rooms/${S.roomId}`),{
     status:'playing',round:1,letter,
     catStartedAt:Date.now(),currentCatIndex:0,
-    catAnswers:null,lastActivity:Date.now()
+    catAnswers:null,catStopped:null,lastActivity:Date.now()
   });
 };
 
@@ -657,6 +617,8 @@ function startCat(roomData){
     document.getElementById('answer-area').style.display='block';
     document.getElementById('wait-others').style.display='none';
     document.getElementById('submit-btn').disabled=false;
+    const sb=document.getElementById('stop-btn');if(sb)sb.style.display='';
+    const bn=document.getElementById('stop-banner');if(bn)bn.style.display='none';
     setTimeout(()=>inp.focus(),150);
   }
   showScreen('game');
@@ -680,6 +642,20 @@ function startCat(roomData){
       S.currentCatIndex=newIdx;S.catSubmitted=false;
       clearInterval(S.timerInt);
       await loadRound();
+    }
+  });
+
+  // Listen: catStopped — freeze timer, show banner, others still answer
+  addL(ref(db,`rooms/${S.roomId}/catStopped`),snap=>{
+    const stopper=snap.val();
+    const banner=document.getElementById('stop-banner');
+    if(stopper&&banner){
+      banner.style.display='block';
+      banner.textContent=`⛔ ${stopper} עצר! סיים/י את התשובה שלך`;
+      const sb=document.getElementById('stop-btn');
+      if(sb)sb.style.display='none';
+    } else if(banner){
+      banner.style.display='none';
     }
   });
 
@@ -735,6 +711,15 @@ function updateTimer(){
   bar.className='tbar'+(pct<30?' warn':'');
 }
 
+// ─── STOP (freeze timer for all, still wait for everyone) ────────
+window.callStop=async()=>{
+  if(S.catSubmitted)return;
+  // Write stopper name so everyone sees the banner
+  await update(ref(db,`rooms/${S.roomId}`),{catStopped:S.pName,lastActivity:Date.now()});
+  // Submit own answer immediately
+  await doSubmit(document.getElementById('cat-answer').value.trim());
+};
+
 // ─── SUBMIT ANSWER ────────────────────────────────────────────────
 window.submitCatAnswer=()=>doSubmit(document.getElementById('cat-answer').value.trim());
 
@@ -761,7 +746,7 @@ async function advanceCat(){
     await update(ref(db,`rooms/${S.roomId}`),{status:'results',lastActivity:Date.now()});
   }else{
     await update(ref(db,`rooms/${S.roomId}`),{
-      currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now()
+      currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now(),catStopped:null
     });
   }
 }
@@ -776,8 +761,8 @@ async function showResults(){
   const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
   const players=psSnap.val()||{};
 
-  document.getElementById('res-rnd').textContent    = room.round;
-  document.getElementById('res-letter').textContent = room.letter;
+  document.getElementById('res-rnd').textContent=room.round;
+  document.getElementById('res-letter').textContent=room.letter;
 
   const rScores={};
   Object.keys(players).forEach(pid=>rScores[pid]=0);
@@ -818,9 +803,8 @@ async function showResults(){
     bycat.appendChild(card);
   });
 
-  // accumulate & save own score
-  Object.entries(rScores).forEach(([uid, pts]) => {
-    S.totScores[uid] = (S.totScores[uid] || 0) + pts;
+  Object.entries(rScores).forEach(([pid,pts])=>{
+    S.totScores[pid]=(S.totScores[pid]||0)+pts;
   });
   saveSession();
 
@@ -844,13 +828,13 @@ async function showResults(){
   }
 }
 
-function renderSB(id, players) {
-  const sorted = Object.entries(players).sort((a,b) => (b[1].score||0) - (a[1].score||0));
-  const m = ['🥇','🥈','🥉'];
-  document.getElementById(id).innerHTML = sorted.map(([uid, p], i) => `
+function renderSB(id,players){
+  const sorted=Object.entries(players).sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+  const m=['🥇','🥈','🥉'];
+  document.getElementById(id).innerHTML=sorted.map(([pid,p],i)=>`
     <div class="sr ${i===0?'gold':''}">
-      <span class="rk">${m[i] || i+1+'.'}</span>
-      <span class="sn">${p.name}${uid===S.uid?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</span>
+      <span class="rk">${m[i]||i+1+'.'}</span>
+      <span class="sn">${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</span>
       <span class="pts">${p.score||0}<span class="pts-l"> נק'</span></span>
     </div>`).join('');
 }
@@ -861,7 +845,7 @@ window.nextRound=async()=>{
   await update(ref(db,`rooms/${S.roomId}`),{
     status:'playing',round:S.rNum,letter,
     catStartedAt:Date.now(),currentCatIndex:0,
-    catAnswers:null,lastActivity:Date.now()
+    catAnswers:null,catStopped:null,lastActivity:Date.now()
   });
 };
 
