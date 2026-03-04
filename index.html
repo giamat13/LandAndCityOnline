@@ -28,6 +28,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 input[type=text]{width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;color:var(--text);font-family:'Heebo',sans-serif;font-size:1.1rem;outline:none;transition:border-color .2s;direction:rtl}
 input[type=text]:focus{border-color:var(--red)}
 input[type=text]::placeholder{color:var(--muted)}
+input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 28px;border-radius:12px;font-family:'Heebo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;border:none;transition:all .2s;width:100%}
 .btn-p{background:linear-gradient(135deg,var(--red),#c23152);color:#fff;box-shadow:0 4px 20px rgba(233,69,96,.35)}
 .btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(233,69,96,.5)}
@@ -65,19 +66,36 @@ input[type=text]::placeholder{color:var(--muted)}
 .you-b{background:rgba(76,201,240,.15);color:var(--blue);border:1px solid rgba(76,201,240,.3);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
 .cats-prev{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
 .cb{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.25);color:var(--muted);padding:4px 10px;border-radius:100px;font-size:.78rem}
-.r-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.ltr{text-align:center;margin-bottom:24px}
-.big-l{font-size:6rem;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:lp .4s cubic-bezier(.34,1.56,.64,1)}
+/* game header */
+.r-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.ltr{text-align:center;margin-bottom:12px}
+.big-l{font-size:5rem;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:lp .4s cubic-bezier(.34,1.56,.64,1)}
 @keyframes lp{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
-.tb-wrap{background:var(--s2);border-radius:100px;height:8px;margin-bottom:20px;overflow:hidden}
-.tb{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--green),var(--blue));transition:width 1s linear,background .5s}
-.tb.warn{background:linear-gradient(90deg,var(--orange),var(--red))}
-.ans-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
-.ans-row{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:12px;padding:10px 14px}
-.ans-row .cl{font-size:.8rem;color:var(--muted);width:80px;flex-shrink:0;font-weight:600}
-.ans-row input{flex:1;background:transparent;border:none;border-bottom:1.5px solid var(--border);border-radius:0;padding:6px 4px;font-size:1rem;transition:border-color .2s}
-.ans-row input:focus{border-bottom-color:var(--red)}
-.ans-row input:disabled{opacity:.5}
+.tb-wrap{background:var(--s2);border-radius:100px;height:8px;margin-bottom:14px;overflow:hidden}
+.tbar{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--green),var(--blue));transition:width 1s linear,background .5s}
+.tbar.warn{background:linear-gradient(90deg,var(--orange),var(--red))}
+/* time selector buttons */
+.time-btn{background:var(--s2);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;padding:8px 16px;font-family:'Heebo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s}
+.time-btn.active{border-color:var(--blue);color:var(--blue);background:rgba(76,201,240,.1)}
+/* category progress dots */
+.cat-prog-wrap{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.cat-prog-bar{display:flex;gap:4px;flex:1}
+.cat-prog-dot{flex:1;height:5px;border-radius:100px;background:var(--border);transition:background .4s}
+.cat-prog-dot.done{background:var(--green)}
+.cat-prog-dot.active{background:var(--orange)}
+.cat-prog-label{color:var(--muted);font-size:.78rem;font-weight:600;white-space:nowrap}
+/* answer card */
+.cat-answer-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:12px;box-shadow:var(--sh);text-align:center}
+.cat-title{font-size:1.7rem;font-weight:900;margin-bottom:4px}
+.cat-subtitle{color:var(--muted);font-size:.82rem;margin-bottom:16px}
+.cat-answer-card input{text-align:center;font-size:1.25rem;font-weight:700}
+/* submission pips */
+.sub-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;min-height:22px}
+.sub-pips{display:flex;gap:5px}
+.sub-pip{width:11px;height:11px;border-radius:50%;background:var(--border);transition:background .3s}
+.sub-pip.done{background:var(--green)}
+.sub-label{color:var(--muted);font-size:.82rem;font-weight:600}
+/* results/scoreboard */
 .rt-wrap{overflow-x:auto;margin-bottom:16px}
 .rt{width:100%;border-collapse:collapse;font-size:.88rem}
 .rt th{background:var(--s2);padding:10px 12px;text-align:right;color:var(--muted);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
@@ -96,18 +114,17 @@ input[type=text]::placeholder{color:var(--muted)}
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:12px 24px;font-size:.9rem;font-weight:600;box-shadow:var(--sh);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap}
 #toast.show{transform:translateX(-50%) translateY(0)}
 .rbadge{background:rgba(233,69,96,.15);color:var(--red);border:1px solid rgba(233,69,96,.25);padding:4px 14px;border-radius:100px;font-size:.85rem;font-weight:700}
-.wait{text-align:center;padding:30px 0}
-.spin{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+.wait{text-align:center;padding:24px 0}
+.spin{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.wait p{color:var(--muted);font-size:.95rem}
-.sdot{width:10px;height:10px;border-radius:50%;background:var(--muted);transition:background .3s}
-.sdot.done{background:var(--green)}
-@media(max-width:400px){.big-l{font-size:5rem}.logo h1{font-size:2.5rem}}
+.wait p{color:var(--muted);font-size:.92rem}
+@media(max-width:400px){.big-l{font-size:4rem}.logo h1{font-size:2.5rem}}
 </style>
 </head>
 <body>
 <div id="app">
 
+<!-- HOME -->
 <div id="screen-home" class="screen active">
   <div class="logo"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
   <div class="card"><h3>📛 שם שחקן</h3><input type="text" id="player-name" placeholder="השם שלך..." maxlength="20"></div>
@@ -123,6 +140,7 @@ input[type=text]::placeholder{color:var(--muted)}
   </div>
 </div>
 
+<!-- CREATE -->
 <div id="screen-create" class="screen">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
     <button class="btn btn-s btn-sm" style="width:auto" onclick="showScreen('home')">← חזור</button>
@@ -141,17 +159,18 @@ input[type=text]::placeholder{color:var(--muted)}
     </div>
   </div>
   <div class="card">
-    <h3>⏱️ זמן לסיבוב</h3>
+    <h3>⏱️ זמן לכל קטגוריה</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-s btn-sm tb" data-v="60" onclick="selTime(this)">60 שנ'</button>
-      <button class="btn btn-s btn-sm tb active" data-v="90" onclick="selTime(this)">90 שנ'</button>
-      <button class="btn btn-s btn-sm tb" data-v="120" onclick="selTime(this)">120 שנ'</button>
-      <button class="btn btn-s btn-sm tb" data-v="180" onclick="selTime(this)">180 שנ'</button>
+      <button class="time-btn" data-v="30" onclick="selTime(this)">30 שנ'</button>
+      <button class="time-btn" data-v="45" onclick="selTime(this)">45 שנ'</button>
+      <button class="time-btn active" data-v="60" onclick="selTime(this)">60 שנ'</button>
+      <button class="time-btn" data-v="90" onclick="selTime(this)">90 שנ'</button>
     </div>
   </div>
   <button class="btn btn-p" onclick="createRoom()">🚀 צור חדר</button>
 </div>
 
+<!-- LOBBY -->
 <div id="screen-lobby" class="screen">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
     <button class="btn btn-s btn-sm" style="width:auto" onclick="leaveRoom()">← עזוב</button>
@@ -176,26 +195,52 @@ input[type=text]::placeholder{color:var(--muted)}
   </div>
 </div>
 
+<!-- GAME — one category at a time -->
 <div id="screen-game" class="screen">
   <div class="r-hdr">
     <span class="rbadge">סיבוב <span id="rnd-num">1</span></span>
-    <span id="timer-txt" style="font-size:1.3rem;font-weight:900;color:var(--orange);">90</span>
+    <span id="timer-txt" style="font-size:1.3rem;font-weight:900;color:var(--orange);">60</span>
+  </div>
+  <!-- category progress bar -->
+  <div class="cat-prog-wrap">
+    <div class="cat-prog-bar" id="cat-prog-bar"></div>
+    <span class="cat-prog-label" id="cat-prog-label"></span>
   </div>
   <div class="ltr"><div class="big-l" id="cur-letter">א</div></div>
-  <div class="tb-wrap"><div class="tb" id="timer-bar" style="width:100%"></div></div>
-  <div class="ans-grid" id="ans-grid"></div>
-  <div id="stop-wrap" style="text-align:center;">
-    <button class="btn btn-p" onclick="playerStop()">⛔ סטופ!</button>
+  <div class="tb-wrap"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
+
+  <!-- answer area (shown while playing) -->
+  <div id="answer-area">
+    <div class="cat-answer-card">
+      <div class="cat-title" id="cat-emoji-name"></div>
+      <div class="cat-subtitle" id="cat-hint"></div>
+      <input type="text" id="cat-answer" placeholder="..." maxlength="30"
+        onkeydown="if(event.key==='Enter')submitCatAnswer()">
+    </div>
+    <!-- live submission counter (visible to all while still answering) -->
+    <div class="sub-row">
+      <div class="sub-pips" id="sub-pips-live"></div>
+      <span class="sub-label" id="sub-label-live"></span>
+    </div>
+    <div style="margin-top:14px;">
+      <button class="btn btn-g" id="submit-btn" onclick="submitCatAnswer()">✅ שלח תשובה</button>
+    </div>
   </div>
+
+  <!-- waiting area (shown after submitting) -->
   <div id="wait-others" style="display:none;">
     <div class="wait">
       <div class="spin"></div>
       <p id="wait-txt">ממתין לשאר השחקנים...</p>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;" id="sdots"></div>
+      <div class="sub-row" style="justify-content:center;margin-top:14px;">
+        <div class="sub-pips" id="sub-pips-wait"></div>
+        <span class="sub-label" id="sub-label-wait"></span>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- RESULTS -->
 <div id="screen-results" class="screen">
   <div style="text-align:center;margin-bottom:24px;padding-top:10px;">
     <div style="font-size:3rem;margin-bottom:8px;">🏆</div>
@@ -215,6 +260,7 @@ input[type=text]::placeholder{color:var(--muted)}
   </div>
 </div>
 
+<!-- FINAL -->
 <div id="screen-final" class="screen">
   <div style="text-align:center;margin-bottom:32px;padding-top:20px;">
     <div style="font-size:4rem;margin-bottom:12px;">🎊</div>
@@ -224,10 +270,18 @@ input[type=text]::placeholder{color:var(--muted)}
   <button class="btn btn-p" onclick="goHome()" style="margin-top:8px;">🏠 חזור לתפריט</button>
 </div>
 
-</div>
+</div><!-- /#app -->
 <div id="toast"></div>
 
 <script type="module">
+// Suppress browser-extension message-channel noise
+window.addEventListener('unhandledrejection', e => {
+  if (e.reason?.message?.includes('message channel closed') ||
+      e.reason?.message?.includes('listener indicated an asynchronous response')) {
+    e.preventDefault();
+  }
+});
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
 import {
@@ -259,42 +313,120 @@ const DCATS=[
   {id:'food',name:'אוכל',emoji:'🍕',on:false},
 ];
 const AVC=['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#f97316','#06b6d4'];
+const INACTIVITY_MS = 10 * 60 * 1000;
 
 let S={
   pName:'',pId:'',roomId:'',isHost:false,
-  listeners:[],rTime:90,timerInt:null,timeLeft:90,
+  listeners:[],rTime:60,timerInt:null,timeLeft:60,
   cats:[],cCats:[],letter:'',rNum:0,totScores:{},
-  submitting:false
+  currentCatIndex:0,catSubmitted:false
 };
 
-// utils
+// ─── SESSION PERSISTENCE ──────────────────────────────────────────
+function saveSession(){
+  try{
+    localStorage.setItem('lac_s',JSON.stringify({
+      roomId:S.roomId,pId:S.pId,pName:S.pName,
+      isHost:S.isHost,rNum:S.rNum,totScores:S.totScores
+    }));
+  }catch(e){}
+}
+function clearSession(){try{localStorage.removeItem('lac_s');}catch(e){}}
+
+async function restoreSession(){
+  try{
+    const raw=localStorage.getItem('lac_s');
+    if(!raw)return;
+    const sess=JSON.parse(raw);
+    if(!sess.roomId||!sess.pId)return;
+    const snap=await get(ref(db,'rooms/'+sess.roomId));
+    if(!snap.exists()){clearSession();return;}
+    const room=snap.val();
+    if(!room.players?.[sess.pId]){clearSession();return;}
+    S.roomId=sess.roomId;S.pId=sess.pId;S.pName=sess.pName;
+    S.isHost=(room.host===sess.pId);
+    S.rNum=room.round||1;
+    S.totScores=sess.totScores||{};
+    S.cats=room.categories||[];
+    S.rTime=room.roundTime||60;
+    S.currentCatIndex=room.currentCatIndex||0;
+    document.getElementById('player-name').value=S.pName;
+    toast('ברוך השב! מחבר מחדש...');
+    if(room.status==='lobby')enterLobby();
+    else if(room.status==='playing')await loadRound();
+    else if(room.status==='results')await showResults();
+    else if(room.status==='ended')await showFinal();
+  }catch(e){clearSession();}
+}
+
+// ─── ACTIVITY & 10-MIN EXPIRY ─────────────────────────────────────
+function touchActivity(){
+  if(S.roomId)update(ref(db,'rooms/'+S.roomId),{lastActivity:Date.now()});
+}
+async function checkExpiry(){
+  if(!S.roomId)return;
+  try{
+    const snap=await get(ref(db,'rooms/'+S.roomId+'/lastActivity'));
+    if(snap.exists()&&Date.now()-snap.val()>INACTIVITY_MS){
+      await remove(ref(db,'rooms/'+S.roomId));
+      clearSession();detach();clearInterval(S.timerInt);
+      S.roomId='';S.isHost=false;
+      showScreen('home');
+      toast('החדר נמחק – אין פעילות 10 דקות');
+    }
+  }catch(e){}
+}
+setInterval(checkExpiry,60000);
+
+// ─── UTILS ────────────────────────────────────────────────────────
 window.showScreen=id=>{
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   window.scrollTo(0,0);
 };
-
 function toast(m){
   const t=document.getElementById('toast');
   t.textContent=m;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2500);
 }
-
 function gid(n){
   let s='';
-  while(s.length<n) s+=Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g,'');
+  while(s.length<n)s+=Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g,'');
   return s.slice(0,n);
 }
-
 function avc(name){
   let h=0;for(const c of name)h=h*31+c.charCodeAt(0);
   return AVC[Math.abs(h)%AVC.length];
 }
-
 function addL(r,fn){onValue(r,fn);S.listeners.push({r,fn});}
 function detach(){S.listeners.forEach(({r,fn})=>off(r,'value',fn));S.listeners=[];}
 
-// init cats grid
+// ─── CATEGORY PROGRESS UI ─────────────────────────────────────────
+function renderCatProg(idx,total){
+  const bar=document.getElementById('cat-prog-bar');
+  bar.innerHTML='';
+  for(let i=0;i<total;i++){
+    const d=document.createElement('div');
+    d.className='cat-prog-dot'+(i<idx?' done':i===idx?' active':'');
+    bar.appendChild(d);
+  }
+  document.getElementById('cat-prog-label').textContent=`${idx+1}/${total}`;
+}
+
+// ─── SUBMISSION PIPS UI ───────────────────────────────────────────
+function renderSubPips(pipsId,labelId,submittedMap,players){
+  const pips=document.getElementById(pipsId);
+  const lbl=document.getElementById(labelId);
+  if(!pips||!lbl)return;
+  const entries=Object.entries(players);
+  pips.innerHTML=entries.map(([pid,p])=>
+    `<div class="sub-pip ${submittedMap[pid]?'done':''}" title="${p.name}"></div>`
+  ).join('');
+  const cnt=Object.values(submittedMap).filter(Boolean).length;
+  lbl.textContent=`${cnt} מתוך ${entries.length} הגישו`;
+}
+
+// ─── CATS GRID ────────────────────────────────────────────────────
 function initGrid(){
   const g=document.getElementById('cats-grid');
   g.innerHTML='';
@@ -317,7 +449,6 @@ window.addCC=()=>{
   S.cCats.push(v);inp.value='';renderCCTags();
 };
 document.getElementById('cc-inp').onkeydown=e=>{if(e.key==='Enter')window.addCC();};
-
 function renderCCTags(){
   const w=document.getElementById('cc-tags');
   w.innerHTML='';
@@ -328,21 +459,20 @@ function renderCCTags(){
     w.appendChild(el);
   });
 }
-
 window.selTime=btn=>{
-  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   S.rTime=parseInt(btn.dataset.v);
 };
 
-// HOME
+// ─── HOME → CREATE ────────────────────────────────────────────────
 window.showCreate=()=>{
   const n=document.getElementById('player-name').value.trim();
   if(!n){toast('נא להזין שם שחקן');return;}
   S.pName=n;showScreen('create');
 };
 
-// CREATE
+// ─── CREATE ROOM ──────────────────────────────────────────────────
 window.createRoom=async()=>{
   const active=[...document.querySelectorAll('.cat-tog.active')].map(el=>{
     const c=DCATS.find(x=>x.id===el.dataset.id);
@@ -350,21 +480,20 @@ window.createRoom=async()=>{
   }).filter(Boolean);
   S.cCats.forEach((name,i)=>active.push({id:'cc_'+i,name,emoji:'⭐'}));
   if(!active.length){toast('בחר לפחות קטגוריה אחת');return;}
-  S.cats=active;S.pId=gid(10);S.isHost=true;S.totScores={};
-
+  S.cats=active;S.pId=gid(10);S.isHost=true;S.totScores={};S.currentCatIndex=0;
   let roomId,t=0;
   do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
   S.roomId=roomId;
-
   await set(ref(db,'rooms/'+roomId),{
     host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,
-    round:0,letter:'',createdAt:Date.now(),
+    round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
     players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now()}}
   });
+  saveSession();
   enterLobby();
 };
 
-// JOIN
+// ─── JOIN ROOM ────────────────────────────────────────────────────
 window.joinRoom=async()=>{
   const n=document.getElementById('player-name').value.trim();
   if(!n){toast('נא להזין שם שחקן');return;}
@@ -375,12 +504,13 @@ window.joinRoom=async()=>{
   const room=snap.val();
   if(room.status!=='lobby'){toast('המשחק כבר התחיל');return;}
   S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;
-  S.cats=room.categories||[];S.rTime=room.roundTime||90;S.totScores={};
+  S.cats=room.categories||[];S.rTime=room.roundTime||60;S.totScores={};S.currentCatIndex=0;
   await set(ref(db,`rooms/${code}/players/${S.pId}`),{name:n,score:0,joinedAt:Date.now()});
+  touchActivity();saveSession();
   enterLobby();
 };
 
-// LOBBY
+// ─── LOBBY ────────────────────────────────────────────────────────
 function enterLobby(){
   document.getElementById('lobby-code').textContent=S.roomId;
   document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
@@ -390,8 +520,7 @@ function enterLobby(){
 
   addL(ref(db,`rooms/${S.roomId}/players`),snap=>{
     const ps=snap.val()||{};
-    const cnt=Object.keys(ps).length;
-    document.getElementById('pl-count').textContent=cnt;
+    document.getElementById('pl-count').textContent=Object.keys(ps).length;
     const list=document.getElementById('pl-list');
     list.innerHTML='';
     Object.entries(ps).sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).forEach(([pid,p])=>{
@@ -404,14 +533,14 @@ function enterLobby(){
       list.appendChild(el);
     });
     const btn=document.getElementById('start-btn');
-    if(btn)btn.disabled=cnt<2;
+    if(btn)btn.disabled=Object.keys(ps).length<2;
   });
 
-  addL(ref(db,`rooms/${S.roomId}/status`),snap=>{
+  addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
     const st=snap.val();
-    if(st==='playing')loadRound();
-    else if(st==='results')showResults();
-    else if(st==='ended')showFinal();
+    if(st==='playing')await loadRound();
+    else if(st==='results')await showResults();
+    else if(st==='ended')await showFinal();
   });
 }
 
@@ -425,163 +554,216 @@ window.leaveRoom=async()=>{
     await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
     if(S.isHost)await remove(ref(db,`rooms/${S.roomId}`));
   }
-  S.roomId='';S.isHost=false;showScreen('home');
+  clearSession();S.roomId='';S.isHost=false;showScreen('home');
 };
 
-// START
+// ─── START GAME ───────────────────────────────────────────────────
 window.startGame=async()=>{
   const s=await get(ref(db,`rooms/${S.roomId}/players`));
   if(Object.keys(s.val()||{}).length<2){toast('צריך לפחות 2 שחקנים');return;}
   const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
-  S.letter=letter;S.rNum=1;
+  S.letter=letter;S.rNum=1;S.currentCatIndex=0;
   await update(ref(db,`rooms/${S.roomId}`),{
-    status:'playing',round:1,letter,roundStartedAt:Date.now(),answers:null,stopped:null
+    status:'playing',round:1,letter,
+    catStartedAt:Date.now(),currentCatIndex:0,
+    catAnswers:null,lastActivity:Date.now()
   });
 };
 
-// LOAD ROUND
+// ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
 async function loadRound(){
   const snap=await get(ref(db,`rooms/${S.roomId}`));
   const r=snap.val();
   S.letter=r.letter;S.rNum=r.round;
-  S.cats=r.categories||S.cats;S.rTime=r.roundTime||S.rTime;
-  S.submitting=false;
-  startRound();
+  S.cats=r.categories||S.cats;
+  S.rTime=r.roundTime||S.rTime;
+  S.currentCatIndex=r.currentCatIndex||0;
+  S.catSubmitted=false;
+  // Check if we already submitted this category
+  const cat=S.cats[S.currentCatIndex];
+  if(cat){
+    const aSnap=await get(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`));
+    S.catSubmitted=aSnap.exists();
+  }
+  startCat(r);
 }
 
-function startRound(){
-  detach();
+// ─── START CAT UI ─────────────────────────────────────────────────
+function startCat(roomData){
+  detach();clearInterval(S.timerInt);
+  const cat=S.cats[S.currentCatIndex];
+  if(!cat)return;
+
+  // Header
   document.getElementById('rnd-num').textContent=S.rNum;
   document.getElementById('cur-letter').textContent=S.letter;
-  const grid=document.getElementById('ans-grid');
-  grid.innerHTML='';
-  S.cats.forEach(cat=>{
-    const row=document.createElement('div');row.className='ans-row';
-    row.innerHTML=`<span class="cl">${cat.emoji} ${cat.name}</span>
-      <input type="text" id="a-${cat.id}" placeholder="${S.letter}..." maxlength="30">`;
-    grid.appendChild(row);
-  });
-  document.getElementById('stop-wrap').style.display='block';
-  document.getElementById('wait-others').style.display='none';
-  showScreen('game');
-  startTimer();
+  renderCatProg(S.currentCatIndex,S.cats.length);
 
-  addL(ref(db,`rooms/${S.roomId}/stopped`),snap=>{
-    if(snap.val()&&snap.val()!==S.pName){
-      toast('⛔ '+snap.val()+' עצר!');
-      submitAnswers();
+  // Category card
+  document.getElementById('cat-emoji-name').textContent=`${cat.emoji} ${cat.name}`;
+  document.getElementById('cat-hint').textContent=`כתוב ${cat.name} שמתחיל/ה ב-${S.letter}`;
+
+  const inp=document.getElementById('cat-answer');
+  inp.value='';inp.disabled=S.catSubmitted;
+
+  if(S.catSubmitted){
+    document.getElementById('answer-area').style.display='none';
+    document.getElementById('wait-others').style.display='block';
+  }else{
+    document.getElementById('answer-area').style.display='block';
+    document.getElementById('wait-others').style.display='none';
+    document.getElementById('submit-btn').disabled=false;
+    setTimeout(()=>inp.focus(),150);
+  }
+  showScreen('game');
+
+  // Timer from catStartedAt
+  const elapsed=Math.floor((Date.now()-(roomData?.catStartedAt||Date.now()))/1000);
+  S.timeLeft=Math.max(0,S.rTime-elapsed);
+  if(!S.catSubmitted){
+    if(S.timeLeft>0)startTimer();
+    else doSubmit(''); // time already expired on reconnect
+  }else{
+    // Show frozen timer at 0
+    document.getElementById('timer-txt').textContent=0;
+    document.getElementById('timer-bar').style.width='0%';
+  }
+
+  // Listen: currentCatIndex change → move to next cat
+  addL(ref(db,`rooms/${S.roomId}/currentCatIndex`),async snap=>{
+    const newIdx=snap.val();
+    if(newIdx!==null&&newIdx!==S.currentCatIndex){
+      S.currentCatIndex=newIdx;S.catSubmitted=false;
+      clearInterval(S.timerInt);
+      await loadRound();
     }
   });
-  addL(ref(db,`rooms/${S.roomId}/status`),snap=>{
-    if(snap.val()==='results')showResults();
-    if(snap.val()==='ended')showFinal();
+
+  // Listen: submission count for this cat (visible to everyone)
+  addL(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}`),async snap=>{
+    const subs=snap.val()||{};
+    const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
+    const players=psSnap.val()||{};
+    const total=Object.keys(players).length;
+    const cnt=Object.keys(subs).length;
+    // Build submitted map
+    const map={};Object.keys(players).forEach(pid=>{map[pid]=!!subs[pid];});
+    renderSubPips('sub-pips-live','sub-label-live',map,players);
+    renderSubPips('sub-pips-wait','sub-label-wait',map,players);
+    document.getElementById('wait-txt').textContent=`ממתין לשאר... (${cnt}/${total})`;
+    // Host: auto-advance when everyone submitted
+    if(S.isHost&&cnt>=total){
+      clearInterval(S.timerInt);
+      await advanceCat();
+    }
+  });
+
+  // Listen: status → results / ended
+  addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
+    if(snap.val()==='results')await showResults();
+    if(snap.val()==='ended')await showFinal();
   });
 }
 
+// ─── TIMER ────────────────────────────────────────────────────────
 function startTimer(){
-  S.timeLeft=S.rTime;updateTimer();
-  clearInterval(S.timerInt);
-  S.timerInt=setInterval(()=>{
+  updateTimer();clearInterval(S.timerInt);
+  S.timerInt=setInterval(async()=>{
     S.timeLeft--;updateTimer();
-    if(S.timeLeft<=0){clearInterval(S.timerInt);submitAnswers();}
+    if(S.timeLeft<=0){
+      clearInterval(S.timerInt);
+      await doSubmit(document.getElementById('cat-answer').value.trim());
+      // Host: grace period then force-advance
+      if(S.isHost){
+        setTimeout(async()=>{
+          const snap=await get(ref(db,`rooms/${S.roomId}/currentCatIndex`));
+          if((snap.val()||0)===S.currentCatIndex)await advanceCat();
+        },1500);
+      }
+    }
   },1000);
 }
-
 function updateTimer(){
   const pct=(S.timeLeft/S.rTime)*100;
   document.getElementById('timer-txt').textContent=S.timeLeft;
   const bar=document.getElementById('timer-bar');
   bar.style.width=pct+'%';
-  bar.className='tb'+(pct<30?' warn':'');
+  bar.className='tbar'+(pct<30?' warn':'');
 }
 
-window.playerStop=async()=>{
-  clearInterval(S.timerInt);
-  await update(ref(db,`rooms/${S.roomId}`),{stopped:S.pName});
-  submitAnswers();
-};
+// ─── SUBMIT ANSWER ────────────────────────────────────────────────
+window.submitCatAnswer=()=>doSubmit(document.getElementById('cat-answer').value.trim());
 
-async function submitAnswers(){
-  if(S.submitting)return;S.submitting=true;
-  clearInterval(S.timerInt);
-  document.getElementById('stop-wrap').style.display='none';
+async function doSubmit(answer){
+  if(S.catSubmitted)return;
+  S.catSubmitted=true;clearInterval(S.timerInt);
+  const cat=S.cats[S.currentCatIndex];
+  document.getElementById('answer-area').style.display='none';
   document.getElementById('wait-others').style.display='block';
-  document.querySelectorAll('#ans-grid input').forEach(i=>i.disabled=true);
-
-  const ans={};
-  S.cats.forEach(cat=>{
-    const inp=document.getElementById('a-'+cat.id);
-    ans[cat.id]=inp?inp.value.trim():'';
+  document.getElementById('cat-answer').disabled=true;
+  await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
+    name:S.pName,answer:answer,submittedAt:Date.now()
   });
-
-  await set(ref(db,`rooms/${S.roomId}/answers/${S.pId}`),{
-    name:S.pName,answers:ans,submittedAt:Date.now()
-  });
-
-  if(S.isHost)waitAll();
+  touchActivity();saveSession();
 }
 
-function waitAll(){
-  const aRef=ref(db,`rooms/${S.roomId}/answers`);
-  const fn=async snap=>{
-    const sub=snap.val()||{};
-    const cnt=Object.keys(sub).length;
-    const psn=await get(ref(db,`rooms/${S.roomId}/players`));
-    const total=Object.keys(psn.val()||{}).length;
-    const dots=document.getElementById('sdots');
-    if(dots&&psn.val()){
-      dots.innerHTML=Object.entries(psn.val()).map(([pid,p])=>
-        `<div class="sdot ${sub[pid]?'done':''}" title="${p.name}"></div>`
-      ).join('');
-    }
-    document.getElementById('wait-txt').textContent=`הגיש ${cnt} מתוך ${total}...`;
-    if(cnt>=total){
-      off(aRef,'value',fn);
-      await update(ref(db,`rooms/${S.roomId}`),{status:'results'});
-    }
-  };
-  onValue(aRef,fn);
+// ─── ADVANCE CATEGORY (host only) ────────────────────────────────
+async function advanceCat(){
+  // Guard against double-advance
+  const snap=await get(ref(db,`rooms/${S.roomId}/currentCatIndex`));
+  if((snap.val()||0)!==S.currentCatIndex)return;
+  const nextIdx=S.currentCatIndex+1;
+  if(nextIdx>=S.cats.length){
+    await update(ref(db,`rooms/${S.roomId}`),{status:'results',lastActivity:Date.now()});
+  }else{
+    await update(ref(db,`rooms/${S.roomId}`),{
+      currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now()
+    });
+  }
 }
 
-// RESULTS
+// ─── RESULTS ──────────────────────────────────────────────────────
 async function showResults(){
   clearInterval(S.timerInt);detach();
   const snap=await get(ref(db,`rooms/${S.roomId}`));
   const room=snap.val();
-  const answers=room.answers||{};
+  const catAnswers=room.catAnswers||{};
   const cats=room.categories||S.cats;
+  const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
+  const players=psSnap.val()||{};
 
   document.getElementById('res-rnd').textContent=room.round;
   document.getElementById('res-letter').textContent=room.letter;
 
   const rScores={};
-  Object.keys(answers).forEach(pid=>rScores[pid]=0);
+  Object.keys(players).forEach(pid=>rScores[pid]=0);
 
   const bycat=document.getElementById('res-cats');
   bycat.innerHTML='';
-
   cats.forEach(cat=>{
-    const ca={};
-    Object.entries(answers).forEach(([pid,d])=>{ca[pid]=(d.answers?.[cat.id]||'').trim();});
+    const catData=catAnswers[cat.id]||{};
     const counts={};
-    Object.values(ca).forEach(a=>{if(a)counts[a.toLowerCase()]=(counts[a.toLowerCase()]||0)+1;});
-    Object.entries(ca).forEach(([pid,a])=>{
+    Object.values(catData).forEach(d=>{
+      const a=(d.answer||'').trim();
+      if(a)counts[a.toLowerCase()]=(counts[a.toLowerCase()]||0)+1;
+    });
+    Object.entries(catData).forEach(([pid,d])=>{
+      const a=(d.answer||'').trim();
       if(!a)return;
       rScores[pid]=(rScores[pid]||0)+(counts[a.toLowerCase()]===1?10:5);
     });
-
-    const rows=Object.entries(answers).map(([pid,d])=>{
-      const a=ca[pid];
+    const rows=Object.entries(players).map(([pid,p])=>{
+      const d=catData[pid];
+      const a=d?(d.answer||'').trim():'';
       const u=a&&counts[a.toLowerCase()]===1;
       const cls=!a?'empty':(u?'unique':'shared');
       const pts=!a?0:(u?10:5);
       return `<tr>
-        <td>${d.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</td>
+        <td>${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</td>
         <td class="${cls}">${a||'—'}</td>
         <td style="text-align:center;font-weight:700;color:${pts===10?'var(--green)':pts===5?'var(--orange)':'var(--muted)'}">+${pts}</td>
       </tr>`;
     }).join('');
-
     const card=document.createElement('div');
     card.className='card';card.style.marginBottom='12px';
     card.innerHTML=`<h3>${cat.emoji} ${cat.name}</h3>
@@ -595,6 +777,7 @@ async function showResults(){
   Object.entries(rScores).forEach(([pid,pts])=>{
     S.totScores[pid]=(S.totScores[pid]||0)+pts;
   });
+  saveSession();
 
   const ups={};
   Object.keys(S.totScores).forEach(pid=>{
@@ -604,15 +787,14 @@ async function showResults(){
 
   const ps2=await get(ref(db,`rooms/${S.roomId}/players`));
   renderSB('scoreboard',ps2.val()||{});
-
   document.getElementById('host-next').style.display=S.isHost?'block':'none';
   document.getElementById('guest-next').style.display=S.isHost?'none':'block';
   showScreen('results');
 
   if(!S.isHost){
-    addL(ref(db,`rooms/${S.roomId}/status`),snap=>{
-      if(snap.val()==='playing')loadRound();
-      if(snap.val()==='ended')showFinal();
+    addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
+      if(snap.val()==='playing')await loadRound();
+      if(snap.val()==='ended')await showFinal();
     });
   }
 }
@@ -630,28 +812,33 @@ function renderSB(id,players){
 
 window.nextRound=async()=>{
   const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
-  S.rNum++;S.letter=letter;S.submitting=false;
+  S.rNum++;S.letter=letter;S.currentCatIndex=0;
   await update(ref(db,`rooms/${S.roomId}`),{
-    status:'playing',round:S.rNum,letter,roundStartedAt:Date.now(),answers:null,stopped:null
+    status:'playing',round:S.rNum,letter,
+    catStartedAt:Date.now(),currentCatIndex:0,
+    catAnswers:null,lastActivity:Date.now()
   });
 };
 
 window.endGame=async()=>{
-  await update(ref(db,`rooms/${S.roomId}`),{status:'ended'});
+  await update(ref(db,`rooms/${S.roomId}`),{status:'ended',lastActivity:Date.now()});
 };
 
 async function showFinal(){
-  clearInterval(S.timerInt);detach();
+  clearInterval(S.timerInt);detach();clearSession();
   const snap=await get(ref(db,`rooms/${S.roomId}/players`));
   renderSB('final-sb',snap.val()||{});
   showScreen('final');
 }
 
 window.goHome=()=>{
-  clearInterval(S.timerInt);detach();
+  clearInterval(S.timerInt);detach();clearSession();
   S.roomId='';S.isHost=false;S.totScores={};
   showScreen('home');
 };
+
+// ─── INIT: try restoring session on page load ─────────────────────
+restoreSession();
 </script>
 </body>
 </html>
