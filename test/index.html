@@ -253,7 +253,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <div id="res-cats"></div>
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);border-radius:10px;padding:10px 14px;">
     <span style="font-size:1.1rem;">⚡</span>
-    <span style="color:var(--blue);font-size:.82rem;font-weight:600;">בונוס מהירות – ככל שענית מהר יותר, כך מרוויחים עד <strong>+5 נקודות</strong> בונוס!</span>
+    <span style="color:var(--blue);font-size:.82rem;font-weight:600;">בונוס מהירות – ענית מהר? מרוויחים עד <strong>+5 נק'</strong> נוסף!</span>
   </div>
   <div class="card"><h3>🏅 ניקוד</h3><div class="sb" id="scoreboard"></div></div>
   <div id="host-next" style="display:none;">
@@ -514,6 +514,8 @@ window.joinRoom=async()=>{
   touchActivity();saveSession();
   enterLobby();
 };
+
+// ─── LOBBY ────────────────────────────────────────────────────────
 function enterLobby(){
   document.getElementById('lobby-code').textContent=S.roomId;
   document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
@@ -558,10 +560,10 @@ window.leaveRoom=async()=>{
     if(S.isHost)await remove(ref(db,`rooms/${S.roomId}`));
   }
   clearSession();S.roomId='';S.isHost=false;showScreen('home');
-}
+};
 
 // ─── START GAME ───────────────────────────────────────────────────
-async function startGame(){
+window.startGame=async()=>{
   const s=await get(ref(db,`rooms/${S.roomId}/players`));
   if(Object.keys(s.val()||{}).length<2){toast('צריך לפחות 2 שחקנים');return;}
   const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
@@ -571,7 +573,7 @@ async function startGame(){
     catStartedAt:Date.now(),currentCatIndex:0,
     catAnswers:null,lastActivity:Date.now()
   });
-}
+};
 
 // ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
 async function loadRound(){
@@ -695,7 +697,7 @@ function updateTimer(){
 }
 
 // ─── SUBMIT ANSWER ────────────────────────────────────────────────
-function submitCatAnswer(){doSubmit(document.getElementById('cat-answer').value.trim());}
+window.submitCatAnswer=()=>doSubmit(document.getElementById('cat-answer').value.trim());
 
 async function doSubmit(answer){
   if(S.catSubmitted)return;
