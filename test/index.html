@@ -299,6 +299,14 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 .pod-2 .pod-av{width:42px;height:42px;}
 .pod-3 .pod-block{height:40px;background:linear-gradient(180deg,rgba(205,127,50,.3),rgba(205,127,50,.1));border:1px solid rgba(205,127,50,.3);}
 .pod-3 .pod-av{width:36px;height:36px;font-size:1rem;}
+/* continue vote */
+.cvote-bar{display:flex;gap:8px;align-items:center;margin-bottom:7px;}
+.cvote-name{font-size:.82rem;font-weight:700;flex:1;color:var(--text);}
+.cvote-chip{padding:3px 10px;border-radius:100px;font-size:.75rem;font-weight:800;}
+.cvote-chip.cont{background:rgba(15,186,129,.18);color:var(--green);border:1px solid rgba(15,186,129,.3);}
+.cvote-chip.end{background:rgba(233,69,96,.18);color:var(--red);border:1px solid rgba(233,69,96,.3);}
+.cvote-chip.none{background:var(--s2);color:var(--muted);border:1px solid var(--border);}
+.btn-voted{box-shadow:0 0 0 2.5px #fff5!important;}
 </style>
 </head>
 <body>
@@ -478,18 +486,33 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
     </div>
     <div style="width:60px;"></div>
   </div>
+  <div id="results-podium-wrap" class="podium-wrap"></div>
   <div id="res-cats"></div>
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);border-radius:10px;padding:10px 14px;">
     <span style="font-size:1.1rem;">⚡</span>
     <span style="color:var(--blue);font-size:.82rem;font-weight:600;">בונוס מהירות – ענית מהר? מרוויחים עד <strong>+5 נק'</strong> נוסף!</span>
   </div>
   <div class="card"><h3 id="scoreboard-label">🏅 ניקוד מצטבר</h3><div class="sb" id="scoreboard"></div></div>
+
+  <!-- Unified vote panel (all players including host) -->
+  <div id="continue-vote-panel" style="display:none;">
+    <div class="card" style="margin-bottom:12px;">
+      <h3>🗳️ מה עושים?</h3>
+      <div style="display:flex;gap:10px;margin-bottom:14px;">
+        <button class="btn btn-g" id="btn-vote-continue" style="flex:1;">▶️ עוד סיבוב</button>
+        <button class="btn btn-s" id="btn-vote-end" style="flex:1;">🏁 לסיים</button>
+      </div>
+      <div id="continue-vote-results"></div>
+    </div>
+  </div>
+
+  <!-- Host action button (shown after votes, reflects majority) -->
   <div id="host-next" style="display:none;">
     <button class="btn btn-p" id="btn-next-round">▶️ סיבוב הבא</button>
-    <button class="btn btn-s" style="margin-top:10px;" id="btn-end-game">🏁 סיים משחק</button>
+    <button class="btn btn-s" id="btn-end-game" style="display:none;margin-top:10px;">🏁 סיים משחק</button>
   </div>
   <div id="guest-next" style="display:none;">
-    <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל סיבוב הבא...</p></div>
+    <div class="wait"><div class="spin"></div><p>מחכים שהמארח יחליט...</p></div>
   </div>
 </div>
 
@@ -1684,10 +1707,62 @@ async function showResults(){
 
   document.getElementById('scoreboard-label').textContent=
     S.cumulativeSB ? '🏅 ניקוד מצטבר' : `🏅 ניקוד סיבוב ${room.round}`;
-  document.getElementById('host-next').style.display=S.isHost?'block':'none';
-  document.getElementById('guest-next').style.display=S.isHost?'none':'block';
+
+  // Podium in results screen (cumulative standings)
+  renderPodium(ps2val, 'results-podium-wrap');
+
+  document.getElementById('host-next').style.display='none';
+  document.getElementById('guest-next').style.display='none';
+  document.getElementById('continue-vote-panel').style.display='block';
 
   showScreen('results');
+
+  // Clear my previous vote
+  await remove(ref(db,`rooms/${S.roomId}/continueVotes/${S.pId}`));
+
+  const btnCont=document.getElementById('btn-vote-continue');
+  const btnEnd=document.getElementById('btn-vote-end');
+  btnCont.classList.remove('btn-voted');
+  btnEnd.classList.remove('btn-voted');
+
+  function setMyVote(v){
+    set(ref(db,`rooms/${S.roomId}/continueVotes/${S.pId}`),{name:S.pName,vote:v});
+    btnCont.classList.toggle('btn-voted', v==='continue');
+    btnEnd.classList.toggle('btn-voted', v==='end');
+  }
+  btnCont.onclick=()=>setMyVote('continue');
+  btnEnd.onclick=()=>setMyVote('end');
+
+  // Live tally for everyone
+  addL(ref(db,`rooms/${S.roomId}/continueVotes`), snap=>{
+    const votes=snap.val()||{};
+    const activePlayers=Object.entries(ps2val).filter(([,p])=>!p.spectator);
+    renderVoteTally('continue-vote-results', votes, ps2val);
+
+    // Host: show action button based on majority once everyone voted
+    if(S.isHost){
+      const contCount=Object.values(votes).filter(v=>v.vote==='continue').length;
+      const endCount=Object.values(votes).filter(v=>v.vote==='end').length;
+      const totalVoters=activePlayers.length;
+      const allVoted=Object.keys(votes).length>=totalVoters;
+      const hostNext=document.getElementById('host-next');
+      const btnNext=document.getElementById('btn-next-round');
+      const btnEndG=document.getElementById('btn-end-game');
+
+      // Show host action button only after host voted
+      const hostVoted=!!votes[S.pId];
+      if(hostVoted){
+        hostNext.style.display='block';
+        const endWins=endCount>contCount;
+        btnNext.style.display=endWins?'none':'block';
+        btnEndG.style.display=endWins?'block':'none';
+        btnNext.textContent=`▶️ סיבוב הבא (${contCount} הצביעו)`;
+        btnEndG.textContent=`🏁 סיים משחק (${endCount} הצביעו)`;
+      }else{
+        hostNext.style.display='none';
+      }
+    }
+  });
 
   // Victory animation based on THIS ROUND's score ranking
   const sortedByRound=Object.entries(ps2val)
@@ -1699,18 +1774,58 @@ async function showResults(){
 
   if(!S.isHost){
     addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
-      if(snap.val()==='playing')await loadRound();
+      if(snap.val()==='playing'){await remove(ref(db,`rooms/${S.roomId}/continueVotes/${S.pId}`));await loadRound();}
       if(snap.val()==='ended')await showFinal();
     });
   }
 }
 
-function renderPodium(players){
+function renderVoteTally(containerId, votes, players){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  const activePlayers=Object.entries(players).filter(([,p])=>!p.spectator);
+  const contVotes=Object.values(votes).filter(v=>v.vote==='continue');
+  const endVotes=Object.values(votes).filter(v=>v.vote==='end');
+  const total=activePlayers.length;
+
+  let html=`<div style="font-size:.8rem;color:var(--muted);font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;">
+    הצבעות (${Object.keys(votes).length}/${total})
+  </div>`;
+
+  // Summary bar
+  html+=`<div style="display:flex;gap:8px;margin-bottom:10px;">
+    <div style="flex:1;background:rgba(15,186,129,.12);border:1px solid rgba(15,186,129,.25);border-radius:10px;padding:8px 12px;text-align:center;">
+      <div style="font-size:1.3rem;font-weight:900;color:var(--green);">${contVotes.length}</div>
+      <div style="font-size:.72rem;color:var(--muted);">▶️ עוד סיבוב</div>
+    </div>
+    <div style="flex:1;background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.25);border-radius:10px;padding:8px 12px;text-align:center;">
+      <div style="font-size:1.3rem;font-weight:900;color:var(--red);">${endVotes.length}</div>
+      <div style="font-size:.72rem;color:var(--muted);">🏁 לסיים</div>
+    </div>
+  </div>`;
+
+  // Per-player breakdown
+  activePlayers.forEach(([pid,p])=>{
+    const v=votes[pid];
+    const chip=v
+      ? `<span class="cvote-chip ${v.vote==='continue'?'cont':'end'}">${v.vote==='continue'?'▶️ ממשיך':'🏁 מסיים'}</span>`
+      : `<span class="cvote-chip none">⏳ לא הצביע</span>`;
+    html+=`<div class="cvote-bar">
+      <div class="cvote-name">${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</div>
+      ${chip}
+    </div>`;
+  });
+
+  el.innerHTML=html;
+}
+
+function renderPodium(players, wrapId){
+  wrapId=wrapId||'podium-wrap';
   const sorted=Object.entries(players)
     .filter(([,p])=>!p.spectator)
     .sort((a,b)=>(b[1].score||0)-(a[1].score||0))
     .slice(0,3);
-  const wrap=document.getElementById('podium-wrap');
+  const wrap=document.getElementById(wrapId);
   if(!wrap||sorted.length<2){if(wrap)wrap.style.display='none';return;}
   wrap.style.display='flex';
   // Order: 2nd, 1st, 3rd
@@ -1848,7 +1963,7 @@ async function nextRound(){
   await update(ref(db,`rooms/${S.roomId}`),{
     status:'playing',round:S.rNum,letter,
     catStartedAt:Date.now(),currentCatIndex:0,
-    catAnswers:null,vetoes:null,disqualified:null,lastActivity:Date.now()
+    catAnswers:null,vetoes:null,disqualified:null,continueVotes:null,lastActivity:Date.now()
   });
   await loadRound();
 }
