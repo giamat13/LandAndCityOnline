@@ -362,7 +362,7 @@
     <div class="logo"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
     <input type="text" id="player-name" style="display:none;">
     <!-- Player identity bar -->
-    <div id="home-identity" style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:16px;cursor:pointer;" onclick="showScreen('profile')">
+    <div id="home-identity" style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:16px;cursor:pointer;">
       <div id="home-av" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;"></div>
       <div style="flex:1;">
         <div id="home-pname" style="font-weight:800;font-size:1rem;"></div>
@@ -370,6 +370,7 @@
       </div>
       <span style="color:var(--muted);font-size:1rem;">✏️</span>
     </div>
+    <div class="divider" style="margin:16px 0;">צור חדר</div>
     <div class="home-actions">
       <button class="btn btn-p" id="btn-show-create">✨ צור חדר חדש</button>
       <div class="divider">הצטרף לחדר קיים</div>
@@ -2513,6 +2514,7 @@
     onValue(r,fn);
     floatEmojiListener={r,fn};
   }
+  document.getElementById('home-identity').addEventListener('click',()=>{ setupProfileScreen(); showScreen('profile'); });
   document.getElementById('btn-show-create').addEventListener('click',showCreate);
   document.getElementById('btn-join').addEventListener('click',()=>joinRoom(false));
   document.getElementById('btn-join-spec').addEventListener('click',()=>joinRoom(true));
