@@ -2847,7 +2847,7 @@
           // Show empty row
           const row=document.createElement('div');
           row.className='vote-row';
-          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>`;
+          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${p.devRole?devBadge(p.devRole):''}`;
           row.innerHTML=nameEl+`<span class="vote-answer" style="opacity:.4;font-style:italic">—</span>`;
           rows.appendChild(row);
           return;
@@ -2864,7 +2864,7 @@
           row.className='vote-row';
 
           // Only show player name on first answer row
-          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>`
+          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${p.devRole?' '+devBadge(p.devRole):''}</span>`
             :`<span class="vote-name" style="opacity:.3">↳</span>`;
           const answerEl=`<span class="vote-answer${isDisq?' disq':''}">${answer}</span>`;
           const countEl=vetoCount>0?`<span class="vote-count hot">${vetoCount}👎</span>`:'<span class="vote-count"></span>';
@@ -3258,7 +3258,11 @@
       div.className=`pod ${rankClass[ri]}`;
       div.style.animationDelay=(ri*0.15)+'s';
       div.innerHTML=`
-        <div class="pod-name" style="color:${isMe?'var(--blue)':'var(--text)'}">${p.name}${isMe?' (אתה)':''}</div>
+        <div class="pod-name" style="color:${isMe?'var(--blue)':'var(--text)'}">
+          ${p.name}${isMe?' (אתה)':''}
+          ${p.devRole?devBadge(p.devRole):''}
+          ${p.tag?`<span class="player-tag" style="font-size:.58rem;">${p.tag}</span>`:''}
+        </div>
         <div class="pod-av" style="width:${ri===1?52:ri===0?42:36}px;height:${ri===1?52:ri===0?42:36}px;background:${c}22;color:${c};font-size:${ri===1?'1.4rem':ri===0?'1.1rem':'.9rem'}">${p.name.charAt(0)}</div>
         <div class="pod-block" style="height:${heights[ri]}px;background:linear-gradient(180deg,${c}33,${c}11);border:1px solid ${c}44;">${medals[ri]}</div>
         <div class="pod-pts">${p.score||0} נק'</div>`;
@@ -3530,7 +3534,7 @@
         const wrap=document.createElement('div');
         wrap.className='chat-msg'+(isMine?' mine':'');
         wrap.innerHTML=`<div class="chat-av" style="background:${c}22;color:${c}">${(m.name||'?').charAt(0)}</div>
-          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}</div>`}${escHtml(m.text)}</div>`;
+          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${m.devRole?(" "+devBadge(m.devRole)):""}</div>`}${escHtml(m.text)}</div>`;
         container.appendChild(wrap);
       });
       container.scrollTop=container.scrollHeight;
@@ -3569,7 +3573,7 @@
     inp.value='';
     const msgId=gid(12);
     await set(ref(db,`rooms/${S.roomId}/chat/${msgId}`),{
-      pId:S.pId,name:S.pName,text,ts:Date.now()
+      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null
     });
     touchActivity();
   }
