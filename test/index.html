@@ -259,6 +259,43 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 .spec-b{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
 .host-b{background:rgba(245,166,35,.12);color:var(--orange);border:1px solid rgba(245,166,35,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
 .disq{color:var(--red);text-decoration:line-through;opacity:.6}
+/* rare answer badge */
+.rare-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(168,85,247,.18);border:1px solid rgba(168,85,247,.4);color:#a855f7;padding:2px 7px;border-radius:100px;font-size:.7rem;font-weight:800;margin-right:4px;vertical-align:middle;animation:rarePop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes rarePop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+/* avatar color picker */
+.av-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.av-swatch{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .15s,border-color .15s;flex-shrink:0;}
+.av-swatch.sel{border-color:#fff;transform:scale(1.2);}
+/* share button */
+.share-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(76,201,240,.12);border:1.5px solid rgba(76,201,240,.3);color:var(--blue);border-radius:10px;padding:8px 16px;font-family:'Heebo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:10px;width:100%;justify-content:center;}
+.share-btn:hover{background:rgba(76,201,240,.25);}
+/* victory overlay */
+#victory-overlay{position:fixed;inset:0;z-index:1000;pointer-events:none;display:none;}
+.confetti-piece{position:absolute;width:10px;height:10px;opacity:0;animation:confettiFall linear forwards;}
+@keyframes confettiFall{0%{opacity:1;transform:translateY(-20px) rotate(0deg);}100%{opacity:0;transform:translateY(100vh) rotate(720deg);}}
+.victory-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);z-index:1001;text-align:center;pointer-events:none;animation:bannerPop .7s .2s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes bannerPop{0%{transform:translate(-50%,-50%) scale(0) rotate(-10deg);opacity:0;}60%{transform:translate(-50%,-50%) scale(1.1) rotate(3deg);opacity:1;}100%{transform:translate(-50%,-50%) scale(1) rotate(0deg);opacity:1;}}
+.victory-banner.hide{animation:bannerFade .5s ease forwards;}
+@keyframes bannerFade{to{opacity:0;transform:translate(-50%,-50%) scale(.8);}}
+.v-emoji{font-size:5rem;display:block;filter:drop-shadow(0 0 20px rgba(255,255,255,.5));}
+.v-text{font-size:1.8rem;font-weight:900;margin-top:8px;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.v-text.gold{background:linear-gradient(135deg,#f5a623,#ffd700,#f5a623);}
+.v-text.silver{background:linear-gradient(135deg,#c0c0c0,#e8e8e8,#c0c0c0);}
+.v-text.bronze{background:linear-gradient(135deg,#cd7f32,#e8a96a,#cd7f32);}
+.v-sub{color:rgba(255,255,255,.75);font-size:1rem;margin-top:4px;}
+/* final podium */
+.podium-wrap{display:flex;justify-content:center;align-items:flex-end;gap:12px;margin:24px 0 8px;}
+.pod{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.pod-av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.2rem;border:3px solid transparent;}
+.pod-name{font-size:.8rem;font-weight:700;text-align:center;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pod-pts{font-size:.75rem;color:var(--muted);}
+.pod-block{border-radius:8px 8px 0 0;width:70px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+.pod-1 .pod-block{height:80px;background:linear-gradient(180deg,rgba(245,166,35,.4),rgba(245,166,35,.15));border:1px solid rgba(245,166,35,.4);}
+.pod-1 .pod-av{width:52px;height:52px;font-size:1.4rem;border-color:rgba(245,166,35,.7);box-shadow:0 0 20px rgba(245,166,35,.4);}
+.pod-2 .pod-block{height:56px;background:linear-gradient(180deg,rgba(192,192,192,.3),rgba(192,192,192,.1));border:1px solid rgba(192,192,192,.3);}
+.pod-2 .pod-av{width:42px;height:42px;}
+.pod-3 .pod-block{height:40px;background:linear-gradient(180deg,rgba(205,127,50,.3),rgba(205,127,50,.1));border:1px solid rgba(205,127,50,.3);}
+.pod-3 .pod-av{width:36px;height:36px;font-size:1rem;}
 </style>
 </head>
 <body>
@@ -267,7 +304,10 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 <!-- HOME -->
 <div id="screen-home" class="screen active">
   <div class="logo"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
-  <div class="card"><h3>📛 שם שחקן</h3><input type="text" id="player-name" placeholder="השם שלך..." maxlength="20"></div>
+  <div class="card"><h3>📛 שם שחקן</h3><input type="text" id="player-name" placeholder="השם שלך..." maxlength="20">
+    <h3 style="margin-top:16px;">🎨 צבע אווטאר</h3>
+    <div class="av-picker" id="av-picker"></div>
+  </div>
   <div class="home-actions">
     <button class="btn btn-p" id="btn-show-create">✨ צור חדר חדש</button>
     <div class="divider">או הצטרף לחדר קיים</div>
@@ -331,8 +371,9 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <div class="code-box" id="code-box">
     <div class="lbl">📤 שתף עם חברים</div>
     <div class="code" id="lobby-code">------</div>
-    <div class="hint">לחץ להעתקה 📋</div>
+    <div class="hint">לחץ להעתקת קוד 📋</div>
   </div>
+  <button class="share-btn" id="btn-share-link">🔗 העתק לינק לחדר</button>
   <div class="card"><h3>🎮 קטגוריות</h3><div class="cats-prev" id="lobby-cats"></div></div>
   <div class="card">
     <h3>👥 שחקנים (<span id="pl-count">0</span>)</h3>
@@ -446,14 +487,18 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 
 <!-- FINAL -->
 <div id="screen-final" class="screen">
-  <div style="text-align:center;margin-bottom:32px;padding-top:20px;">
+  <div style="text-align:center;margin-bottom:24px;padding-top:20px;">
     <div style="font-size:4rem;margin-bottom:12px;">🎊</div>
     <h2 style="font-size:2rem;font-weight:900;">המשחק הסתיים!</h2>
   </div>
+  <div id="podium-wrap" class="podium-wrap"></div>
   <div class="card"><h3>🏆 תוצאות סופיות</h3><div class="sb" id="final-sb"></div></div>
   <button class="btn btn-p" id="btn-go-home" style="margin-top:8px;">🏠 חזור לתפריט</button>
   <button class="btn btn-s" onclick="exitGame()" style="margin-top:8px;">🚪 יציאה</button>
 </div>
+
+<!-- VICTORY OVERLAY -->
+<div id="victory-overlay"></div>
 
 </div><!-- /#app -->
 
@@ -510,6 +555,101 @@ getAnalytics(fb);
 const db = getDatabase(fb);
 
 const LETTERS='אבגדהוזחטיכלמנסעפצקרשת'.split('');
+const AVATAR_COLORS=['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#f97316','#06b6d4','#84cc16','#ef4444'];
+
+// ─── SOUND SYSTEM ─────────────────────────────────────────────────
+const SFX={
+  _ctx:null,
+  _get(){if(!this._ctx)this._ctx=new(window.AudioContext||window.webkitAudioContext)();return this._ctx;},
+  play(type){
+    try{
+      const ctx=this._get();
+      const g=ctx.createGain();g.connect(ctx.destination);
+      const o=ctx.createOscillator();o.connect(g);
+      if(type==='submit'){
+        g.gain.setValueAtTime(.18,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.25);
+        o.type='sine';o.frequency.setValueAtTime(660,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(880,ctx.currentTime+.12);
+        o.start();o.stop(ctx.currentTime+.25);
+      }else if(type==='tick'){
+        g.gain.setValueAtTime(.08,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.06);
+        o.type='square';o.frequency.setValueAtTime(880,ctx.currentTime);
+        o.start();o.stop(ctx.currentTime+.06);
+      }else if(type==='warn'){
+        g.gain.setValueAtTime(.12,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.15);
+        o.type='sawtooth';o.frequency.setValueAtTime(440,ctx.currentTime);
+        o.start();o.stop(ctx.currentTime+.15);
+      }else if(type==='start'){
+        [523,659,784,1047].forEach((f,i)=>{
+          const og=ctx.createGain();og.connect(ctx.destination);
+          const oo=ctx.createOscillator();oo.connect(og);
+          og.gain.setValueAtTime(.15,ctx.currentTime+i*.1);og.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.1+.2);
+          oo.type='sine';oo.frequency.setValueAtTime(f,ctx.currentTime+i*.1);
+          oo.start(ctx.currentTime+i*.1);oo.stop(ctx.currentTime+i*.1+.2);
+        });
+        return;
+      }else if(type==='win'){
+        [523,659,784,1047,1319].forEach((f,i)=>{
+          const og=ctx.createGain();og.connect(ctx.destination);
+          const oo=ctx.createOscillator();oo.connect(og);
+          og.gain.setValueAtTime(.2,ctx.currentTime+i*.12);og.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.12+.3);
+          oo.type='sine';oo.frequency.setValueAtTime(f,ctx.currentTime+i*.12);
+          oo.start(ctx.currentTime+i*.12);oo.stop(ctx.currentTime+i*.12+.3);
+        });
+        return;
+      }else if(type==='place2'){
+        [523,659,784].forEach((f,i)=>{
+          const og=ctx.createGain();og.connect(ctx.destination);
+          const oo=ctx.createOscillator();oo.connect(og);
+          og.gain.setValueAtTime(.15,ctx.currentTime+i*.12);og.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.12+.25);
+          oo.type='triangle';oo.frequency.setValueAtTime(f,ctx.currentTime+i*.12);
+          oo.start(ctx.currentTime+i*.12);oo.stop(ctx.currentTime+i*.12+.25);
+        });
+        return;
+      }else if(type==='place3'){
+        [440,523].forEach((f,i)=>{
+          const og=ctx.createGain();og.connect(ctx.destination);
+          const oo=ctx.createOscillator();oo.connect(og);
+          og.gain.setValueAtTime(.12,ctx.currentTime+i*.14);og.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.14+.22);
+          oo.type='triangle';oo.frequency.setValueAtTime(f,ctx.currentTime+i*.14);
+          oo.start(ctx.currentTime+i*.14);oo.stop(ctx.currentTime+i*.14+.22);
+        });
+        return;
+      }
+    }catch(e){}
+  }
+};
+
+// ─── AVATAR COLOR PICKER ──────────────────────────────────────────
+let S_pColor=AVATAR_COLORS[0];
+function initAvPicker(){
+  const wrap=document.getElementById('av-picker');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  AVATAR_COLORS.forEach(c=>{
+    const sw=document.createElement('div');
+    sw.className='av-swatch'+(c===S_pColor?' sel':'');
+    sw.style.background=c;
+    sw.addEventListener('click',()=>{
+      S_pColor=c;
+      wrap.querySelectorAll('.av-swatch').forEach(s=>s.classList.remove('sel'));
+      sw.classList.add('sel');
+    });
+    wrap.appendChild(sw);
+  });
+}
+initAvPicker();
+
+// ─── URL SHARE / AUTO-JOIN ────────────────────────────────────────
+(function checkUrlRoom(){
+  const params=new URLSearchParams(window.location.search);
+  const rc=params.get('room');
+  if(rc){
+    const inp=document.getElementById('join-code');
+    if(inp)inp.value=rc.toUpperCase();
+    // Clean URL without reload
+    window.history.replaceState({},'',window.location.pathname);
+  }
+})();
 const DCATS=[
   {id:'country',name:'ארץ',emoji:'🌍',on:true},
   {id:'city',name:'עיר',emoji:'🏙️',on:true},
@@ -520,7 +660,12 @@ const DCATS=[
   {id:'name',name:'שם פרטי',emoji:'👤',on:true},
   {id:'food',name:'אוכל',emoji:'🍕',on:false},
 ];
-const AVC=['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#f97316','#06b6d4'];
+const AVC=AVATAR_COLORS;
+function avc(name,playerColor){
+  if(playerColor)return playerColor;
+  let h=0;for(const c of name)h=h*31+c.charCodeAt(0);
+  return AVC[Math.abs(h)%AVC.length];
+}
 const INACTIVITY_MS = 10 * 60 * 1000;
 
 let S={
@@ -612,10 +757,6 @@ function gid(n){
   let s='';
   while(s.length<n)s+=Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g,'');
   return s.slice(0,n);
-}
-function avc(name){
-  let h=0;for(const c of name)h=h*31+c.charCodeAt(0);
-  return AVC[Math.abs(h)%AVC.length];
 }
 function addL(r,fn){onValue(r,fn);S.listeners.push({r,fn});}
 function detach(){S.listeners.forEach(({r,fn})=>off(r,'value',fn));S.listeners=[];}
@@ -718,7 +859,7 @@ async function createRoom(){
     cumulativeSB:S.cumulativeSB,
     totalRounds:S.totalRounds,
     round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
-    players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true}}
+    players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor}}
   });
   saveSession();
   enterLobby();
@@ -748,7 +889,7 @@ async function joinRoom(asSpectator=false){
   S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
   S.cumulativeSB=room.cumulativeSB!==false;
   await set(ref(db,`rooms/${code}/players/${S.pId}`),{
-    name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false
+    name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor
   });
   touchActivity();saveSession();
 
@@ -790,7 +931,7 @@ function enterLobby(){
     const hostSnap=await get(ref(db,`rooms/${S.roomId}/host`));
     const currentHost=hostSnap.val();
     Object.entries(ps).sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).forEach(([pid,p])=>{
-      const c=avc(p.name);
+      const c=avc(p.name,p.color);
       const el=document.createElement('div');
       el.className='pl-item';
       const badges=[];
@@ -827,6 +968,14 @@ function enterLobby(){
 
 function copyCode(){
   navigator.clipboard.writeText(S.roomId).then(()=>toast('קוד הועתק! 📋'));
+}
+function shareLink(){
+  const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
+  if(navigator.share){
+    navigator.share({title:'ארץ עיר אונליין',text:'הצטרף למשחק!',url}).catch(()=>{});
+  }else{
+    navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🔗'));
+  }
 }
 
 async function leaveRoom(){
@@ -954,6 +1103,7 @@ async function startCat(roomData){
   // Play letter animation only on first cat of each round
   const isFirstCat=(S.currentCatIndex===0);
   await animateLetter(S.letter, isFirstCat);
+  if(isFirstCat)SFX.play('start');
   if(!S.catSubmitted){
     setTimeout(()=>inp.focus(),80);
     if(S.timeLeft>0)startTimer();
@@ -1026,6 +1176,7 @@ function startTimer(){
   updateTimer();clearInterval(S.timerInt);
   S.timerInt=setInterval(async()=>{
     S.timeLeft--;updateTimer();
+    if(S.timeLeft<=10&&S.timeLeft>0){SFX.play(S.timeLeft<=3?'warn':'tick');}
     if(S.timeLeft<=0){
       clearInterval(S.timerInt);
       if(!S.isSpectator){
@@ -1075,7 +1226,7 @@ function renderSpectatorView(subs, players, cat){
   specPanel.innerHTML=`<div style="color:var(--muted);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">👁 תצוגת צופה — ${cat.emoji} ${cat.name}</div>`+
     activePlayers.map(([pid,p])=>{
       const d=subs[pid];
-      const c=avc(p.name);
+      const c=avc(p.name,p.color);
       const ansArr=d?(Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[])):[]; 
       const typing=!d; // hasn't submitted yet
       const tagsHtml=ansArr.map(a=>`<span style="background:rgba(15,186,129,.15);border:1px solid rgba(15,186,129,.35);color:var(--green);padding:3px 10px;border-radius:100px;font-size:.82rem;font-weight:700;">${a}</span>`).join('');
@@ -1132,6 +1283,7 @@ function submitCatAnswer(){
 async function doSubmit(answers){
   if(S.catSubmitted)return;
   S.catSubmitted=true;
+  SFX.play('submit');
   // לא עוצרים את הטיימר — ממשיך לרוץ חזותית
   const cat=S.cats[S.currentCatIndex];
   const ansArr=Array.isArray(answers)?answers:(answers?[answers]:[]);
@@ -1438,8 +1590,10 @@ async function showResults(){
         const al=(a||'').trim();
         if(!al)return;
         if(disqSet.has(al.toLowerCase()))return;
-        const base=counts[al.toLowerCase()]===1?10:5;
-        rScores[pid]=(rScores[pid]||0)+base;
+        const isUniq=counts[al.toLowerCase()]===1;
+        const base=isUniq?10:5;
+        const rareBonus=isUniq?2:0;
+        rScores[pid]=(rScores[pid]||0)+base+rareBonus;
       });
       // Time bonus only once per player (on first valid answer)
       const firstValid=ansArr.find(a=>{const al=(a||'').trim();return al&&!disqSet.has(al.toLowerCase());});
@@ -1464,16 +1618,19 @@ async function showResults(){
         const u=al&&!isDisq&&counts[al.toLowerCase()]===1;
         const cls=isDisq?'disq':(!al?'empty':(u?'unique':'shared'));
         const base=isDisq||!al?0:(u?10:5);
+        const rareBonus=u?2:0;
         const tb=(!firstValidDone&&!isDisq&&al&&timeBonus>0)?timeBonus:0;
         if(!isDisq&&al)firstValidDone=true;
         const disqLabel=isDisq?'<span style="color:var(--red);font-size:.72rem;margin-right:4px;">❌ נפסל</span>':'';
+        const rareLbl=u?'<span class="rare-badge">💎 נדיר +2</span>':'';
         const nameCell=ai===0?`${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}`
           :`<span style="opacity:.3">↳</span>`;
+        const totalPts=base+rareBonus;
         rowsArr.push(`<tr>
           <td>${nameCell}</td>
-          <td class="${cls}">${disqLabel}${al||'—'}</td>
-          <td style="text-align:center;font-weight:700;color:${isDisq?'var(--red)':base===10?'var(--green)':base===5?'var(--orange)':'var(--muted)'}">
-            ${isDisq?'<span style="text-decoration:line-through;opacity:.5">0</span>':'+'+base+(tb>0?`<span style="color:var(--blue);font-size:.75rem;"> +${tb}⚡</span>`:'')}</td>
+          <td class="${cls}">${disqLabel}${rareLbl}${al||'—'}</td>
+          <td style="text-align:center;font-weight:700;color:${isDisq?'var(--red)':totalPts>=12?'#a855f7':totalPts>=10?'var(--green)':totalPts>=5?'var(--orange)':'var(--muted)'}">
+            ${isDisq?'<span style="text-decoration:line-through;opacity:.5">0</span>':'+'+totalPts+(tb>0?`<span style="color:var(--blue);font-size:.75rem;"> +${tb}⚡</span>`:'')}</td>
         </tr>`);
       });
     });
@@ -1529,6 +1686,97 @@ async function showResults(){
   }
 }
 
+function renderPodium(players){
+  const sorted=Object.entries(players)
+    .filter(([,p])=>!p.spectator)
+    .sort((a,b)=>(b[1].score||0)-(a[1].score||0))
+    .slice(0,3);
+  const wrap=document.getElementById('podium-wrap');
+  if(!wrap||sorted.length<2){if(wrap)wrap.style.display='none';return;}
+  wrap.style.display='flex';
+  // Order: 2nd, 1st, 3rd
+  const order=[sorted[1],sorted[0],sorted[2]].filter(Boolean);
+  const ranks=[2,1,3];
+  const rankClass=['pod-2','pod-1','pod-3'];
+  const medals=['🥈','🥇','🥉'];
+  const heights=[56,80,40];
+  wrap.innerHTML='';
+  order.forEach((entry,i)=>{
+    const [pid,p]=entry;
+    const ri=i; // index in display order
+    const rank=ranks[ri];
+    const c=avc(p.name,p.color);
+    const isMe=pid===S.pId;
+    const div=document.createElement('div');
+    div.className=`pod ${rankClass[ri]}`;
+    div.style.animationDelay=(ri*0.15)+'s';
+    div.innerHTML=`
+      <div class="pod-name" style="color:${isMe?'var(--blue)':'var(--text)'}">${p.name}${isMe?' (אתה)':''}</div>
+      <div class="pod-av" style="width:${ri===1?52:ri===0?42:36}px;height:${ri===1?52:ri===0?42:36}px;background:${c}22;color:${c};font-size:${ri===1?'1.4rem':ri===0?'1.1rem':'.9rem'}">${p.name.charAt(0)}</div>
+      <div class="pod-block" style="height:${heights[ri]}px;background:linear-gradient(180deg,${c}33,${c}11);border:1px solid ${c}44;">${medals[ri]}</div>
+      <div class="pod-pts">${p.score||0} נק'</div>`;
+    wrap.appendChild(div);
+  });
+}
+
+function showVictoryAnim(place,winnerName){
+  const overlay=document.getElementById('victory-overlay');
+  if(!overlay)return;
+  overlay.style.display='block';
+  // Remove any old banner
+  document.querySelectorAll('.victory-banner').forEach(b=>b.remove());
+
+  const banner=document.createElement('div');
+  banner.className='victory-banner';
+
+  if(place===1){
+    SFX.play('win');
+    spawnConfetti(80);
+    banner.innerHTML=`<span class="v-emoji">🥇</span><div class="v-text gold">ניצחת!</div><div class="v-sub">מקום ראשון 🎉</div>`;
+  }else if(place===2){
+    SFX.play('place2');
+    spawnConfetti(30,'silver');
+    banner.innerHTML=`<span class="v-emoji">🥈</span><div class="v-text silver">כמעט!</div><div class="v-sub">מקום שני – עוד קצת!</div>`;
+  }else if(place===3){
+    SFX.play('place3');
+    spawnConfetti(15,'bronze');
+    banner.innerHTML=`<span class="v-emoji">🥉</span><div class="v-text bronze">כבוד!</div><div class="v-sub">מקום שלישי</div>`;
+  }else if(place>3){
+    banner.innerHTML=`<span class="v-emoji">🎮</span><div class="v-text silver">משחק גמור!</div><div class="v-sub">${winnerName} ניצח!</div>`;
+  }else{return;}
+
+  document.body.appendChild(banner);
+  // Auto-dismiss after 3.5s
+  setTimeout(()=>{
+    banner.classList.add('hide');
+    overlay.style.display='none';
+    setTimeout(()=>banner.remove(),600);
+  },3500);
+}
+
+function spawnConfetti(count,style){
+  const overlay=document.getElementById('victory-overlay');
+  const colors=style==='silver'?['#c0c0c0','#e8e8e8','#a9a9a9','#d3d3d3']:
+    style==='bronze'?['#cd7f32','#e8a96a','#b87333','#dda870']:
+    ['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#ffd700'];
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='confetti-piece';
+    const size=6+Math.random()*8;
+    p.style.cssText=`
+      left:${Math.random()*100}%;
+      top:-20px;
+      width:${size}px;height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      animation-duration:${1.5+Math.random()*2}s;
+      animation-delay:${Math.random()*.8}s;
+    `;
+    overlay.appendChild(p);
+    setTimeout(()=>p.remove(),(3500+Math.random()*1000));
+  }
+}
+
 function renderSB(id,players){
   const sorted=Object.entries(players)
     .filter(([,p])=>!p.spectator)
@@ -1545,9 +1793,17 @@ function renderSB(id,players){
 async function showFinal(){
   clearInterval(S.timerInt);detach();clearSession();
   const snap=await get(ref(db,`rooms/${S.roomId}/players`));
-  renderSB('final-sb',snap.val()||{});
+  const players=snap.val()||{};
+  renderSB('final-sb',players);
+  renderPodium(players);
   enterRoom();
   showScreen('final');
+  // Find our placement
+  const sorted=Object.entries(players)
+    .filter(([,p])=>!p.spectator)
+    .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+  const myPlace=sorted.findIndex(([pid])=>pid===S.pId)+1;
+  setTimeout(()=>showVictoryAnim(myPlace, sorted[0]?.[1]?.name||''),400);
 }
 
 async function nextRound(){
@@ -1767,6 +2023,7 @@ document.getElementById('btn-add-cc').addEventListener('click',addCC);
 document.getElementById('btn-create-room').addEventListener('click',createRoom);
 document.getElementById('btn-leave-room').addEventListener('click',leaveRoom);
 document.getElementById('code-box').addEventListener('click',copyCode);
+document.getElementById('btn-share-link').addEventListener('click',shareLink);
 document.getElementById('start-btn').addEventListener('click',startGame);
 document.getElementById('submit-btn').addEventListener('click',submitCatAnswer);
 document.getElementById('btn-exit-game').addEventListener('click',exitGame);
