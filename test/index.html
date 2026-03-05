@@ -1265,7 +1265,7 @@
         const isReq=r.visibility==='request';
         const badge=`<span class="pub-room-badge ${isReq?'pub-badge-req':'pub-badge-pub'}">${isReq?'🔔 בקשה':'🌐 ציבורי'}</span>`;
         const cats=(r.cats||[]).slice(0,3).map(c=>c.emoji).join('');
-        const timeDisplay=r.roundTime===0?'∞':r.roundTime+'שנ'';
+        const timeDisplay=r.roundTime===0?'∞':r.roundTime+"שנ'";
         card.innerHTML=`
           <div style="flex:1;">
             <div class="pub-room-host">${r.roomName||`👑 ${r.hostName}`}</div>
