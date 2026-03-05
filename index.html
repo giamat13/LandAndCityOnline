@@ -129,13 +129,13 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <div class="logo"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
   <div class="card"><h3>📛 שם שחקן</h3><input type="text" id="player-name" placeholder="השם שלך..." maxlength="20"></div>
   <div class="home-actions">
-    <button class="btn btn-p" onclick="showCreate()">✨ צור חדר חדש</button>
+    <button class="btn btn-p" id="btn-show-create">✨ צור חדר חדש</button>
     <div class="divider">או הצטרף לחדר קיים</div>
     <div style="display:flex;gap:10px;">
       <input type="text" id="join-code" placeholder="קוד חדר..." maxlength="6"
         style="text-transform:uppercase;letter-spacing:.15em;font-size:1.2rem;text-align:center;"
         oninput="this.value=this.value.toUpperCase()">
-      <button class="btn btn-s" style="width:auto;padding:14px 22px;" onclick="joinRoom()">הצטרף</button>
+      <button class="btn btn-s" style="width:auto;padding:14px 22px;" id="btn-join">הצטרף</button>
     </div>
   </div>
 </div>
@@ -143,7 +143,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 <!-- CREATE -->
 <div id="screen-create" class="screen">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <button class="btn btn-s btn-sm" style="width:auto" onclick="showScreen('home')">← חזור</button>
+    <button class="btn btn-s btn-sm" style="width:auto" id="btn-back-home">← חזור</button>
     <h2 style="font-size:1.3rem;font-weight:800;">הגדרות חדר</h2>
   </div>
   <div class="card">
@@ -153,7 +153,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
       <h3>➕ קטגוריה מותאמת</h3>
       <div class="cc-row">
         <input type="text" id="cc-inp" placeholder="לדוגמה: סרט, ספורטאי..." maxlength="20">
-        <button class="btn btn-s btn-sm" onclick="addCC()">הוסף</button>
+        <button class="btn btn-s btn-sm" id="btn-add-cc">הוסף</button>
       </div>
       <div class="cc-tags" id="cc-tags"></div>
     </div>
@@ -161,22 +161,22 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <div class="card">
     <h3>⏱️ זמן לכל קטגוריה</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="time-btn" data-v="30" onclick="selTime(this)">30 שנ'</button>
-      <button class="time-btn" data-v="45" onclick="selTime(this)">45 שנ'</button>
-      <button class="time-btn active" data-v="60" onclick="selTime(this)">60 שנ'</button>
-      <button class="time-btn" data-v="90" onclick="selTime(this)">90 שנ'</button>
+      <button class="time-btn" data-v="30">30 שנ'</button>
+      <button class="time-btn" data-v="45">45 שנ'</button>
+      <button class="time-btn active" data-v="60">60 שנ'</button>
+      <button class="time-btn" data-v="90">90 שנ'</button>
     </div>
   </div>
-  <button class="btn btn-p" onclick="createRoom()">🚀 צור חדר</button>
+  <button class="btn btn-p" id="btn-create-room">🚀 צור חדר</button>
 </div>
 
 <!-- LOBBY -->
 <div id="screen-lobby" class="screen">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-    <button class="btn btn-s btn-sm" style="width:auto" onclick="leaveRoom()">← עזוב</button>
+    <button class="btn btn-s btn-sm" style="width:auto" id="btn-leave-room">← עזוב</button>
     <span class="sp"><span class="dot"></span>ממתין לשחקנים</span>
   </div>
-  <div class="code-box" onclick="copyCode()">
+  <div class="code-box" id="code-box">
     <div class="lbl">📤 שתף עם חברים</div>
     <div class="code" id="lobby-code">------</div>
     <div class="hint">לחץ להעתקה 📋</div>
@@ -187,7 +187,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
     <div class="pl-list" id="pl-list"></div>
   </div>
   <div id="host-ctrl" style="display:none;">
-    <button class="btn btn-g" id="start-btn" onclick="startGame()" disabled>🎯 התחל משחק</button>
+    <button class="btn btn-g" id="start-btn" disabled>🎯 התחל משחק</button>
     <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
   </div>
   <div id="guest-wait" style="display:none;">
@@ -200,6 +200,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <div class="r-hdr">
     <span class="rbadge">סיבוב <span id="rnd-num">1</span></span>
     <span id="timer-txt" style="font-size:1.3rem;font-weight:900;color:var(--orange);">60</span>
+    <button class="btn btn-s btn-sm" id="btn-exit-game" style="width:auto;padding:7px 14px;font-size:.78rem;">🚪 יציאה</button>
   </div>
   <!-- category progress bar -->
   <div class="cat-prog-wrap">
@@ -214,8 +215,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
     <div class="cat-answer-card">
       <div class="cat-title" id="cat-emoji-name"></div>
       <div class="cat-subtitle" id="cat-hint"></div>
-      <input type="text" id="cat-answer" placeholder="..." maxlength="30"
-        onkeydown="if(event.key==='Enter')submitCatAnswer()">
+      <input type="text" id="cat-answer" placeholder="..." maxlength="30">
     </div>
     <!-- live submission counter (visible to all while still answering) -->
     <div class="sub-row">
@@ -223,7 +223,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
       <span class="sub-label" id="sub-label-live"></span>
     </div>
     <div style="margin-top:14px;">
-      <button class="btn btn-g" id="submit-btn" onclick="submitCatAnswer()">✅ שלח תשובה</button>
+      <button class="btn btn-g" id="submit-btn">✅ שלח תשובה</button>
     </div>
   </div>
 
@@ -250,10 +250,14 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
     </p>
   </div>
   <div id="res-cats"></div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);border-radius:10px;padding:10px 14px;">
+    <span style="font-size:1.1rem;">⚡</span>
+    <span style="color:var(--blue);font-size:.82rem;font-weight:600;">בונוס מהירות – ענית מהר? מרוויחים עד <strong>+5 נק'</strong> נוסף!</span>
+  </div>
   <div class="card"><h3>🏅 ניקוד</h3><div class="sb" id="scoreboard"></div></div>
   <div id="host-next" style="display:none;">
-    <button class="btn btn-p" onclick="nextRound()">▶️ סיבוב הבא</button>
-    <button class="btn btn-s" style="margin-top:10px;" onclick="endGame()">🏁 סיים משחק</button>
+    <button class="btn btn-p" id="btn-next-round">▶️ סיבוב הבא</button>
+    <button class="btn btn-s" style="margin-top:10px;" id="btn-end-game">🏁 סיים משחק</button>
   </div>
   <div id="guest-next" style="display:none;">
     <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל סיבוב הבא...</p></div>
@@ -267,7 +271,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
     <h2 style="font-size:2rem;font-weight:900;">המשחק הסתיים!</h2>
   </div>
   <div class="card"><h3>🏆 תוצאות סופיות</h3><div class="sb" id="final-sb"></div></div>
-  <button class="btn btn-p" onclick="goHome()" style="margin-top:8px;">🏠 חזור לתפריט</button>
+  <button class="btn btn-p" id="btn-go-home" style="margin-top:8px;">🏠 חזור לתפריט</button>
 </div>
 
 </div><!-- /#app -->
@@ -379,11 +383,11 @@ async function checkExpiry(){
 setInterval(checkExpiry,60000);
 
 // ─── UTILS ────────────────────────────────────────────────────────
-window.showScreen=id=>{
+function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   window.scrollTo(0,0);
-};
+}
 function toast(m){
   const t=document.getElementById('toast');
   t.textContent=m;t.classList.add('show');
@@ -441,14 +445,14 @@ function initGrid(){
 }
 initGrid();
 
-window.addCC=()=>{
+function addCC(){
   const inp=document.getElementById('cc-inp');
   const v=inp.value.trim();
   if(!v)return;
   if(S.cCats.includes(v)){toast('קטגוריה כבר קיימת');return;}
   S.cCats.push(v);inp.value='';renderCCTags();
-};
-document.getElementById('cc-inp').onkeydown=e=>{if(e.key==='Enter')window.addCC();};
+}
+document.getElementById('cc-inp').onkeydown=e=>{if(e.key==='Enter')addCC();};
 function renderCCTags(){
   const w=document.getElementById('cc-tags');
   w.innerHTML='';
@@ -459,21 +463,21 @@ function renderCCTags(){
     w.appendChild(el);
   });
 }
-window.selTime=btn=>{
+function selTime(btn){
   document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   S.rTime=parseInt(btn.dataset.v);
-};
+}
 
 // ─── HOME → CREATE ────────────────────────────────────────────────
-window.showCreate=()=>{
+function showCreate(){
   const n=document.getElementById('player-name').value.trim();
   if(!n){toast('נא להזין שם שחקן');return;}
   S.pName=n;showScreen('create');
-};
+}
 
 // ─── CREATE ROOM ──────────────────────────────────────────────────
-window.createRoom=async()=>{
+async function createRoom(){
   const active=[...document.querySelectorAll('.cat-tog.active')].map(el=>{
     const c=DCATS.find(x=>x.id===el.dataset.id);
     return c?{id:c.id,name:c.name,emoji:c.emoji}:null;
@@ -494,7 +498,7 @@ window.createRoom=async()=>{
 };
 
 // ─── JOIN ROOM ────────────────────────────────────────────────────
-window.joinRoom=async()=>{
+async function joinRoom(){
   const n=document.getElementById('player-name').value.trim();
   if(!n){toast('נא להזין שם שחקן');return;}
   const code=document.getElementById('join-code').value.trim().toUpperCase();
@@ -544,11 +548,11 @@ function enterLobby(){
   });
 }
 
-window.copyCode=()=>{
+function copyCode(){
   navigator.clipboard.writeText(S.roomId).then(()=>toast('קוד הועתק! 📋'));
-};
+}
 
-window.leaveRoom=async()=>{
+async function leaveRoom(){
   clearInterval(S.timerInt);detach();
   if(S.roomId&&S.pId){
     await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
@@ -558,7 +562,7 @@ window.leaveRoom=async()=>{
 };
 
 // ─── START GAME ───────────────────────────────────────────────────
-window.startGame=async()=>{
+async function startGame(){
   const s=await get(ref(db,`rooms/${S.roomId}/players`));
   if(Object.keys(s.val()||{}).length<2){toast('צריך לפחות 2 שחקנים');return;}
   const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
@@ -692,7 +696,7 @@ function updateTimer(){
 }
 
 // ─── SUBMIT ANSWER ────────────────────────────────────────────────
-window.submitCatAnswer=()=>doSubmit(document.getElementById('cat-answer').value.trim());
+function submitCatAnswer(){doSubmit(document.getElementById('cat-answer').value.trim());}
 
 async function doSubmit(answer){
   if(S.catSubmitted)return;
@@ -702,7 +706,7 @@ async function doSubmit(answer){
   document.getElementById('wait-others').style.display='block';
   document.getElementById('cat-answer').disabled=true;
   await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
-    name:S.pName,answer:answer,submittedAt:Date.now()
+    name:S.pName,answer:answer,submittedAt:Date.now(),timeLeft:S.timeLeft
   });
   touchActivity();saveSession();
 }
@@ -750,18 +754,22 @@ async function showResults(){
     Object.entries(catData).forEach(([pid,d])=>{
       const a=(d.answer||'').trim();
       if(!a)return;
-      rScores[pid]=(rScores[pid]||0)+(counts[a.toLowerCase()]===1?10:5);
+      const base=counts[a.toLowerCase()]===1?10:5;
+      const timeBonus=d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
+      rScores[pid]=(rScores[pid]||0)+base+timeBonus;
     });
     const rows=Object.entries(players).map(([pid,p])=>{
       const d=catData[pid];
       const a=d?(d.answer||'').trim():'';
       const u=a&&counts[a.toLowerCase()]===1;
       const cls=!a?'empty':(u?'unique':'shared');
-      const pts=!a?0:(u?10:5);
+      const base=!a?0:(u?10:5);
+      const timeBonus=a&&d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
+      const pts=base+timeBonus;
       return `<tr>
         <td>${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</td>
         <td class="${cls}">${a||'—'}</td>
-        <td style="text-align:center;font-weight:700;color:${pts===10?'var(--green)':pts===5?'var(--orange)':'var(--muted)'}">+${pts}</td>
+        <td style="text-align:center;font-weight:700;color:${base===10?'var(--green)':base===5?'var(--orange)':'var(--muted)'}">+${base}${timeBonus>0?`<span style="color:var(--blue);font-size:.75rem;"> +${timeBonus}⚡</span>`:''}</td>
       </tr>`;
     }).join('');
     const card=document.createElement('div');
@@ -810,20 +818,6 @@ function renderSB(id,players){
     </div>`).join('');
 }
 
-window.nextRound=async()=>{
-  const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
-  S.rNum++;S.letter=letter;S.currentCatIndex=0;
-  await update(ref(db,`rooms/${S.roomId}`),{
-    status:'playing',round:S.rNum,letter,
-    catStartedAt:Date.now(),currentCatIndex:0,
-    catAnswers:null,lastActivity:Date.now()
-  });
-};
-
-window.endGame=async()=>{
-  await update(ref(db,`rooms/${S.roomId}`),{status:'ended',lastActivity:Date.now()});
-};
-
 async function showFinal(){
   clearInterval(S.timerInt);detach();clearSession();
   const snap=await get(ref(db,`rooms/${S.roomId}/players`));
@@ -831,11 +825,56 @@ async function showFinal(){
   showScreen('final');
 }
 
-window.goHome=()=>{
+async function nextRound(){
+  const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+  S.rNum++;S.letter=letter;S.currentCatIndex=0;
+  await update(ref(db,`rooms/${S.roomId}`),{
+    status:'playing',round:S.rNum,letter,
+    catStartedAt:Date.now(),currentCatIndex:0,
+    catAnswers:null,lastActivity:Date.now()
+  });
+  await loadRound();
+}
+
+async function endGame(){
+  await update(ref(db,`rooms/${S.roomId}`),{status:'ended',lastActivity:Date.now()});
+  await showFinal();
+}
+
+function goHome(){
   clearInterval(S.timerInt);detach();clearSession();
   S.roomId='';S.isHost=false;S.totScores={};
   showScreen('home');
-};
+}
+
+async function exitGame(){
+  if(!confirm('לצאת מהמשחק?'))return;
+  clearInterval(S.timerInt);detach();
+  if(S.roomId&&S.pId){
+    await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
+    if(S.isHost)await remove(ref(db,`rooms/${S.roomId}`));
+  }
+  clearSession();S.roomId='';S.isHost=false;S.totScores={};
+  showScreen('home');
+}
+
+// ─── WIRE UP ALL EVENT LISTENERS ─────────────────────────────────
+document.getElementById('btn-show-create').addEventListener('click',showCreate);
+document.getElementById('btn-join').addEventListener('click',joinRoom);
+document.getElementById('btn-back-home').addEventListener('click',()=>showScreen('home'));
+document.getElementById('btn-add-cc').addEventListener('click',addCC);
+document.getElementById('btn-create-room').addEventListener('click',createRoom);
+document.getElementById('btn-leave-room').addEventListener('click',leaveRoom);
+document.getElementById('code-box').addEventListener('click',copyCode);
+document.getElementById('start-btn').addEventListener('click',startGame);
+document.getElementById('submit-btn').addEventListener('click',submitCatAnswer);
+document.getElementById('btn-exit-game').addEventListener('click',exitGame);
+document.getElementById('btn-next-round').addEventListener('click',nextRound);
+document.getElementById('btn-end-game').addEventListener('click',endGame);
+document.getElementById('btn-go-home').addEventListener('click',goHome);
+document.getElementById('cat-answer').addEventListener('keydown',e=>{if(e.key==='Enter')submitCatAnswer();});
+document.getElementById('cc-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addCC();});
+document.querySelectorAll('.time-btn').forEach(btn=>btn.addEventListener('click',()=>selTime(btn)));
 
 // ─── INIT: try restoring session on page load ─────────────────────
 restoreSession();
