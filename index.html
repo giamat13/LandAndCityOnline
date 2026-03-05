@@ -948,12 +948,48 @@
 
   function triggerEntryPreview(effectId){
     if(effectId==='none')return;
-    const prev=document.getElementById('prof-av-preview');
-    if(!prev)return;
-    prev.classList.remove('entry-bounce','entry-spin','entry-flash','entry-shake','entry-slideup','entry-zoom','entry-flip','entry-rubber','entry-glitch','entry-drop','entry-pop');
-    void prev.offsetWidth;
-    prev.classList.add('entry-'+effectId);
-    setTimeout(()=>prev.classList.remove('entry-bounce','entry-spin','entry-flash','entry-shake','entry-slideup','entry-zoom','entry-flip','entry-rubber','entry-glitch','entry-drop','entry-pop'),1000);
+    const name=document.getElementById('prof-name')?.value?.trim()||S.pName||'השם שלך';
+    const c=S_pColor;
+    const avatarContent=S_pEmoji||(name.charAt(0)||'?');
+    const frameClass=S_pFrame?'av-frame-'+S_pFrame:'';
+    // Remove any existing preview overlay
+    document.getElementById('entry-preview-overlay')?.remove();
+    const overlay=document.createElement('div');
+    overlay.id='entry-preview-overlay';
+    overlay.style.cssText=`position:fixed;inset:0;z-index:2500;
+      background:rgba(10,10,25,.88);backdrop-filter:blur(10px);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:18px;cursor:pointer;animation:fadeUp .25s ease;`;
+    const avatarEl=document.createElement('div');
+    avatarEl.className=(frameClass+' entry-'+effectId).trim();
+    avatarEl.style.cssText=`width:110px;height:110px;border-radius:50%;
+      background:${c}33;color:${c};
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900;font-size:3rem;
+      box-shadow:0 0 40px ${c}55;`;
+    avatarEl.textContent=avatarContent;
+    const nameEl=document.createElement('div');
+    nameEl.style.cssText=`font-size:1.6rem;font-weight:900;color:#fff;
+      text-shadow:0 2px 12px rgba(0,0,0,.8);text-align:center;`;
+    nameEl.textContent=name;
+    const joinEl=document.createElement('div');
+    joinEl.style.cssText=`font-size:1rem;font-weight:700;color:var(--green);
+      text-shadow:0 1px 8px rgba(0,0,0,.7);`;
+    joinEl.textContent='הצטרף/ה לחדר! 🎉';
+    const hint=document.createElement('div');
+    hint.style.cssText=`font-size:.78rem;color:rgba(255,255,255,.35);margin-top:8px;`;
+    hint.textContent='לחץ לסגור';
+    overlay.appendChild(avatarEl);
+    overlay.appendChild(nameEl);
+    if(S_pTag){const t=document.createElement('div');t.className='player-tag';t.style.fontSize='.9rem';t.textContent=S_pTag;overlay.appendChild(t);}
+    overlay.appendChild(joinEl);
+    overlay.appendChild(hint);
+    document.body.appendChild(overlay);
+    const close=()=>{overlay.style.animation='bannerFade .35s ease forwards';setTimeout(()=>overlay.remove(),350);};
+    const EFFECT_MS={bounce:650,spin:700,flash:550,shake:500,slideup:650,zoom:600,flip:700,rubber:800,glitch:700,drop:650,pop:600};
+    const animMs=EFFECT_MS[effectId]||700;
+    overlay.addEventListener('click',close);
+    setTimeout(close, animMs+80);
   }
 
   function initEntryPicker(){
