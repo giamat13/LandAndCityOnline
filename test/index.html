@@ -516,7 +516,7 @@
     <div class="card">
       <h3>🏠 שם החדר</h3>
       <input type="text" id="room-name-inp" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30" style="margin-top:8px;">
-      <div style="font-size:.74rem;color:var(--muted);margin-top:6px;">יוצג ברשימת החדרים הציבוריים</div>
+      <div id="room-public-hint" style="font-size:.74rem;color:var(--muted);margin-top:6px;">יוצג ברשימת החדרים הציבוריים</div>
     </div>
     <div class="card">
       <h3>📋 קטגוריות</h3>
@@ -598,6 +598,7 @@
       <h3>👥 שחקנים (<span id="pl-count">0</span>)</h3>
       <div class="pl-list" id="pl-list"></div>
     </div>
+    <div id="lobby-perm-lb-wrap" style="display:none;"></div>
     <div id="host-ctrl" style="display:none;">
       <div id="join-requests-wrap" style="display:none;margin-bottom:14px;">
         <div class="card" style="border-color:rgba(245,166,35,.3);">
@@ -611,6 +612,7 @@
     </div>
     <div id="guest-wait" style="display:none;">
       <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
+      <button id="btn-spectator-upgrade" style="display:none;margin-top:12px;" class="btn btn-s">🎮 הצטרף כשחקן רגיל</button>
     </div>
   </div>
 
@@ -734,6 +736,7 @@
     </div>
     <div id="podium-wrap" class="podium-wrap"></div>
     <div class="card"><h3>🏆 תוצאות סופיות</h3><div class="sb" id="final-sb"></div></div>
+    <div id="final-perm-lb-wrap"></div>
     <button class="btn btn-p" id="btn-go-home" style="margin-top:8px;">🏠 חזור לתפריט</button>
     <button class="btn btn-s" onclick="exitGame()" style="margin-top:8px;">🚪 יציאה</button>
   </div>
@@ -779,7 +782,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
   import {
-    getDatabase,ref,set,get,update,onValue,off,remove
+    getDatabase,ref,set,get,update,onValue,off,remove,onDisconnect
   } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
   const fb = initializeApp({
@@ -1628,7 +1631,7 @@
     const code=document.getElementById('join-code').value.trim().toUpperCase();
     if(code.length!==6){toast('קוד חדר לא תקין');return;}
     const snap=await get(ref(db,'rooms/'+code));
-    if(!snap.exists()){toast('חדר לא נמצא 😕');return;}
+    if(!snap.exists()){toast('החדר לא נמצא – ייתכן שנמחק 😕');return;}
     const room=snap.val();
     const inProgress=room.status!=='lobby'&&room.status!=='ended';
 
@@ -1639,6 +1642,11 @@
       asSpectator=!choice;
     }
 
+    // For permanent ended rooms — reset to lobby
+    if(room.isPermanent && room.status==='ended'){
+      await update(ref(db,'rooms/'+code),{status:'lobby',catAnswers:null,vetoes:null,disqualified:null,continueVotes:null,round:0,letter:''});
+      room.status='lobby';
+    }
     S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
     S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;
     S.currentCatIndex=room.currentCatIndex||0;
@@ -1866,14 +1874,35 @@
     });
   }
 
+
+  // ─── ELIGIBLE PLAYERS ────────────────────────────────────────────
+  // For permanent rooms: only online players count. For regular: all non-spectators.
+  function getEligible(players){
+    return Object.fromEntries(
+      Object.entries(players).filter(([,p])=>{
+        if(p.spectator)return false;
+        if(S.isPermanent && p.online===false)return false;
+        return true;
+      })
+    );
+  }
   // ─── LOBBY ────────────────────────────────────────────────────────
   function enterRoom(){
     showChatFab(true);
     initChat();
     initFloatEmojis();
     startExpiryWatcher();
+    setupPresence();
   }
 
+
+  // ─── PRESENCE TRACKING ───────────────────────────────────────────
+  function setupPresence(){
+    if(!S.roomId||!S.pId)return;
+    const presRef=ref(db,'rooms/'+S.roomId+'/players/'+S.pId+'/online');
+    set(presRef,true).catch(()=>{});
+    onDisconnect(presRef).set(false).catch(()=>{});
+  }
   // ─── EXPIRY WATCHER ───────────────────────────────────────────────
   function startExpiryWatcher(){
     clearInterval(S.expiryInt);
@@ -2008,8 +2037,10 @@
     document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
     const _settingsBtn=document.getElementById('btn-room-settings');
     const _inviteBtn=document.getElementById('btn-invite-tmp');
+    const _upBtn=document.getElementById('btn-spectator-upgrade');
     if(_settingsBtn) _settingsBtn.style.display=S.isHost?'inline-flex':'none';
     if(_inviteBtn) _inviteBtn.style.display=(S.isHost&&S.isPermanent)?'flex':'none';
+    if(_upBtn) _upBtn.style.display=S.isSpectator?'block':'none';
     document.getElementById('guest-wait').style.display=S.isHost?'none':'block';
     document.getElementById('lobby-cats').innerHTML=S.cats.map(c=>`<span class="cb">${c.emoji} ${c.name}</span>`).join('');
     showScreen('lobby');
@@ -2023,6 +2054,11 @@
       const wrap=document.getElementById('lobby-room-name-wrap');
       const txt=document.getElementById('lobby-room-name-text');
       if(rn&&wrap&&txt){wrap.style.display='block';txt.textContent='🏠 '+rn;}
+      // Load permanent leaderboard
+      if(rd.isPermanent){
+        const lbSnap=await get(ref(db,'rooms/'+S.roomId+'/permLeaderboard'));
+        renderPermLeaderboard('lobby-perm-lb-wrap', lbSnap.val()||{});
+      }
       // If permanent room, save to this participant's my-rooms
       if(rd.isPermanent){
         S.isPermanent=true;
@@ -2068,16 +2104,40 @@
             <div class="pl-name">${p.name}</div>
             ${p.tag?`<div style="font-size:.68rem;color:var(--muted);margin-top:1px;">${p.tag}</div>`:''}
           </div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">${badges.join('')}</div>`;
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
+            ${badges.join('')}
+            ${S.isHost&&pid!==S.pId?`<button class="kick-btn" data-pid="${pid}" data-name="${p.name}" title="הוצא מהחדר" style="background:none;border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;margin-right:2px;">✕</button>`:''}
+          </div>`;
         list.appendChild(el);
       });
+      // Kick button handler
+      list.querySelectorAll('.kick-btn').forEach(btn=>{
+        btn.addEventListener('click',async()=>{
+          const pid=btn.dataset.pid;
+          const name=btn.dataset.name;
+          if(!confirm(`להוציא את ${name} מהחדר?`))return;
+          await remove(ref(db,'rooms/'+S.roomId+'/players/'+pid));
+          toast(name+' הוצא מהחדר');
+        });
+      });
       const btn=document.getElementById('start-btn');
-      if(btn)btn.disabled=activePlayers.length<2;
+      if(btn)btn.disabled=Object.keys(getEligible(ps)).length<2;
       if(S.isHost&&S.visibility!=='private'){
         update(ref(db,'publicRooms/'+S.roomId),{playerCount:activePlayers.length}).catch(()=>{});
       }
     });
 
+
+    // Detect being kicked by host
+    addL(ref(db,'rooms/'+S.roomId+'/players/'+S.pId),snap=>{
+      if(!snap.exists()&&S.roomId){
+        clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();detachChat();clearSession();
+        S.roomId='';S.isHost=false;S.isSpectator=false;S.isPermanent=false;
+        showChatFab(false);
+        showScreen('home');
+        toast('👢 הוצאת מהחדר על ידי המארח');
+      }
+    });
     // Host: handle join requests
     if(S.isHost){
       addL(ref(db,`rooms/${S.roomId}/joinRequests`),snap=>{
@@ -2208,8 +2268,9 @@
   // ─── START GAME ───────────────────────────────────────────────────
   async function startGame(){
     const s=await get(ref(db,`rooms/${S.roomId}/players`));
-    const activePlayers=Object.entries(s.val()||{}).filter(([,p])=>!p.spectator);
-    if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים פעילים');return;}
+    const allPs=s.val()||{};
+    const activePlayers=Object.entries(getEligible(allPs));
+    if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
     await update(ref(db,`rooms/${S.roomId}`),{
@@ -2347,15 +2408,13 @@
       const subs=snap.val()||{};
       const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
       const players=psSnap.val()||{};
-      // Only count active players who joined BEFORE this category started
+      // Only count eligible players who joined BEFORE this category started
       const catStartedAt=roomData?.catStartedAt||0;
-      const activePlayers=Object.fromEntries(
-        Object.entries(players).filter(([,p])=>!p.spectator&&(p.joinedAt||0)<=catStartedAt+3000)
+      const allEligible=getEligible(players);
+      const joinedBefore=Object.fromEntries(
+        Object.entries(allEligible).filter(([,p])=>(p.joinedAt||0)<=catStartedAt+3000)
       );
-      // Fallback: if no one qualifies (e.g. all joined after), count everyone non-spectator
-      const eligiblePlayers=Object.keys(activePlayers).length>0
-        ? activePlayers
-        : Object.fromEntries(Object.entries(players).filter(([,p])=>!p.spectator));
+      const eligiblePlayers=Object.keys(joinedBefore).length>0 ? joinedBefore : allEligible;
       const total=Object.keys(eligiblePlayers).length;
       const cnt=Object.keys(subs).filter(pid=>eligiblePlayers[pid]).length;
       const map={};Object.keys(eligiblePlayers).forEach(pid=>{map[pid]=!!subs[pid];});
@@ -3110,12 +3169,52 @@
       </div>`).join('');
   }
 
+
+  // ─── PERMANENT LEADERBOARD ───────────────────────────────────────
+  function renderPermLeaderboard(wrapId, lb){
+    const wrap=document.getElementById(wrapId);
+    if(!wrap)return;
+    const entries=Object.entries(lb).sort((a,b)=>(b[1].total||0)-(a[1].total||0));
+    if(!entries.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    const medals=['🥇','🥈','🥉'];
+    wrap.innerHTML='<div class="card" style="margin-top:16px;"><h3>🏆 לוח התהילה</h3>'
+      +entries.map(([,p],i)=>{
+        const c=avc(p.name,p.color);
+        const avg=p.games>0?Math.round(p.total/p.games):0;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="width:24px;text-align:center;font-size:1rem;">${medals[i]||'#'+(i+1)}</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">${p.emoji||p.name.charAt(0)}</div>
+          <div style="flex:1;">
+            <div style="font-weight:800;font-size:.9rem;">${p.name}</div>
+            <div style="font-size:.72rem;color:var(--muted);">${p.games} משחקים · ממוצע ${avg} נק'</div>
+          </div>
+          <div style="font-size:1.1rem;font-weight:900;color:var(--blue);">${p.total}</div>
+        </div>`;
+      }).join('')+'</div>';
+  }
   async function showFinal(){
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();clearSession();
     const snap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=snap.val()||{};
+    // Update permanent leaderboard
+    if(S.isPermanent&&S.isHost){
+      const lbSnap=await get(ref(db,'rooms/'+S.roomId+'/permLeaderboard'));
+      const lb=lbSnap.val()||{};
+      Object.entries(players).filter(([,p])=>!p.spectator).forEach(([pid,p])=>{
+        const key=p.name.replace(/[.#$/\[\]]/g,'_');
+        const prev=lb[key]||{name:p.name,total:0,games:0,color:p.color,emoji:p.emoji};
+        lb[key]={name:p.name,total:(prev.total||0)+(p.score||0),games:(prev.games||0)+1,color:p.color,emoji:p.emoji};
+      });
+      await set(ref(db,'rooms/'+S.roomId+'/permLeaderboard'),lb).catch(()=>{});
+    }
     renderSB('final-sb',players);
     renderPodium(players);
+    // Show permanent leaderboard section in final screen
+    if(S.isPermanent){
+      const lbSnap2=await get(ref(db,'rooms/'+S.roomId+'/permLeaderboard'));
+      renderPermLeaderboard('final-perm-lb-wrap', lbSnap2.val()||{});
+    }
     enterRoom();
     showScreen('final');
     // Find our placement
@@ -3158,9 +3257,12 @@
       await update(ref(db,`rooms/${S.roomId}`),{host:next[0]});
       await set(ref(db,`rooms/${S.roomId}/players/${next[0]}/isHost`),true);
       toast(`👑 הבעלות עברה ל-${next[1].name}`);
-    }else{
-      // No other active players — delete the room
+    }else if(!S.isPermanent){
+      // No other active players and not permanent — delete the room
       await remove(ref(db,`rooms/${S.roomId}`));
+    }else{
+      // Permanent room: keep it, just clear host
+      await update(ref(db,`rooms/${S.roomId}`),{host:null,status:'lobby'});
     }
   }
 
@@ -3362,6 +3464,14 @@
   document.getElementById('btn-add-cc').addEventListener('click',addCC);
   document.getElementById('btn-create-room').addEventListener('click',createRoom);
   document.getElementById('btn-leave-room').addEventListener('click',leaveRoom);
+
+  document.getElementById('btn-spectator-upgrade').addEventListener('click',async()=>{
+    if(!S.roomId||!S.pId)return;
+    await update(ref(db,'rooms/'+S.roomId+'/players/'+S.pId),{spectator:false});
+    S.isSpectator=false;
+    document.getElementById('btn-spectator-upgrade').style.display='none';
+    toast('🎮 אתה עכשיו שחקן רגיל!');
+  });
   document.getElementById('btn-room-settings').addEventListener('click',openRoomSettings);
   document.getElementById('btn-invite-tmp').addEventListener('click',openInvitePanel);
 
