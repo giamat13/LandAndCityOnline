@@ -210,6 +210,55 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 .btn-add-ans{background:rgba(15,186,129,.15);color:var(--green);border:1.5px solid rgba(15,186,129,.3);border-radius:10px;padding:10px 16px;font-family:'Heebo',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
 .btn-add-ans:hover{background:rgba(15,186,129,.3)}
 .btn-add-ans:disabled{opacity:.4;cursor:not-allowed}
+/* tournament */
+.trn-btn.active{border-color:#a855f7;color:#a855f7;background:rgba(168,85,247,.1)}
+.trn-prog-wrap{display:flex;gap:5px;margin-bottom:14px;align-items:center}
+.trn-prog-dot{width:14px;height:14px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .4s}
+.trn-prog-dot.done{background:var(--green)}.trn-prog-dot.cur{background:var(--orange)}
+.trn-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25);padding:3px 10px;border-radius:100px;font-size:.75rem;font-weight:700;white-space:nowrap}
+/* chat */
+.chat-fab{position:fixed;bottom:86px;left:16px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#0284c7);border:none;cursor:pointer;font-size:1.3rem;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(76,201,240,.45);z-index:500;transition:transform .2s;display:none}
+.chat-fab:hover{transform:scale(1.1)}
+.react-fab{position:fixed;bottom:86px;left:74px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#f97316,#f5a623);border:none;cursor:pointer;font-size:1.3rem;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(249,115,22,.45);z-index:500;transition:transform .2s;display:none}
+.react-fab:hover{transform:scale(1.1)}
+.react-quick-picker{position:fixed;bottom:148px;left:16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px 12px;display:flex;gap:8px;box-shadow:var(--sh);z-index:600;animation:fadeUp .18s ease;}
+.react-quick-picker span{font-size:1.6rem;cursor:pointer;padding:4px 2px;border-radius:8px;transition:transform .12s;}
+.react-quick-picker span:hover{transform:scale(1.35);}
+.float-emoji{position:fixed;font-size:2.2rem;pointer-events:none;z-index:900;animation:floatUp 3s ease-out forwards;}
+@keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1}70%{opacity:1}100%{transform:translateY(-85vh) scale(1.3);opacity:0}}
+.chat-unread{position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;display:none}
+.chat-panel{position:fixed;bottom:0;left:0;right:0;max-width:600px;margin:0 auto;height:62vh;max-height:480px;background:var(--surface);border-top:1px solid var(--border);border-radius:20px 20px 0 0;z-index:600;display:flex;flex-direction:column;transform:translateY(105%);transition:transform .35s cubic-bezier(.34,1.15,.64,1);box-shadow:0 -10px 50px rgba(0,0,0,.6)}
+.chat-panel.open{transform:translateY(0)}
+.chat-hdr{padding:14px 20px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
+.chat-hdr h4{font-weight:800;font-size:1rem}
+.chat-close{background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;line-height:1;padding:2px 6px}
+.chat-msgs{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.chat-msg{display:flex;gap:8px;align-items:flex-start;animation:fadeUp .22s ease}
+.chat-msg.mine{flex-direction:row-reverse}
+.chat-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem;flex-shrink:0;margin-top:2px}
+.chat-bubble{border-radius:14px;padding:8px 12px;max-width:78%;font-size:.88rem;line-height:1.4;word-break:break-word}
+.chat-msg:not(.mine) .chat-bubble{background:var(--s2)}
+.chat-msg.mine .chat-bubble{background:rgba(76,201,240,.2);border:1px solid rgba(76,201,240,.2)}
+.chat-name{font-size:.67rem;color:var(--muted);margin-bottom:2px;font-weight:600}
+.chat-system{text-align:center;color:var(--muted);font-size:.75rem;padding:4px 0;font-style:italic}
+.chat-inp-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0}
+.chat-inp-row input{flex:1;padding:10px 14px;font-size:.95rem}
+.chat-send{background:var(--blue);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:'Heebo',sans-serif;font-weight:700;cursor:pointer;font-size:.9rem;flex-shrink:0}
+.emoji-btn{background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;font-size:1.1rem;flex-shrink:0;transition:background .15s;}
+.emoji-btn:hover{background:rgba(76,201,240,.1);border-color:var(--blue);}
+.emoji-picker{position:absolute;bottom:70px;right:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px;display:flex;flex-wrap:wrap;gap:6px;max-width:260px;box-shadow:var(--sh);z-index:700;animation:fadeUp .18s ease;}
+.emoji-picker span{font-size:1.4rem;cursor:pointer;padding:4px;border-radius:8px;transition:background .12s;}
+.emoji-picker span:hover{background:var(--s2);}
+/* emoji reactions */
+.react-row{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;padding-right:4px}
+.react-btn{background:var(--s2);border:1px solid var(--border);border-radius:100px;padding:2px 7px;font-size:.82rem;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:2px;color:var(--text);font-family:'Heebo',sans-serif}
+.react-btn:hover{border-color:var(--orange);background:rgba(245,166,35,.1);transform:scale(1.15)}
+.react-btn.mine{border-color:var(--blue);background:rgba(76,201,240,.15)}
+.react-cnt{font-size:.7rem;font-weight:700;color:var(--muted);min-width:8px}
+/* spectator / host badges */
+.spec-b{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
+.host-b{background:rgba(245,166,35,.12);color:var(--orange);border:1px solid rgba(245,166,35,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
+.disq{color:var(--red);text-decoration:line-through;opacity:.6}
 </style>
 </head>
 <body>
@@ -228,6 +277,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
         oninput="this.value=this.value.toUpperCase()">
       <button class="btn btn-s" style="width:auto;padding:14px 22px;" id="btn-join">הצטרף</button>
     </div>
+    <button class="btn btn-s" id="btn-join-spec" style="margin-top:4px;opacity:.7;font-size:.88rem;padding:10px 28px;">👁 הצטרף כצופה</button>
   </div>
 </div>
 
@@ -260,9 +310,13 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   </div>
   <div class="card">
     <h3>⚙️ הגדרות</h3>
-    <div class="tog-wrap" id="tog-show-voters">
+    <div class="tog-wrap" id="tog-show-voters" style="margin-bottom:14px;">
       <div class="tog" id="tog-voters-el"></div>
       <span class="tog-label">הצג מי הצביע פסול (ברירת מחדל: כבוי)</span>
+    </div>
+    <div class="tog-wrap" id="tog-sb-mode">
+      <div class="tog on" id="tog-sb-el"></div>
+      <span class="tog-label">לוח ניקוד מצטבר (כבוי = כל סיבוב בנפרד)</span>
     </div>
   </div>
   <button class="btn btn-p" id="btn-create-room">🚀 צור חדר</button>
@@ -346,11 +400,12 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 
 <!-- VOTING -->
 <div id="screen-vote" class="screen">
-  <div style="text-align:center;margin-bottom:20px;padding-top:10px;">
-    <div style="font-size:2.5rem;margin-bottom:6px;">🗳️</div>
-    <h2 style="font-size:1.6rem;font-weight:900;">הצבעת פסילה</h2>
-    <p style="color:var(--muted);font-size:.85rem;margin-top:4px;">לחצו 👎 על תשובות שנראות לכם לא תקינות</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:6px;">
+    <button class="btn btn-s btn-sm" style="width:auto" onclick="exitGame()">🚪 יציאה</button>
+    <h2 style="font-size:1.5rem;font-weight:900;">🗳️ הצבעת פסילה</h2>
+    <div style="width:60px;"></div>
   </div>
+  <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;text-align:center;">לחצו 👎 על תשובות שנראות לכם לא תקינות</p>
   <div id="vote-cats"></div>
   <div style="background:rgba(76,201,240,.06);border:1px solid rgba(76,201,240,.15);border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:.8rem;color:var(--muted);">
     💡 תשובה תיפסל אם <strong style="color:var(--red);">מעל 50%</strong> מהשחקנים יצביעו נגדה. תשובות זהות נפסלות ביחד.
@@ -365,19 +420,21 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 
 <!-- RESULTS -->
 <div id="screen-results" class="screen">
-  <div style="text-align:center;margin-bottom:24px;padding-top:10px;">
-    <div style="font-size:3rem;margin-bottom:8px;">🏆</div>
-    <h2 style="font-size:1.8rem;font-weight:900;">תוצאות סיבוב <span id="res-rnd">1</span></h2>
-    <p style="color:var(--muted);font-size:.9rem;margin-top:4px;">
-      האות: <span id="res-letter" style="font-weight:900;color:var(--red);font-size:1.1rem;"></span>
-    </p>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:6px;">
+    <button class="btn btn-s btn-sm" style="width:auto" onclick="exitGame()">🚪 יציאה</button>
+    <div style="text-align:center;">
+      <div style="font-size:2rem;margin-bottom:4px;">🏆</div>
+      <h2 style="font-size:1.5rem;font-weight:900;">תוצאות סיבוב <span id="res-rnd">1</span></h2>
+      <p style="color:var(--muted);font-size:.85rem;">האות: <span id="res-letter" style="font-weight:900;color:var(--red);font-size:1rem;"></span></p>
+    </div>
+    <div style="width:60px;"></div>
   </div>
   <div id="res-cats"></div>
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);border-radius:10px;padding:10px 14px;">
     <span style="font-size:1.1rem;">⚡</span>
     <span style="color:var(--blue);font-size:.82rem;font-weight:600;">בונוס מהירות – ענית מהר? מרוויחים עד <strong>+5 נק'</strong> נוסף!</span>
   </div>
-  <div class="card"><h3>🏅 ניקוד</h3><div class="sb" id="scoreboard"></div></div>
+  <div class="card"><h3 id="scoreboard-label">🏅 ניקוד מצטבר</h3><div class="sb" id="scoreboard"></div></div>
   <div id="host-next" style="display:none;">
     <button class="btn btn-p" id="btn-next-round">▶️ סיבוב הבא</button>
     <button class="btn btn-s" style="margin-top:10px;" id="btn-end-game">🏁 סיים משחק</button>
@@ -395,9 +452,28 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   </div>
   <div class="card"><h3>🏆 תוצאות סופיות</h3><div class="sb" id="final-sb"></div></div>
   <button class="btn btn-p" id="btn-go-home" style="margin-top:8px;">🏠 חזור לתפריט</button>
+  <button class="btn btn-s" onclick="exitGame()" style="margin-top:8px;">🚪 יציאה</button>
 </div>
 
 </div><!-- /#app -->
+
+<!-- CHAT FAB + PANEL (shown when in a room) -->
+<button id="chat-fab" class="chat-fab" style="display:none;" title="צ'אט">
+  💬<span id="chat-unread" class="chat-unread"></span>
+</button>
+<button id="react-fab" class="react-fab" style="display:none;" title="תגובה מהירה">🎉</button>
+<div id="chat-panel" class="chat-panel">
+  <div class="chat-hdr">
+    <h4>💬 צ'אט</h4>
+    <button class="chat-close" id="chat-close">✕</button>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-inp-row" style="position:relative;">
+    <button class="emoji-btn" id="chat-emoji-btn" title="אמוג'י">😊</button>
+    <input type="text" id="chat-inp" placeholder="כתוב הודעה..." maxlength="100" autocomplete="off">
+    <button class="chat-send" id="chat-send">שלח</button>
+  </div>
+</div>
 <div id="toast"></div>
 <div id="ltr-overlay" class="ltr-overlay" style="display:none;">
   <div class="ol-label">האות של הסיבוב</div>
@@ -452,7 +528,13 @@ let S={
   listeners:[],rTime:60,timerInt:null,timeLeft:60,
   cats:[],cCats:[],letter:'',rNum:0,totScores:{},
   currentCatIndex:0,catSubmitted:false,showVoters:false,
-  currentAnswers:[]  // multi-answer per cat
+  currentAnswers:[],
+  totalRounds:0,
+  isSpectator:false,
+  chatOpen:false,
+  chatUnread:0,
+  chatListener:null,
+  cumulativeSB:true  // true = מצטבר, false = סיבוב בנפרד
 };
 
 // ─── SESSION PERSISTENCE ──────────────────────────────────────────
@@ -460,7 +542,8 @@ function saveSession(){
   try{
     localStorage.setItem('lac_s',JSON.stringify({
       roomId:S.roomId,pId:S.pId,pName:S.pName,
-      isHost:S.isHost,rNum:S.rNum,totScores:S.totScores
+      isHost:S.isHost,rNum:S.rNum,totScores:S.totScores,
+      isSpectator:S.isSpectator,totalRounds:S.totalRounds
     }));
   }catch(e){}
 }
@@ -483,6 +566,8 @@ async function restoreSession(){
     S.cats=room.categories||[];
     S.rTime=room.roundTime||60;
     S.currentCatIndex=room.currentCatIndex||0;
+    S.isSpectator=sess.isSpectator||false;
+    S.totalRounds=room.totalRounds||0;
     document.getElementById('player-name').value=S.pName;
     toast('ברוך השב! מחבר מחדש...');
     if(room.status==='lobby')enterLobby();
@@ -534,6 +619,10 @@ function avc(name){
 }
 function addL(r,fn){onValue(r,fn);S.listeners.push({r,fn});}
 function detach(){S.listeners.forEach(({r,fn})=>off(r,'value',fn));S.listeners=[];}
+function detachChat(){
+  if(S.chatListener){off(S.chatListener.r,'value',S.chatListener.fn);S.chatListener=null;}
+  if(floatEmojiListener){off(floatEmojiListener.r,'value',floatEmojiListener.fn);floatEmojiListener=null;}
+}
 
 // ─── CATEGORY PROGRESS UI ─────────────────────────────────────────
 function renderCatProg(idx,total){
@@ -574,6 +663,12 @@ function initGrid(){
   });
 }
 initGrid();
+
+// Scoreboard mode toggle
+document.getElementById('tog-sb-mode').addEventListener('click',()=>{
+  S.cumulativeSB=!S.cumulativeSB;
+  document.getElementById('tog-sb-el').classList.toggle('on',S.cumulativeSB);
+});
 
 function addCC(){
   const inp=document.getElementById('cc-inp');
@@ -620,15 +715,17 @@ async function createRoom(){
   S.roomId=roomId;
   await set(ref(db,'rooms/'+roomId),{
     host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,
+    cumulativeSB:S.cumulativeSB,
+    totalRounds:S.totalRounds,
     round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
-    players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now()}}
+    players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true}}
   });
   saveSession();
   enterLobby();
 };
 
 // ─── JOIN ROOM ────────────────────────────────────────────────────
-async function joinRoom(){
+async function joinRoom(asSpectator=false){
   const n=document.getElementById('player-name').value.trim();
   if(!n){toast('נא להזין שם שחקן');return;}
   const code=document.getElementById('join-code').value.trim().toUpperCase();
@@ -636,39 +733,87 @@ async function joinRoom(){
   const snap=await get(ref(db,'rooms/'+code));
   if(!snap.exists()){toast('חדר לא נמצא 😕');return;}
   const room=snap.val();
-  if(room.status!=='lobby'){toast('המשחק כבר התחיל');return;}
-  S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;
-  S.cats=room.categories||[];S.rTime=room.roundTime||60;S.totScores={};S.currentCatIndex=0;
-  S.showVoters=room.showVoters||false;
-  await set(ref(db,`rooms/${code}/players/${S.pId}`),{name:n,score:0,joinedAt:Date.now()});
+  const inProgress=room.status!=='lobby'&&room.status!=='ended';
+
+  if(inProgress&&!asSpectator){
+    // Offer choice: join as player or spectator
+    const choice=confirm('המשחק כבר התחיל.\n\nלחץ אישור להצטרפות כשחקן (תקבל תשובות מהסיבוב הנוכחי ואילך)\nלחץ ביטול להצטרפות כצופה');
+    if(choice===null)return; // cancelled the dialog itself
+    asSpectator=!choice;
+  }
+
+  S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
+  S.cats=room.categories||[];S.rTime=room.roundTime||60;S.totScores={};
+  S.currentCatIndex=room.currentCatIndex||0;
+  S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
+  S.cumulativeSB=room.cumulativeSB!==false;
+  await set(ref(db,`rooms/${code}/players/${S.pId}`),{
+    name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false
+  });
   touchActivity();saveSession();
-  enterLobby();
+
+  if(inProgress){
+    enterRoom();
+    if(room.status==='playing')await loadRound();
+    else if(room.status==='voting')await showVoting();
+    else if(room.status==='results')await showResults();
+    else if(room.status==='ended')await showFinal();
+  }else{
+    enterLobby();
+  }
 };
 
 // ─── LOBBY ────────────────────────────────────────────────────────
+function enterRoom(){
+  showChatFab(true);
+  initChat();
+  initFloatEmojis();
+}
+
 function enterLobby(){
+  S.totalRounds=S.totalRounds||0;
   document.getElementById('lobby-code').textContent=S.roomId;
   document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
   document.getElementById('guest-wait').style.display=S.isHost?'none':'block';
   document.getElementById('lobby-cats').innerHTML=S.cats.map(c=>`<span class="cb">${c.emoji} ${c.name}</span>`).join('');
+  // Tournament badge removed
   showScreen('lobby');
+  enterRoom();
 
-  addL(ref(db,`rooms/${S.roomId}/players`),snap=>{
+  addL(ref(db,`rooms/${S.roomId}/players`),async snap=>{
     const ps=snap.val()||{};
+    const activePlayers=Object.entries(ps).filter(([,p])=>!p.spectator);
     document.getElementById('pl-count').textContent=Object.keys(ps).length;
     const list=document.getElementById('pl-list');
     list.innerHTML='';
+    // Get current host
+    const hostSnap=await get(ref(db,`rooms/${S.roomId}/host`));
+    const currentHost=hostSnap.val();
     Object.entries(ps).sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).forEach(([pid,p])=>{
       const c=avc(p.name);
       const el=document.createElement('div');
       el.className='pl-item';
+      const badges=[];
+      if(pid===S.pId)badges.push('<span class="you-b">אתה</span>');
+      if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
+      if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
       el.innerHTML=`<div class="pl-av" style="background:${c}22;color:${c}">${p.name.charAt(0)}</div>
-        <span class="pl-name">${p.name}</span>
-        ${pid===S.pId?'<span class="you-b">אתה</span>':''}`;
+        <span class="pl-name">${p.name}</span>${badges.join('')}`;
       list.appendChild(el);
     });
     const btn=document.getElementById('start-btn');
-    if(btn)btn.disabled=Object.keys(ps).length<2;
+    if(btn)btn.disabled=activePlayers.length<2;
+  });
+
+  // Listen for host changes (host transfer)
+  addL(ref(db,`rooms/${S.roomId}/host`),snap=>{
+    const newHost=snap.val();
+    if(newHost&&newHost===S.pId&&!S.isHost){
+      S.isHost=true;
+      document.getElementById('host-ctrl').style.display='block';
+      document.getElementById('guest-wait').style.display='none';
+      toast('👑 אתה עכשיו המארח!');
+    }
   });
 
   addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
@@ -687,16 +832,19 @@ function copyCode(){
 async function leaveRoom(){
   clearInterval(S.timerInt);detach();
   if(S.roomId&&S.pId){
+    if(S.isHost)await transferHost();
     await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
-    if(S.isHost)await remove(ref(db,`rooms/${S.roomId}`));
   }
-  clearSession();S.roomId='';S.isHost=false;showScreen('home');
+  detachChat();clearSession();S.roomId='';S.isHost=false;S.isSpectator=false;
+  showChatFab(false);
+  showScreen('home');
 };
 
 // ─── START GAME ───────────────────────────────────────────────────
 async function startGame(){
   const s=await get(ref(db,`rooms/${S.roomId}/players`));
-  if(Object.keys(s.val()||{}).length<2){toast('צריך לפחות 2 שחקנים');return;}
+  const activePlayers=Object.entries(s.val()||{}).filter(([,p])=>!p.spectator);
+  if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים פעילים');return;}
   const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
   S.letter=letter;S.rNum=1;S.currentCatIndex=0;
   await update(ref(db,`rooms/${S.roomId}`),{
@@ -714,7 +862,9 @@ async function loadRound(){
   S.cats=r.categories||S.cats;
   S.rTime=r.roundTime||S.rTime;
   S.currentCatIndex=r.currentCatIndex||0;
+  S.totalRounds=r.totalRounds||0;
   S.catSubmitted=false;
+  enterRoom();
   // Check if we already submitted this category
   const cat=S.cats[S.currentCatIndex];
   if(cat){
@@ -775,10 +925,21 @@ async function startCat(roomData){
   // Reset multi-answers
   S.currentAnswers=[];
   renderAnsTags();
+  // Hide edit bar from previous cat
+  const oldEditBar=document.getElementById('edit-bar');
+  if(oldEditBar)oldEditBar.style.display='none';
+  document.getElementById('submit-btn').style.display='';
 
-  if(S.catSubmitted){
+  if(S.isSpectator){
     document.getElementById('answer-area').style.display='none';
     document.getElementById('wait-others').style.display='block';
+    document.getElementById('wait-txt').textContent='אתה צופה 👁';
+  } else if(S.catSubmitted){
+    // Restore edit mode with previously submitted answers
+    const aSnap2=await get(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`));
+    const prevData=aSnap2.val();
+    const prevAnswers=prevData?(Array.isArray(prevData.answers)&&prevData.answers.length?prevData.answers:(prevData.answer?[prevData.answer]:[])):[]; 
+    showEditMode(prevAnswers);
   }else{
     document.getElementById('answer-area').style.display='block';
     document.getElementById('wait-others').style.display='none';
@@ -809,6 +970,11 @@ async function startCat(roomData){
     if(newIdx!==null&&newIdx!==S.currentCatIndex){
       S.currentCatIndex=newIdx;S.catSubmitted=false;
       clearInterval(S.timerInt);
+      // Lock edit bar — no more editing once category advances
+      const eb=document.getElementById('edit-bar');
+      if(eb)eb.style.display='none';
+      const updateBtn=document.getElementById('btn-update-ans');
+      if(updateBtn)updateBtn.disabled=true;
       await loadRound();
     }
   });
@@ -818,14 +984,29 @@ async function startCat(roomData){
     const subs=snap.val()||{};
     const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=psSnap.val()||{};
-    const total=Object.keys(players).length;
-    const cnt=Object.keys(subs).length;
-    // Build submitted map
-    const map={};Object.keys(players).forEach(pid=>{map[pid]=!!subs[pid];});
-    renderSubPips('sub-pips-live','sub-label-live',map,players);
-    renderSubPips('sub-pips-wait','sub-label-wait',map,players);
-    document.getElementById('wait-txt').textContent=`ממתין לשאר... (${cnt}/${total})`;
-    // Host: auto-advance when everyone submitted
+    // Only count active players who joined BEFORE this category started
+    const catStartedAt=roomData?.catStartedAt||0;
+    const activePlayers=Object.fromEntries(
+      Object.entries(players).filter(([,p])=>!p.spectator&&(p.joinedAt||0)<=catStartedAt+3000)
+    );
+    // Fallback: if no one qualifies (e.g. all joined after), count everyone non-spectator
+    const eligiblePlayers=Object.keys(activePlayers).length>0
+      ? activePlayers
+      : Object.fromEntries(Object.entries(players).filter(([,p])=>!p.spectator));
+    const total=Object.keys(eligiblePlayers).length;
+    const cnt=Object.keys(subs).filter(pid=>eligiblePlayers[pid]).length;
+    const map={};Object.keys(eligiblePlayers).forEach(pid=>{map[pid]=!!subs[pid];});
+    renderSubPips('sub-pips-live','sub-label-live',map,eligiblePlayers);
+    renderSubPips('sub-pips-wait','sub-label-wait',map,eligiblePlayers);
+    if(!S.isSpectator)
+      document.getElementById('wait-txt').textContent=`ממתין לשאר... (${cnt}/${total})`;
+
+    // Spectator: show live answers panel
+    if(S.isSpectator){
+      renderSpectatorView(subs, players, cat);
+    }
+
+    // Host: auto-advance when all eligible players submitted
     if(S.isHost&&cnt>=total){
       clearInterval(S.timerInt);
       await advanceCat();
@@ -847,10 +1028,21 @@ function startTimer(){
     S.timeLeft--;updateTimer();
     if(S.timeLeft<=0){
       clearInterval(S.timerInt);
-      const inp=document.getElementById('cat-answer');
-      const val=inp.value.trim();
-      if(val)addAnswerTag(val);
-      await doSubmit(S.currentAnswers);
+      if(!S.isSpectator){
+        const inp=document.getElementById('cat-answer');
+        const val=inp.value.trim();
+        if(val)addAnswerTag(val);
+        await doSubmit(S.currentAnswers);
+        // After time runs out — lock editing
+        setTimeout(()=>{
+          const editBar=document.getElementById('edit-bar');
+          if(editBar){
+            editBar.innerHTML='<div style="color:var(--muted);font-size:.82rem;">⏰ הזמן נגמר — לא ניתן לערוך</div>';
+          }
+          const upBtn=document.getElementById('btn-update-ans');
+          if(upBtn)upBtn.disabled=true;
+        },100);
+      }
       // Host: grace period then force-advance
       if(S.isHost){
         setTimeout(async()=>{
@@ -867,6 +1059,40 @@ function updateTimer(){
   const bar=document.getElementById('timer-bar');
   bar.style.width=pct+'%';
   bar.className='tbar'+(pct<30?' warn':'');
+}
+
+// ─── SPECTATOR LIVE VIEW ──────────────────────────────────────────
+function renderSpectatorView(subs, players, cat){
+  const waitDiv=document.getElementById('wait-others');
+  let specPanel=document.getElementById('spec-live-panel');
+  if(!specPanel){
+    specPanel=document.createElement('div');
+    specPanel.id='spec-live-panel';
+    specPanel.style.cssText='margin-top:14px;';
+    waitDiv.appendChild(specPanel);
+  }
+  const activePlayers=Object.entries(players).filter(([,p])=>!p.spectator);
+  specPanel.innerHTML=`<div style="color:var(--muted);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">👁 תצוגת צופה — ${cat.emoji} ${cat.name}</div>`+
+    activePlayers.map(([pid,p])=>{
+      const d=subs[pid];
+      const c=avc(p.name);
+      const ansArr=d?(Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[])):[]; 
+      const typing=!d; // hasn't submitted yet
+      const tagsHtml=ansArr.map(a=>`<span style="background:rgba(15,186,129,.15);border:1px solid rgba(15,186,129,.35);color:var(--green);padding:3px 10px;border-radius:100px;font-size:.82rem;font-weight:700;">${a}</span>`).join('');
+      return `<div style="display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px 14px;margin-bottom:7px;">
+        <div style="width:30px;height:30px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;">${p.name.charAt(0)}</div>
+        <div style="flex:1;">
+          <div style="font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:4px;">${p.name}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;min-height:22px;">
+            ${typing
+              ? '<span style="color:var(--muted);font-size:.8rem;font-style:italic;animation:pulse 1.5s infinite;">✍️ כותב...</span>'
+              : (tagsHtml||'<span style="color:var(--muted);font-size:.8rem;font-style:italic;">לא ענה</span>')
+            }
+          </div>
+        </div>
+        ${d?'<span style="color:var(--green);font-size:.8rem;font-weight:700;">✓</span>':''}
+      </div>`;
+    }).join('');
 }
 
 // ─── MULTI-ANSWER TAG HELPERS ─────────────────────────────────────
@@ -896,29 +1122,73 @@ function addAnswerTag(val){
 
 // ─── SUBMIT ANSWER ────────────────────────────────────────────────
 function submitCatAnswer(){
-  // Add current input value to tags if not empty
+  // Auto-add whatever is still in the input field
   const inp=document.getElementById('cat-answer');
   const val=inp.value.trim();
-  if(val){
-    addAnswerTag(val);
-    inp.value='';
-  }
+  if(val){ addAnswerTag(val); inp.value=''; }
   doSubmit(S.currentAnswers);
 }
 
 async function doSubmit(answers){
   if(S.catSubmitted)return;
-  S.catSubmitted=true;clearInterval(S.timerInt);
+  S.catSubmitted=true;
+  clearInterval(S.timerInt);
   const cat=S.cats[S.currentCatIndex];
-  document.getElementById('answer-area').style.display='none';
-  document.getElementById('wait-others').style.display='block';
-  document.getElementById('cat-answer').disabled=true;
-  // answers can be array or legacy single string
   const ansArr=Array.isArray(answers)?answers:(answers?[answers]:[]);
   await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
     name:S.pName,answers:ansArr,answer:ansArr[0]||'',submittedAt:Date.now(),timeLeft:S.timeLeft
   });
+  // Show edit UI instead of hiding answer area
+  showEditMode(ansArr);
   touchActivity();saveSession();
+}
+
+function showEditMode(submittedAnswers){
+  // Keep answer area visible but switch to "submitted + edit" state
+  const answerArea=document.getElementById('answer-area');
+  const waitOthers=document.getElementById('wait-others');
+  answerArea.style.display='block';
+  waitOthers.style.display='none';
+
+  // Disable main submit button, show "עדכן" button instead
+  const submitBtn=document.getElementById('submit-btn');
+  submitBtn.style.display='none';
+
+  // Show edit bar
+  let editBar=document.getElementById('edit-bar');
+  if(!editBar){
+    editBar=document.createElement('div');
+    editBar.id='edit-bar';
+    editBar.style.cssText='margin-top:10px;display:flex;gap:8px;align-items:center;';
+    editBar.innerHTML=`
+      <div style="flex:1;color:var(--green);font-size:.82rem;font-weight:700;">✅ נשלח! אפשר לערוך עד שמעבירים קטגוריה</div>
+      <button id="btn-update-ans" style="background:rgba(76,201,240,.15);color:var(--blue);border:1.5px solid rgba(76,201,240,.3);border-radius:10px;padding:8px 16px;font-family:'Heebo',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">✏️ עדכן</button>`;
+    answerArea.querySelector('.cat-answer-card').appendChild(editBar);
+    document.getElementById('btn-update-ans').addEventListener('click', updateAnswer);
+  }else{
+    editBar.style.display='flex';
+  }
+
+  // Load submitted answers into tags
+  S.currentAnswers=submittedAnswers||[];
+  const inp=document.getElementById('cat-answer');
+  inp.value=''; inp.disabled=false;
+  renderAnsTags();
+}
+
+async function updateAnswer(){
+  // Auto-add whatever is still in input
+  const inp=document.getElementById('cat-answer');
+  const val=inp.value.trim();
+  if(val){ addAnswerTag(val); inp.value=''; }
+  const cat=S.cats[S.currentCatIndex];
+  const ansArr=[...S.currentAnswers];
+  // timeLeft=0 on edit — מונע בונוס זמן לעורכים
+  await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
+    name:S.pName,answers:ansArr,answer:ansArr[0]||'',submittedAt:Date.now(),timeLeft:0
+  });
+  toast('✅ תשובות עודכנו!');
+  touchActivity();
 }
 
 // ─── ADVANCE CATEGORY (host only) ────────────────────────────────
@@ -941,6 +1211,7 @@ async function advanceCat(){
 // ─── VOTING ───────────────────────────────────────────────────────
 async function showVoting(){
   clearInterval(S.timerInt);detach();
+  enterRoom();
   const snap=await get(ref(db,`rooms/${S.roomId}`));
   const room=snap.val();
   const catAnswers=room.catAnswers||{};
@@ -1006,7 +1277,31 @@ async function showVoting(){
           vetoBtn=`<button class="btn-veto${myVote?' voted':''}" data-cat="${catId}" data-vkey="${vetoKey}">${myVote?'✓ פסול':'👎 פסול'}</button>`;
         }
         row.innerHTML=nameEl+answerEl+countEl+vetoBtn;
+
+        // Emoji reactions row (below the answer row)
+        const reactDiv=document.createElement('div');
+        reactDiv.className='react-row';
+        reactDiv.style.paddingRight='74px';
+        const EMOJIS=['🔥','😂','😮','👏','💀'];
+        const myReacts=new Set(Object.entries((vetoes[`react_${catId}_${vetoKey}`])||{}).filter(([,v])=>v===S.pId).map(([e])=>e));
+        EMOJIS.forEach(em=>{
+          const cnt=Object.values((vetoes[`react_${catId}_${vetoKey}`]||{})).filter(v=>v===em).length;
+          // Actually let's use a different path structure already loaded
+          const reacts=vetoes[`react_${catId}_${vetoKey}`]||{};
+          const emCount=Object.entries(reacts).filter(([,v])=>v===em).length;
+          const isMine=reacts[S.pId]===em;
+          const btn=document.createElement('button');
+          btn.className='react-btn'+(isMine?' mine':'');
+          btn.innerHTML=`${em}${emCount>0?`<span class="react-cnt">${emCount}</span>`:''}`;
+          btn.addEventListener('click',async()=>{
+            const rRef=ref(db,`rooms/${S.roomId}/vetoes/react_${catId}_${vetoKey}/${S.pId}`);
+            if(isMine){await remove(rRef);}else{await set(rRef,em);}
+            touchActivity();
+          });
+          reactDiv.appendChild(btn);
+        });
         rows.appendChild(row);
+        rows.appendChild(reactDiv);
       });
     });
 
@@ -1100,10 +1395,13 @@ async function commitVotingAndShowResults(){
 // ─── RESULTS ──────────────────────────────────────────────────────
 async function showResults(){
   clearInterval(S.timerInt);detach();
+  enterRoom();
   const snap=await get(ref(db,`rooms/${S.roomId}`));
   const room=snap.val();
   const catAnswers=room.catAnswers||{};
   const cats=room.categories||S.cats;
+  S.totalRounds=room.totalRounds||0;
+  S.cumulativeSB=room.cumulativeSB!==false;
   const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
   const players=psSnap.val()||{};
 
@@ -1118,7 +1416,7 @@ async function showResults(){
   document.getElementById('res-letter').textContent=room.letter;
 
   const rScores={};
-  Object.keys(players).forEach(pid=>rScores[pid]=0);
+  Object.entries(players).forEach(([pid,p])=>{if(!p.spectator)rScores[pid]=0;});
 
   const bycat=document.getElementById('res-cats');
   bycat.innerHTML='';
@@ -1148,9 +1446,9 @@ async function showResults(){
       const firstValid=ansArr.find(a=>{const al=(a||'').trim();return al&&!disqSet.has(al.toLowerCase());});
       if(firstValid&&timeBonus>0)rScores[pid]=(rScores[pid]||0)+timeBonus;
     });
-    // Build table rows — one row per answer per player
+    // Build table rows — one row per answer per player (skip spectators)
     const rowsArr=[];
-    Object.entries(players).forEach(([pid,p])=>{
+    Object.entries(players).filter(([,p])=>!p.spectator).forEach(([pid,p])=>{
       const d=catData[pid];
       const ansArr=d?(Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[])):[]; 
       const timeBonus=d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
@@ -1203,9 +1501,25 @@ async function showResults(){
   await update(ref(db),ups);
 
   const ps2=await get(ref(db,`rooms/${S.roomId}/players`));
-  renderSB('scoreboard',ps2.val()||{});
+  const ps2val=ps2.val()||{};
+
+  // Show scoreboard — cumulative (total score from Firebase) or per-round only
+  if(S.cumulativeSB){
+    renderSB('scoreboard', ps2val);
+  } else {
+    // Build a temporary players map with just this round's scores
+    const roundPlayers={};
+    Object.entries(ps2val).forEach(([pid,p])=>{
+      roundPlayers[pid]={...p, score: rScores[pid]||0};
+    });
+    renderSB('scoreboard', roundPlayers);
+  }
+
+  document.getElementById('scoreboard-label').textContent=
+    S.cumulativeSB ? '🏅 ניקוד מצטבר' : `🏅 ניקוד סיבוב ${room.round}`;
   document.getElementById('host-next').style.display=S.isHost?'block':'none';
   document.getElementById('guest-next').style.display=S.isHost?'none':'block';
+
   showScreen('results');
 
   if(!S.isHost){
@@ -1217,7 +1531,9 @@ async function showResults(){
 }
 
 function renderSB(id,players){
-  const sorted=Object.entries(players).sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+  const sorted=Object.entries(players)
+    .filter(([,p])=>!p.spectator)
+    .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
   const m=['🥇','🥈','🥉'];
   document.getElementById(id).innerHTML=sorted.map(([pid,p],i)=>`
     <div class="sr ${i===0?'gold':''}">
@@ -1231,10 +1547,15 @@ async function showFinal(){
   clearInterval(S.timerInt);detach();clearSession();
   const snap=await get(ref(db,`rooms/${S.roomId}/players`));
   renderSB('final-sb',snap.val()||{});
+  enterRoom();
   showScreen('final');
 }
 
 async function nextRound(){
+  // Tournament check
+  if(S.totalRounds>0&&S.rNum>=S.totalRounds){
+    await endGame();return;
+  }
   const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
   S.rNum++;S.letter=letter;S.currentCatIndex=0;
   await update(ref(db,`rooms/${S.roomId}`),{
@@ -1250,9 +1571,28 @@ async function endGame(){
   await showFinal();
 }
 
+async function transferHost(){
+  if(!S.isHost||!S.roomId)return;
+  const snap=await get(ref(db,`rooms/${S.roomId}/players`));
+  const ps=snap.val()||{};
+  // Find next active (non-spectator) player who isn't us
+  const next=Object.entries(ps)
+    .filter(([pid,p])=>pid!==S.pId&&!p.spectator)
+    .sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0))[0];
+  if(next){
+    await update(ref(db,`rooms/${S.roomId}`),{host:next[0]});
+    await set(ref(db,`rooms/${S.roomId}/players/${next[0]}/isHost`),true);
+    toast(`👑 הבעלות עברה ל-${next[1].name}`);
+  }else{
+    // No other active players — delete the room
+    await remove(ref(db,`rooms/${S.roomId}`));
+  }
+}
+
 function goHome(){
-  clearInterval(S.timerInt);detach();clearSession();
-  S.roomId='';S.isHost=false;S.totScores={};
+  clearInterval(S.timerInt);detach();detachChat();clearSession();
+  S.roomId='';S.isHost=false;S.totScores={};S.isSpectator=false;
+  showChatFab(false);
   showScreen('home');
 }
 
@@ -1260,16 +1600,168 @@ async function exitGame(){
   if(!confirm('לצאת מהמשחק?'))return;
   clearInterval(S.timerInt);detach();
   if(S.roomId&&S.pId){
+    if(S.isHost)await transferHost();
     await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
-    if(S.isHost)await remove(ref(db,`rooms/${S.roomId}`));
   }
-  clearSession();S.roomId='';S.isHost=false;S.totScores={};
+  detachChat();clearSession();S.roomId='';S.isHost=false;S.totScores={};S.isSpectator=false;
+  showChatFab(false);
   showScreen('home');
 }
 
-// ─── WIRE UP ALL EVENT LISTENERS ─────────────────────────────────
+// ─── CHAT ─────────────────────────────────────────────────────────
+function showChatFab(show){
+  const fab=document.getElementById('chat-fab');
+  const rfab=document.getElementById('react-fab');
+  fab.style.display=show?'flex':'none';
+  rfab.style.display=show?'flex':'none';
+  if(!show){closeChatPanel();closeReactPicker();}
+}
+
+function openChatPanel(){
+  document.getElementById('chat-panel').classList.add('open');
+  S.chatOpen=true;S.chatUnread=0;
+  document.getElementById('chat-unread').style.display='none';
+  document.getElementById('chat-unread').textContent='';
+  setTimeout(()=>{
+    const msgs=document.getElementById('chat-msgs');
+    msgs.scrollTop=msgs.scrollHeight;
+    document.getElementById('chat-inp').focus();
+  },200);
+}
+function closeChatPanel(){
+  document.getElementById('chat-panel').classList.remove('open');
+  S.chatOpen=false;
+}
+
+function initChat(){
+  detachChat();
+  const chatRef=ref(db,`rooms/${S.roomId}/chat`);
+  const fn=snap=>{
+    const data=snap.val()||{};
+    const msgs=Object.values(data).sort((a,b)=>a.ts-b.ts);
+    const container=document.getElementById('chat-msgs');
+    container.innerHTML='';
+    msgs.forEach(m=>{
+      if(m.system){
+        const div=document.createElement('div');
+        div.className='chat-system';div.textContent=m.text;
+        container.appendChild(div);return;
+      }
+      const isMine=m.pId===S.pId;
+      const c=avc(m.name||'?');
+      const wrap=document.createElement('div');
+      wrap.className='chat-msg'+(isMine?' mine':'');
+      wrap.innerHTML=`<div class="chat-av" style="background:${c}22;color:${c}">${(m.name||'?').charAt(0)}</div>
+        <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}</div>`}${escHtml(m.text)}</div>`;
+      container.appendChild(wrap);
+    });
+    container.scrollTop=container.scrollHeight;
+    // Unread badge
+    if(!S.chatOpen&&msgs.length>0){
+      const last=msgs[msgs.length-1];
+      if(last.pId!==S.pId){
+        S.chatUnread=Math.min(S.chatUnread+1,99);
+        const badge=document.getElementById('chat-unread');
+        badge.textContent=S.chatUnread;badge.style.display='flex';
+      }
+    }
+  };
+  onValue(chatRef,fn);
+  S.chatListener={r:chatRef,fn};
+}
+
+async function sendChat(){
+  const inp=document.getElementById('chat-inp');
+  const text=inp.value.trim();
+  if(!text||!S.roomId)return;
+  inp.value='';
+  const msgId=gid(12);
+  await set(ref(db,`rooms/${S.roomId}/chat/${msgId}`),{
+    pId:S.pId,name:S.pName,text,ts:Date.now()
+  });
+  touchActivity();
+}
+
+function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ─── QUICK EMOJI REACTIONS ────────────────────────────────────────
+const QUICK_EMOJIS=['🔥','😂','❤️','😮','👏','💀','🥳','😭','💯','🤯'];
+let reactPickerOpen=false;
+
+function closeReactPicker(){
+  const p=document.getElementById('react-quick-picker');
+  if(p)p.remove();
+  reactPickerOpen=false;
+}
+
+document.getElementById('react-fab').addEventListener('click',(e)=>{
+  e.stopPropagation();
+  if(reactPickerOpen){closeReactPicker();return;}
+  closeReactPicker();
+  reactPickerOpen=true;
+  const picker=document.createElement('div');
+  picker.id='react-quick-picker';
+  picker.className='react-quick-picker';
+  QUICK_EMOJIS.forEach(em=>{
+    const span=document.createElement('span');
+    span.textContent=em;
+    span.addEventListener('click',(ev)=>{
+      ev.stopPropagation();
+      sendFloatEmoji(em);
+      closeReactPicker();
+    });
+    picker.appendChild(span);
+  });
+  document.body.appendChild(picker);
+  setTimeout(()=>document.addEventListener('click',closeReactPicker,{once:true}),50);
+});
+
+async function sendFloatEmoji(em){
+  if(!S.roomId)return;
+  const x=10+Math.floor(Math.random()*80); // 10%–90% of screen width
+  const id=gid(10);
+  await set(ref(db,`rooms/${S.roomId}/floatEmojis/${id}`),{
+    em,x,ts:Date.now(),by:S.pName
+  });
+  // Auto-remove from Firebase after 5s
+  setTimeout(()=>remove(ref(db,`rooms/${S.roomId}/floatEmojis/${id}`)),5000);
+}
+
+function spawnFloatEmoji(em,x){
+  const el=document.createElement('div');
+  el.className='float-emoji';
+  el.textContent=em;
+  el.style.left=x+'%';
+  el.style.bottom='20px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),3100);
+}
+
+let floatEmojiListener=null;
+let seenFloatIds=new Set();
+
+function initFloatEmojis(){
+  if(floatEmojiListener){
+    off(floatEmojiListener.r,'value',floatEmojiListener.fn);
+    floatEmojiListener=null;
+  }
+  seenFloatIds=new Set();
+  const r=ref(db,`rooms/${S.roomId}/floatEmojis`);
+  const fn=snap=>{
+    const data=snap.val()||{};
+    Object.entries(data).forEach(([id,d])=>{
+      if(seenFloatIds.has(id))return;
+      seenFloatIds.add(id);
+      // Only show if recent (within 4s)
+      if(Date.now()-d.ts<4000) spawnFloatEmoji(d.em,d.x);
+    });
+  };
+  onValue(r,fn);
+  floatEmojiListener={r,fn};
+}
 document.getElementById('btn-show-create').addEventListener('click',showCreate);
-document.getElementById('btn-join').addEventListener('click',joinRoom);
+document.getElementById('btn-join').addEventListener('click',()=>joinRoom(false));
+document.getElementById('btn-join-spec').addEventListener('click',()=>joinRoom(true));
 document.getElementById('btn-back-home').addEventListener('click',()=>showScreen('home'));
 document.getElementById('btn-add-cc').addEventListener('click',addCC);
 document.getElementById('btn-create-room').addEventListener('click',createRoom);
@@ -1282,6 +1774,33 @@ document.getElementById('btn-show-results').addEventListener('click',commitVotin
 document.getElementById('btn-next-round').addEventListener('click',nextRound);
 document.getElementById('btn-end-game').addEventListener('click',endGame);
 document.getElementById('btn-go-home').addEventListener('click',goHome);
+// Chat emoji picker
+const CHAT_EMOJIS=['😂','🔥','😮','❤️','👏','💀','🤣','😭','👍','🤔','😅','🎉','💯','🤯','😤','🥳','😎','🙏','💪','🤦'];
+document.getElementById('chat-emoji-btn').addEventListener('click',(e)=>{
+  e.stopPropagation();
+  let picker=document.getElementById('emoji-picker-panel');
+  if(picker){picker.remove();return;}
+  picker=document.createElement('div');
+  picker.id='emoji-picker-panel';
+  picker.className='emoji-picker';
+  CHAT_EMOJIS.forEach(em=>{
+    const span=document.createElement('span');
+    span.textContent=em;
+    span.addEventListener('click',()=>{
+      const inp=document.getElementById('chat-inp');
+      inp.value+=em;
+      inp.focus();
+      picker.remove();
+    });
+    picker.appendChild(span);
+  });
+  document.getElementById('chat-panel').appendChild(picker);
+  document.addEventListener('click',()=>picker.remove(),{once:true});
+});
+document.getElementById('chat-fab').addEventListener('click',()=>{S.chatOpen?closeChatPanel():openChatPanel();});
+document.getElementById('chat-close').addEventListener('click',closeChatPanel);
+document.getElementById('chat-send').addEventListener('click',sendChat);
+document.getElementById('chat-inp').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
 document.getElementById('cat-answer').addEventListener('keydown',e=>{
   if(e.key==='Enter'){
     const val=document.getElementById('cat-answer').value.trim();
