@@ -1132,13 +1132,12 @@ function submitCatAnswer(){
 async function doSubmit(answers){
   if(S.catSubmitted)return;
   S.catSubmitted=true;
-  clearInterval(S.timerInt);
+  // לא עוצרים את הטיימר — ממשיך לרוץ חזותית
   const cat=S.cats[S.currentCatIndex];
   const ansArr=Array.isArray(answers)?answers:(answers?[answers]:[]);
   await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
     name:S.pName,answers:ansArr,answer:ansArr[0]||'',submittedAt:Date.now(),timeLeft:S.timeLeft
   });
-  // Show edit UI instead of hiding answer area
   showEditMode(ansArr);
   touchActivity();saveSession();
 }
@@ -1727,12 +1726,13 @@ async function sendFloatEmoji(em){
   setTimeout(()=>remove(ref(db,`rooms/${S.roomId}/floatEmojis/${id}`)),5000);
 }
 
-function spawnFloatEmoji(em,x){
+function spawnFloatEmoji(em,x,name){
   const el=document.createElement('div');
   el.className='float-emoji';
-  el.textContent=em;
   el.style.left=x+'%';
   el.style.bottom='20px';
+  el.style.textAlign='center';
+  el.innerHTML=`<div style="font-size:2.2rem;line-height:1;">${em}</div><div style="font-size:.65rem;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);margin-top:2px;white-space:nowrap;">${name||''}</div>`;
   document.body.appendChild(el);
   setTimeout(()=>el.remove(),3100);
 }
@@ -1753,7 +1753,7 @@ function initFloatEmojis(){
       if(seenFloatIds.has(id))return;
       seenFloatIds.add(id);
       // Only show if recent (within 4s)
-      if(Date.now()-d.ts<4000) spawnFloatEmoji(d.em,d.x);
+      if(Date.now()-d.ts<4000) spawnFloatEmoji(d.em,d.x,d.by);
     });
   };
   onValue(r,fn);
