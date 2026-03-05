@@ -309,6 +309,43 @@
   .btn-voted{box-shadow:0 0 0 2.5px #fff5!important;}
   /* profile screen */
   .profile-avatar-preview{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.6rem;font-weight:900;margin:0 auto 20px;border:3px solid rgba(255,255,255,.15);transition:background .25s,color .25s;}
+  /* avatar frames */
+  .av-frame-gold{border:3px solid #f5a623!important;box-shadow:0 0 16px rgba(245,166,35,.6)!important;}
+  .av-frame-silver{border:3px solid #c0c0c0!important;box-shadow:0 0 12px rgba(192,192,192,.45)!important;}
+  .av-frame-bronze{border:3px solid #cd7f32!important;box-shadow:0 0 12px rgba(205,127,50,.45)!important;}
+  .av-frame-rainbow{border:3px solid transparent!important;animation:rainbowBorder 2s linear infinite!important;}
+  .av-frame-purple{border:3px solid #a855f7!important;box-shadow:0 0 16px rgba(168,85,247,.6)!important;}
+  .av-frame-neon{border:3px solid #0fba81!important;box-shadow:0 0 16px rgba(15,186,129,.7),inset 0 0 8px rgba(15,186,129,.15)!important;}
+  .av-frame-blue{border:3px solid #4cc9f0!important;box-shadow:0 0 14px rgba(76,201,240,.55)!important;}
+  .av-frame-red{border:3px solid #e94560!important;box-shadow:0 0 14px rgba(233,69,96,.55)!important;}
+  .av-frame-dashed{border:3px dashed rgba(255,255,255,.5)!important;}
+  .av-frame-double{border:5px double rgba(255,255,255,.6)!important;}
+  .av-frame-fire{border:3px solid #f97316!important;box-shadow:0 0 18px rgba(249,115,22,.75),inset 0 0 6px rgba(249,115,22,.2)!important;}
+  .av-frame-ice{border:3px solid #93c5fd!important;box-shadow:0 0 16px rgba(147,197,253,.65)!important;}
+  .av-frame-dark{border:3px solid #1f1f3a!important;box-shadow:0 0 0 2px rgba(255,255,255,.12),0 0 14px rgba(0,0,0,.9)!important;}
+  @keyframes rainbowBorder{0%{border-color:#e94560}25%{border-color:#f5a623}50%{border-color:#0fba81}75%{border-color:#4cc9f0}100%{border-color:#e94560}}
+  /* player tag */
+  .player-tag{display:inline-block;background:rgba(76,201,240,.12);color:var(--blue);border:1px solid rgba(76,201,240,.25);padding:1px 8px;border-radius:100px;font-size:.66rem;font-weight:700;margin-right:6px;vertical-align:middle;}
+  /* profile option buttons */
+  .prof-emoji-grid{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px;}
+  .prof-emoji-btn{width:42px;height:42px;border-radius:10px;border:2px solid var(--border);background:var(--s2);font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+  .prof-emoji-btn:hover,.prof-emoji-btn.sel{border-color:var(--blue);background:rgba(76,201,240,.14);transform:scale(1.1);}
+  .prof-frame-btn{width:46px;height:46px;border-radius:50%;background:var(--s2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;transition:all .15s;flex-shrink:0;border:3px solid var(--border);}
+  .prof-frame-btn.sel{outline:2.5px solid #fff;outline-offset:2px;}
+  .prof-tag-btn,.prof-entry-btn{padding:7px 14px;border-radius:100px;border:1.5px solid var(--border);background:var(--s2);color:var(--muted);font-family:'Heebo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;}
+  .prof-tag-btn:hover,.prof-tag-btn.sel{border-color:var(--blue);color:var(--blue);background:rgba(76,201,240,.12);}
+  .prof-entry-btn:hover,.prof-entry-btn.sel{border-color:var(--orange);color:var(--orange);background:rgba(245,166,35,.1);}
+  /* entry animations */
+  @keyframes entryBounce{0%{transform:scale(0);opacity:0}60%{transform:scale(1.3);opacity:1}80%{transform:scale(.9)}100%{transform:scale(1)}}
+  @keyframes entrySpin{0%{transform:rotate(-360deg) scale(0);opacity:0}70%{transform:rotate(15deg) scale(1.1);opacity:1}100%{transform:rotate(0) scale(1)}}
+  @keyframes entryFlash{0%,100%{filter:brightness(1)}45%{filter:brightness(2.8) saturate(2.5)}}
+  @keyframes entryShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(4px)}}
+  .entry-bounce{animation:entryBounce .65s cubic-bezier(.34,1.56,.64,1)!important;}
+  .entry-spin{animation:entrySpin .7s cubic-bezier(.34,1.56,.64,1)!important;}
+  .entry-flash{animation:entryFlash .55s ease!important;}
+  .entry-shake{animation:entryShake .5s ease!important;}
+  /* room name in lobby */
+  .lobby-room-name{text-align:center;font-size:1.15rem;font-weight:900;color:var(--text);margin-bottom:10px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
   /* visibility selector */
   .vis-opts{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
   .vis-opt{display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .2s;user-select:none;}
@@ -351,10 +388,34 @@
       <h3 style="margin-bottom:12px;">📛 השם שלך</h3>
       <input type="text" id="prof-name" placeholder="הכנס שם..." maxlength="20"
         style="text-align:center;font-size:1.2rem;font-weight:700;margin-bottom:20px;">
-      <h3 style="margin-bottom:12px;">🎨 צבע אווטאר</h3>
-      <div class="av-picker" id="av-picker" style="justify-content:center;"></div>
+      <h3 style="margin-bottom:12px;">🎨 צבע</h3>
+      <div class="av-picker" id="av-picker" style="justify-content:center;margin-bottom:20px;"></div>
+
+      <h3 style="margin-bottom:10px;">😎 אימוג'י אווטאר</h3>
+      <div id="prof-emoji-grid" class="prof-emoji-grid"></div>
+      <button id="btn-use-letter" class="btn btn-s btn-sm" style="width:auto;margin:0 auto 4px;display:block;font-size:.78rem;">← השתמש באות הראשונה</button>
+
+      <h3 style="margin-bottom:10px;margin-top:20px;">🖼️ פריים</h3>
+      <div id="prof-frame-row" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:4px;"></div>
+
+      <h3 style="margin-bottom:10px;margin-top:20px;">🏷️ תגית (מתחת לשם)</h3>
+      <input type="text" id="prof-tag-inp" placeholder='לדוגמה: "מלך ארץ עיר 👑" ...' maxlength="25"
+        style="text-align:center;margin-bottom:4px;">
+      <div id="prof-tag-preview" style="font-size:.72rem;color:var(--muted);margin-top:4px;min-height:16px;"></div>
+
+      <h3 style="margin-bottom:10px;margin-top:20px;">✨ אפקט כניסה</h3>
+      <div id="prof-entry-row" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;"></div>
+      <button id="btn-preview-entry" class="btn btn-s btn-sm" style="width:auto;margin:0 auto;display:block;font-size:.8rem;">▶️ תצוגה מקדימה</button>
     </div>
-    <button class="btn btn-p" id="btn-profile-continue" style="margin-top:8px;">המשך ←</button>
+
+    <div class="card" style="margin-top:8px;">
+      <h3>🏠 שם ברירת מחדל לחדר</h3>
+      <input type="text" id="prof-room-name" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30"
+        style="margin-top:8px;">
+      <div style="font-size:.74rem;color:var(--muted);margin-top:6px;">ימולא אוטומטית בעת יצירת חדר</div>
+    </div>
+
+    <button class="btn btn-p" id="btn-profile-continue" style="margin-top:8px;">שמור והמשך ←</button>
   </div>
 
   <!-- HOME -->
@@ -370,7 +431,7 @@
       </div>
       <span style="color:var(--muted);font-size:1rem;">✏️</span>
     </div>
-    <div class="divider" style="margin:16px 0;">צור חדר</div>
+    <div class="divider" style="margin:16px 0;">מה תרצה לעשות?</div>
     <div class="home-actions">
       <button class="btn btn-p" id="btn-show-create">✨ צור חדר חדש</button>
       <div class="divider">הצטרף לחדר קיים</div>
@@ -397,6 +458,11 @@
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
       <button class="btn btn-s btn-sm" style="width:auto" id="btn-back-home">← חזור</button>
       <h2 style="font-size:1.3rem;font-weight:800;">הגדרות חדר</h2>
+    </div>
+    <div class="card">
+      <h3>🏠 שם החדר</h3>
+      <input type="text" id="room-name-inp" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30" style="margin-top:8px;">
+      <div style="font-size:.74rem;color:var(--muted);margin-top:6px;">יוצג ברשימת החדרים הציבוריים</div>
     </div>
     <div class="card">
       <h3>📋 קטגוריות</h3>
@@ -458,6 +524,9 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <button class="btn btn-s btn-sm" style="width:auto" id="btn-leave-room">← עזוב</button>
       <span class="sp"><span class="dot"></span>ממתין לשחקנים</span>
+    </div>
+    <div id="lobby-room-name-wrap" style="display:none;margin-bottom:10px;">
+      <div class="lobby-room-name" id="lobby-room-name-text"></div>
     </div>
     <div class="code-box" id="code-box">
       <div class="lbl">📤 שתף עם חברים</div>
@@ -747,6 +816,38 @@
     visibility:'private'
   };
   let S_pColor=AVATAR_COLORS[0];
+  let S_pEmoji=null;   // null = use first letter
+  let S_pFrame=null;   // null/'gold'/'silver'/'rainbow'/'purple'/'neon'
+  let S_pTag=null;     // null or tag string
+  let S_pEntry='none'; // 'none'/'bounce'/'spin'/'flash'/'shake'
+  let S_pRoomName='';  // default room name
+
+  const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
+  const PROF_FRAMES=[
+    {id:null,     label:'ללא',  style:'border:3px solid var(--border);'},
+    {id:'gold',   label:'🥇',   style:'border:3px solid #f5a623;box-shadow:0 0 12px rgba(245,166,35,.5);'},
+    {id:'silver', label:'🥈',   style:'border:3px solid #c0c0c0;box-shadow:0 0 10px rgba(192,192,192,.4);'},
+    {id:'bronze', label:'🥉',   style:'border:3px solid #cd7f32;box-shadow:0 0 10px rgba(205,127,50,.4);'},
+    {id:'rainbow',label:'🌈',   style:'border:3px solid #e94560;'},
+    {id:'purple', label:'💜',   style:'border:3px solid #a855f7;box-shadow:0 0 12px rgba(168,85,247,.5);'},
+    {id:'neon',   label:'💚',   style:'border:3px solid #0fba81;box-shadow:0 0 14px rgba(15,186,129,.65);'},
+    {id:'blue',   label:'💙',   style:'border:3px solid #4cc9f0;box-shadow:0 0 12px rgba(76,201,240,.5);'},
+    {id:'red',    label:'❤️',   style:'border:3px solid #e94560;box-shadow:0 0 12px rgba(233,69,96,.5);'},
+    {id:'dashed', label:'〰️',   style:'border:3px dashed rgba(255,255,255,.5);'},
+    {id:'double', label:'⭕',   style:'border:5px double rgba(255,255,255,.6);'},
+    {id:'fire',   label:'🔥',   style:'border:3px solid #f97316;box-shadow:0 0 16px rgba(249,115,22,.7),0 0 4px rgba(249,115,22,.4) inset;'},
+    {id:'ice',    label:'🧊',   style:'border:3px solid #93c5fd;box-shadow:0 0 14px rgba(147,197,253,.6);'},
+    {id:'dark',   label:'🖤',   style:'border:3px solid #1f1f3a;box-shadow:0 0 0 2px rgba(255,255,255,.12),0 0 12px rgba(0,0,0,.8);'},
+  ];
+  
+  const PROF_ENTRIES=[
+    {id:'none',  label:'ללא'},
+    {id:'bounce',label:'💥 קפיצה'},
+    {id:'spin',  label:'🌀 סיבוב'},
+    {id:'flash', label:'⚡ פלאש'},
+    {id:'shake', label:'🫨 רעידה'},
+  ];
+
   function initAvPicker(){
     const wrap=document.getElementById('av-picker');
     if(!wrap)return;
@@ -765,19 +866,106 @@
     });
   }
 
+  function initEmojiPicker(){
+    const grid=document.getElementById('prof-emoji-grid');
+    if(!grid)return;
+    grid.innerHTML='';
+    PROF_EMOJIS.forEach(em=>{
+      const btn=document.createElement('button');
+      btn.className='prof-emoji-btn'+(S_pEmoji===em?' sel':'');
+      btn.textContent=em;
+      btn.addEventListener('click',()=>{
+        S_pEmoji=em;
+        grid.querySelectorAll('.prof-emoji-btn').forEach(b=>b.classList.remove('sel'));
+        btn.classList.add('sel');
+        updateProfilePreview();
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function initFramePicker(){
+    const row=document.getElementById('prof-frame-row');
+    if(!row)return;
+    row.innerHTML='';
+    PROF_FRAMES.forEach(f=>{
+      const btn=document.createElement('button');
+      btn.className='prof-frame-btn'+(S_pFrame===f.id?' sel':'');
+      if(f.id) btn.className+=' av-frame-'+f.id;
+      btn.style.cssText=f.style;
+      btn.textContent=f.label;
+      btn.title=f.label;
+      btn.addEventListener('click',()=>{
+        S_pFrame=f.id;
+        row.querySelectorAll('.prof-frame-btn').forEach(b=>b.classList.remove('sel'));
+        btn.classList.add('sel');
+        updateProfilePreview();
+      });
+      row.appendChild(btn);
+    });
+  }
+
+  function initTagInput(){
+    const inp=document.getElementById('prof-tag-inp');
+    const prev=document.getElementById('prof-tag-preview');
+    if(!inp)return;
+    inp.value=S_pTag||'';
+    if(prev) prev.textContent=S_pTag?`תוצג: "${S_pTag}"`:' ';
+    inp.oninput=()=>{
+      S_pTag=inp.value.trim()||null;
+      if(prev) prev.textContent=S_pTag?`תוצג: "${S_pTag}"`:' ';
+    };
+  }
+
+  function initEntryPicker(){
+    const row=document.getElementById('prof-entry-row');
+    if(!row)return;
+    row.innerHTML='';
+    PROF_ENTRIES.forEach(e=>{
+      const btn=document.createElement('button');
+      btn.className='prof-entry-btn'+(S_pEntry===e.id?' sel':'');
+      btn.textContent=e.label;
+      btn.addEventListener('click',()=>{S_pEntry=e.id;row.querySelectorAll('.prof-entry-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');});
+      row.appendChild(btn);
+    });
+  }
+
+  document.getElementById('btn-preview-entry').addEventListener('click',()=>{
+    if(S_pEntry==='none'){toast('בחר אפקט קודם');return;}
+    const prev=document.getElementById('prof-av-preview');
+    if(!prev)return;
+    prev.classList.remove('entry-bounce','entry-spin','entry-flash','entry-shake');
+    // force reflow
+    void prev.offsetWidth;
+    prev.classList.add('entry-'+S_pEntry);
+    setTimeout(()=>prev.classList.remove('entry-bounce','entry-spin','entry-flash','entry-shake'),900);
+  });
+
   function updateProfilePreview(){
     const name=(document.getElementById('prof-name')||{}).value||'';
     const prev=document.getElementById('prof-av-preview');
     if(prev){
       prev.style.background=S_pColor+'33';
       prev.style.color=S_pColor;
-      prev.textContent=name.trim().charAt(0)||'?';
+      prev.textContent=S_pEmoji||(name.trim().charAt(0)||'?');
+      // reset then apply frame class
+      prev.className='profile-avatar-preview';
+      if(S_pFrame) prev.classList.add('av-frame-'+S_pFrame);
     }
   }
 
+  document.getElementById('btn-use-letter').addEventListener('click',()=>{
+    S_pEmoji=null;
+    document.querySelectorAll('.prof-emoji-btn').forEach(b=>b.classList.remove('sel'));
+    updateProfilePreview();
+  });
+
   // ─── PROFILE PERSISTENCE ──────────────────────────────────────────
   function saveProfile(){
-    try{localStorage.setItem('lac_profile',JSON.stringify({name:S.pName,color:S_pColor}));}catch(e){}
+    try{localStorage.setItem('lac_profile',JSON.stringify({
+      name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
+      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName
+    }));}catch(e){}
   }
   function loadProfile(){
     try{
@@ -787,23 +975,43 @@
       if(!p.name)return false;
       S.pName=p.name;
       S_pColor=p.color||AVATAR_COLORS[0];
+      S_pEmoji=p.emoji||null;
+      S_pFrame=p.frame||null;
+      S_pTag=p.tag||null;
+      S_pEntry=p.entry||'none';
+      S_pRoomName=p.roomName||'';
       document.getElementById('player-name').value=p.name;
       return true;
     }catch(e){return false;}
   }
+
   function updateHomeIdentity(){
     const av=document.getElementById('home-av');
     const nm=document.getElementById('home-pname');
-    if(av){av.style.background=S_pColor+'33';av.style.color=S_pColor;av.textContent=S.pName.charAt(0);}
-    if(nm)nm.textContent=S.pName;
+    if(av){
+      av.style.background=S_pColor+'33';
+      av.style.color=S_pColor;
+      av.textContent=S_pEmoji||S.pName.charAt(0);
+      av.style.cssText+=';width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;';
+      // clear old frame classes
+      av.className='';
+      if(S_pFrame) av.classList.add('av-frame-'+S_pFrame);
+    }
+    if(nm){
+      nm.innerHTML=`<div style="font-weight:800;font-size:1rem;">${S.pName}</div>`
+        +(S_pTag?`<div style="font-size:.7rem;color:var(--muted);margin-top:1px;">${S_pTag}</div>`:'');
+    }
   }
 
   // Profile screen setup
   function setupProfileScreen(){
-    const inp=document.getElementById('prof-name');
-    inp.value=S.pName||'';
-    // re-render picker with correct selection
+    document.getElementById('prof-name').value=S.pName||'';
+    document.getElementById('prof-room-name').value=S_pRoomName||'';
     initAvPicker();
+    initEmojiPicker();
+    initFramePicker();
+    initTagInput();
+    initEntryPicker();
     updateProfilePreview();
   }
 
@@ -814,6 +1022,8 @@
     const n=document.getElementById('prof-name').value.trim();
     if(!n){toast('נא להזין שם שחקן');return;}
     S.pName=n;
+    S_pTag=( document.getElementById('prof-tag-inp').value.trim()||null );
+    S_pRoomName=document.getElementById('prof-room-name').value.trim();
     document.getElementById('player-name').value=n;
     saveProfile();
     updateHomeIdentity();
@@ -866,8 +1076,8 @@
         const cats=(r.cats||[]).slice(0,3).map(c=>c.emoji).join('');
         card.innerHTML=`
           <div style="flex:1;">
-            <div class="pub-room-host">👑 ${r.hostName}</div>
-            <div class="pub-room-meta">${r.playerCount||1} שחקנים · ${cats} · ${r.roundTime||30}שנ'</div>
+            <div class="pub-room-host">${r.roomName||`👑 ${r.hostName}`}</div>
+            <div class="pub-room-meta">👑 ${r.hostName} · ${r.playerCount||1} שחקנים · ${cats} · ${r.roundTime||30}שנ'</div>
           </div>
           ${badge}`;
         card.addEventListener('click',()=>joinPublicRoom(roomId,r));
@@ -1166,7 +1376,11 @@
   function showCreate(){
     const n=document.getElementById('player-name').value.trim();
     if(!n){toast('נא להזין שם שחקן');return;}
-    S.pName=n;showScreen('create');
+    S.pName=n;
+    // pre-fill room name from profile default
+    const rni=document.getElementById('room-name-inp');
+    if(rni&&!rni.value&&S_pRoomName) rni.value=S_pRoomName;
+    showScreen('create');
   }
 
   // ─── CREATE ROOM ──────────────────────────────────────────────────
@@ -1178,20 +1392,22 @@
     S.cCats.forEach((name,i)=>active.push({id:'cc_'+i,name,emoji:'⭐'}));
     if(!active.length){toast('בחר לפחות קטגוריה אחת');return;}
     S.cats=active;S.pId=gid(10);S.isHost=true;S.totScores={};S.currentCatIndex=0;
+    const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
     let roomId,t=0;
     do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
     S.roomId=roomId;
     await set(ref(db,'rooms/'+roomId),{
       host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,
       cumulativeSB:S.cumulativeSB,visibility:S.visibility,
-      totalRounds:S.totalRounds,
+      totalRounds:S.totalRounds,roomName,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
-      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor}}
+      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,
+        emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'}}
     });
     // Register in public index if not private
     if(S.visibility!=='private'){
       await set(ref(db,'publicRooms/'+roomId),{
-        hostName:S.pName,visibility:S.visibility,
+        hostName:S.pName,visibility:S.visibility,roomName,
         cats:active.slice(0,5).map(c=>({emoji:c.emoji,name:c.name})),
         roundTime:S.rTime,playerCount:1,
         status:'lobby',createdAt:Date.now()
@@ -1226,7 +1442,8 @@
     S.cumulativeSB=room.cumulativeSB!==false;
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
-      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor
+      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,
+      emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'
     });
     touchActivity();saveSession();
 
@@ -1248,40 +1465,86 @@
     initFloatEmojis();
   }
 
+  // ─── ENTRY EFFECT ─────────────────────────────────────────────────
+  function showEntryEffect(player, pid){
+    const effect=player.entryEffect||'none';
+    const c=avc(player.name,player.color);
+    const avatarContent=player.emoji||player.name.charAt(0);
+    const frameClass=player.frame?'av-frame-'+player.frame:'';
+
+    // Mini toast banner
+    const banner=document.createElement('div');
+    banner.style.cssText=`position:fixed;top:80px;left:50%;transform:translateX(-50%);
+      background:var(--surface);border:1px solid var(--border);border-radius:100px;
+      padding:10px 20px;display:flex;align-items:center;gap:10px;z-index:900;
+      box-shadow:0 8px 32px rgba(0,0,0,.5);animation:fadeUp .3s ease;white-space:nowrap;`;
+    banner.innerHTML=`
+      <div class="${frameClass} entry-${effect}" style="width:34px;height:34px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;">${avatarContent}</div>
+      <span style="font-weight:700;font-size:.9rem;">${player.name}${player.tag?` <span class="player-tag">${player.tag}</span>`:''} הצטרף/ה!</span>`;
+    document.body.appendChild(banner);
+    setTimeout(()=>{banner.style.animation='bannerFade .35s ease forwards';setTimeout(()=>banner.remove(),350);},2200);
+  }
+
   function enterLobby(){
     S.totalRounds=S.totalRounds||0;
     document.getElementById('lobby-code').textContent=S.roomId;
     document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
     document.getElementById('guest-wait').style.display=S.isHost?'none':'block';
     document.getElementById('lobby-cats').innerHTML=S.cats.map(c=>`<span class="cb">${c.emoji} ${c.name}</span>`).join('');
-    // Tournament badge removed
     showScreen('lobby');
     enterRoom();
 
+    // Show room name
+    (async()=>{
+      const snap=await get(ref(db,`rooms/${S.roomId}/roomName`));
+      const rn=snap.val();
+      const wrap=document.getElementById('lobby-room-name-wrap');
+      const txt=document.getElementById('lobby-room-name-text');
+      if(rn&&wrap&&txt){wrap.style.display='block';txt.textContent='🏠 '+rn;}
+    })();
+
+    let prevPlayerIds=new Set();
     addL(ref(db,`rooms/${S.roomId}/players`),async snap=>{
       const ps=snap.val()||{};
       const activePlayers=Object.entries(ps).filter(([,p])=>!p.spectator);
       document.getElementById('pl-count').textContent=Object.keys(ps).length;
       const list=document.getElementById('pl-list');
+
+      // detect new players for entry effect
+      const currentIds=new Set(Object.keys(ps));
+      if(prevPlayerIds.size>0){
+        currentIds.forEach(pid=>{
+          if(!prevPlayerIds.has(pid)&&pid!==S.pId){
+            const p=ps[pid];
+            showEntryEffect(p,pid);
+          }
+        });
+      }
+      prevPlayerIds=new Set(currentIds);
+
       list.innerHTML='';
-      // Get current host
       const hostSnap=await get(ref(db,`rooms/${S.roomId}/host`));
       const currentHost=hostSnap.val();
       Object.entries(ps).sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).forEach(([pid,p])=>{
         const c=avc(p.name,p.color);
         const el=document.createElement('div');
         el.className='pl-item';
+        const avatarContent=p.emoji||p.name.charAt(0);
+        const frameClass=p.frame?'av-frame-'+p.frame:'';
         const badges=[];
         if(pid===S.pId)badges.push('<span class="you-b">אתה</span>');
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
-        el.innerHTML=`<div class="pl-av" style="background:${c}22;color:${c}">${p.name.charAt(0)}</div>
-          <span class="pl-name">${p.name}</span>${badges.join('')}`;
+        el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="pl-name">${p.name}</div>
+            ${p.tag?`<div style="font-size:.68rem;color:var(--muted);margin-top:1px;">${p.tag}</div>`:''}
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">${badges.join('')}</div>`;
         list.appendChild(el);
       });
       const btn=document.getElementById('start-btn');
       if(btn)btn.disabled=activePlayers.length<2;
-      // Update publicRooms player count
       if(S.isHost&&S.visibility!=='private'){
         update(ref(db,'publicRooms/'+S.roomId),{playerCount:activePlayers.length}).catch(()=>{});
       }
