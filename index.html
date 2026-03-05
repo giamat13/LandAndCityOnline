@@ -365,6 +365,16 @@
   .entry-glitch{animation:entryGlitch .7s steps(1)!important;}
   .entry-drop{animation:entryDrop .65s cubic-bezier(.34,1.56,.64,1)!important;}
   .entry-pop{animation:entryPop .6s cubic-bezier(.34,1.56,.64,1)!important;}
+  /* my rooms */
+  .my-room-card{background:var(--surface);border:1px solid rgba(168,85,247,.3);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;box-shadow:var(--sh);}
+  .my-room-card:hover{border-color:#a855f7;transform:translateY(-1px);}
+  .my-room-pin{font-size:1.3rem;flex-shrink:0;}
+  .my-room-info{flex:1;min-width:0;}
+  .my-room-name{font-size:.95rem;font-weight:800;}
+  .my-room-meta{font-size:.74rem;color:var(--muted);margin-top:2px;}
+  .my-room-code{font-size:.78rem;font-weight:800;color:#a855f7;letter-spacing:.1em;}
+  .my-room-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 6px;border-radius:8px;transition:color .2s;flex-shrink:0;}
+  .my-room-del:hover{color:var(--red);}
   /* room name in lobby */
   .lobby-room-name{text-align:center;font-size:1.15rem;font-weight:900;color:var(--text);margin-bottom:10px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
   /* visibility selector */
@@ -463,6 +473,13 @@
       </div>
       <button class="btn btn-s" id="btn-join-spec" style="margin-top:4px;opacity:.7;font-size:.88rem;padding:10px 28px;">👁 הצטרף כצופה</button>
     </div>
+    <!-- My Rooms -->
+    <div id="my-rooms-section" style="margin-top:16px;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">📌 החדרים שלי</span>
+      </div>
+      <div id="my-rooms-list"></div>
+    </div>
     <!-- Public rooms -->
     <div class="card" style="margin-top:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -520,6 +537,10 @@
         <div class="tog on" id="tog-sb-el"></div>
         <span class="tog-label">לוח ניקוד מצטבר (כבוי = כל סיבוב בנפרד)</span>
       </div>
+      <div class="tog-wrap" id="tog-permanent" style="margin-bottom:16px;">
+        <div class="tog" id="tog-permanent-el"></div>
+        <span class="tog-label">📌 חדר קבוע – לא יימחק אוטומטית, יישמר ב"החדרים שלי"</span>
+      </div>
       <h3 style="margin-bottom:10px;">🌐 נראות חדר</h3>
       <div class="vis-opts" id="vis-opts">
         <div class="vis-opt sel" data-v="private">
@@ -542,7 +563,7 @@
   <!-- LOBBY -->
   <div id="screen-lobby" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-      <button class="btn btn-s btn-sm" style="width:auto" id="btn-leave-room">← עזוב</button>
+      <button class="btn btn-s btn-sm" style="width:auto" id="btn-leave-room">← יציאה</button>
       <span class="sp"><span class="dot"></span>ממתין לשחקנים</span>
     </div>
     <div id="lobby-room-name-wrap" style="display:none;margin-bottom:10px;">
@@ -833,7 +854,10 @@
     chatUnread:0,
     chatListener:null,
     cumulativeSB:true,
-    visibility:'private'
+    visibility:'private',
+    expiryInt:null,
+    warnedExpiry:false,
+    isPermanent:false
   };
   let S_pColor=AVATAR_COLORS[0];
   let S_pEmoji=null;   // null = use first letter
@@ -1056,6 +1080,56 @@
     }catch(e){return false;}
   }
 
+  // ─── PERMANENT ROOMS (local storage) ────────────────────────────
+  function loadMyRooms(){
+    try{return JSON.parse(localStorage.getItem('lac_myrooms')||'[]');}catch(e){return [];}
+  }
+  function saveMyRoom(roomId, roomName, cats){
+    try{
+      const rooms=loadMyRooms().filter(r=>r.id!==roomId);
+      rooms.unshift({id:roomId,name:roomName,cats,savedAt:Date.now()});
+      localStorage.setItem('lac_myrooms',JSON.stringify(rooms.slice(0,10)));
+    }catch(e){}
+  }
+  function deleteMyRoom(roomId){
+    try{
+      const rooms=loadMyRooms().filter(r=>r.id!==roomId);
+      localStorage.setItem('lac_myrooms',JSON.stringify(rooms));
+    }catch(e){}
+  }
+  function renderMyRooms(){
+    const rooms=loadMyRooms();
+    const section=document.getElementById('my-rooms-section');
+    const list=document.getElementById('my-rooms-list');
+    if(!section||!list)return;
+    if(!rooms.length){section.style.display='none';return;}
+    section.style.display='block';
+    list.innerHTML='';
+    rooms.forEach(r=>{
+      const card=document.createElement('div');
+      card.className='my-room-card';
+      const cats=(r.cats||[]).slice(0,4).map(c=>c.emoji||'').join(' ');
+      card.innerHTML=`
+        <div class="my-room-pin">📌</div>
+        <div class="my-room-info">
+          <div class="my-room-name">${r.name||r.id}</div>
+          <div class="my-room-meta">${cats}</div>
+          <div class="my-room-code">${r.id}</div>
+        </div>
+        <button class="my-room-del" title="הסר מהרשימה">🗑️</button>`;
+      card.querySelector('.my-room-del').addEventListener('click',e=>{
+        e.stopPropagation();
+        deleteMyRoom(r.id);
+        renderMyRooms();
+      });
+      card.addEventListener('click',()=>{
+        document.getElementById('join-code').value=r.id;
+        joinRoom(false);
+      });
+      list.appendChild(card);
+    });
+  }
+
   function updateHomeIdentity(){
     const av=document.getElementById('home-av');
     const nm=document.getElementById('home-pname');
@@ -1127,6 +1201,7 @@
   // ─── PUBLIC ROOMS ─────────────────────────────────────────────────
   let pubRoomsListener=null;
   function initPublicRooms(){
+    cleanupStaleRooms();
     if(pubRoomsListener){off(pubRoomsListener.r,'value',pubRoomsListener.fn);pubRoomsListener=null;}
     const r=ref(db,'publicRooms');
     const fn=snap=>{
@@ -1169,6 +1244,7 @@
   }
   document.getElementById('btn-refresh-pub').addEventListener('click',initPublicRooms);
   initPublicRooms();
+  renderMyRooms();
 
   async function joinPublicRoom(roomId, pubData){
     const n=document.getElementById('player-name').value.trim();
@@ -1221,7 +1297,7 @@
     let h=0;for(const c of name)h=h*31+c.charCodeAt(0);
     return AVC[Math.abs(h)%AVC.length];
   }
-  const INACTIVITY_MS = 15 * 60 * 1000;
+  const INACTIVITY_MS = 1 * 60 * 1000; // TEST: 1 minute
 
   // ─── SESSION PERSISTENCE ──────────────────────────────────────────
   function saveSession(){
@@ -1251,6 +1327,7 @@
       S.totScores=sess.totScores||{};
       S.cats=room.categories||[];
       S.rTime=room.roundTime||30;
+      S.isPermanent=room.isPermanent||false;
       S.currentCatIndex=room.currentCatIndex||0;
       S.isSpectator=sess.isSpectator||false;
       S.totalRounds=room.totalRounds||0;
@@ -1265,26 +1342,30 @@
     }catch(e){clearSession();}
   }
 
-  // ─── ACTIVITY & 10-MIN EXPIRY ─────────────────────────────────────
+  // ─── ACTIVITY & EXPIRY ────────────────────────────────────────────
   function touchActivity(){
-    if(S.roomId)update(ref(db,'rooms/'+S.roomId),{lastActivity:Date.now()});
-  }
-  async function checkExpiry(){
     if(!S.roomId)return;
+    const now=Date.now();
+    update(ref(db,'rooms/'+S.roomId),{lastActivity:now});
+    set(ref(db,'roomActivity/'+S.roomId),now).catch(()=>{});
+  }
+
+  // ─── GLOBAL STALE ROOM CLEANUP (runs on every page load) ──────────
+  async function cleanupStaleRooms(){
     try{
-      const snap=await get(ref(db,'rooms/'+S.roomId+'/lastActivity'));
-      if(snap.exists()&&Date.now()-snap.val()>INACTIVITY_MS){
-        const expiredId=S.roomId;
-        await remove(ref(db,'rooms/'+expiredId));
-        remove(ref(db,'publicRooms/'+expiredId)).catch(()=>{});
-        clearSession();detach();clearInterval(S.timerInt);
-        S.roomId='';S.isHost=false;
-        showScreen('home');
-        toast('החדר נמחק – אין פעילות 15 דקות');
-      }
+      const snap=await get(ref(db,'roomActivity'));
+      if(!snap.exists())return;
+      const data=snap.val();
+      const now=Date.now();
+      // roomActivity only contains non-permanent rooms, so no extra check needed
+      const stale=Object.entries(data).filter(([,ts])=>now-ts>INACTIVITY_MS);
+      await Promise.all(stale.map(([id])=>Promise.all([
+        remove(ref(db,'rooms/'+id)).catch(()=>{}),
+        remove(ref(db,'publicRooms/'+id)).catch(()=>{}),
+        remove(ref(db,'roomActivity/'+id)).catch(()=>{})
+      ])));
     }catch(e){}
   }
-  setInterval(checkExpiry,60000);
 
   // ─── UTILS ────────────────────────────────────────────────────────
   function showScreen(id){
@@ -1353,6 +1434,10 @@
   document.getElementById('tog-sb-mode').addEventListener('click',()=>{
     S.cumulativeSB=!S.cumulativeSB;
     document.getElementById('tog-sb-el').classList.toggle('on',S.cumulativeSB);
+  });
+  document.getElementById('tog-permanent').addEventListener('click',()=>{
+    S.isPermanent=!S.isPermanent;
+    document.getElementById('tog-permanent-el').classList.toggle('on',S.isPermanent);
   });
 
   function addCC(){
@@ -1484,6 +1569,14 @@
         status:'lobby',createdAt:Date.now()
       });
     }
+    // Permanent rooms skip the expiry index; regular rooms register for cleanup
+    if(S.isPermanent){
+      saveMyRoom(roomId, roomName, active.slice(0,5));
+      renderMyRooms();
+      await update(ref(db,'rooms/'+roomId),{isPermanent:true});
+    } else {
+      set(ref(db,'roomActivity/'+roomId),Date.now()).catch(()=>{});
+    }
     saveSession();
     enterLobby();
   };
@@ -1507,7 +1600,7 @@
     }
 
     S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
-    S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};
+    S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;
     S.currentCatIndex=room.currentCatIndex||0;
     S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
     S.cumulativeSB=room.cumulativeSB!==false;
@@ -1534,6 +1627,79 @@
     showChatFab(true);
     initChat();
     initFloatEmojis();
+    startExpiryWatcher();
+  }
+
+  // ─── EXPIRY WATCHER ───────────────────────────────────────────────
+  function startExpiryWatcher(){
+    clearInterval(S.expiryInt);
+    S.warnedExpiry=false;
+    if(S.isPermanent)return; // permanent rooms never expire
+    S.expiryInt=setInterval(async()=>{
+      if(!S.roomId)return clearInterval(S.expiryInt);
+      try{
+        const snap=await get(ref(db,'roomActivity/'+S.roomId));
+        if(!snap.exists()){
+          // Room was already deleted by cleanup
+          clearInterval(S.expiryInt);
+          handleRoomDeleted();
+          return;
+        }
+        const age=Date.now()-snap.val();
+        if(age>INACTIVITY_MS){
+          // Cleanup hasn't run yet but we're past the limit — leave now
+          clearInterval(S.expiryInt);
+          handleRoomDeleted();
+        } else if(!S.warnedExpiry && age>(INACTIVITY_MS - 10000)){
+          // Within last minute before expiry — warn once
+          S.warnedExpiry=true;
+          showExpiryWarning();
+        }
+      }catch(e){}
+    },3000); // TEST: check every 3 seconds
+  }
+
+  function showExpiryWarning(){
+    const banner=document.createElement('div');
+    banner.id='expiry-warning-banner';
+    banner.style.cssText=`position:fixed;top:16px;left:50%;transform:translateX(-50%);
+      background:rgba(233,69,96,.95);border:1px solid rgba(255,255,255,.2);
+      border-radius:14px;padding:12px 20px;z-index:1800;
+      box-shadow:0 8px 32px rgba(233,69,96,.5);animation:fadeUp .3s ease;
+      text-align:center;max-width:320px;width:90%;`;
+    banner.innerHTML=`<div style="font-size:.95rem;font-weight:900;color:#fff;">⚠️ החדר יימחק בעוד דקה</div>
+      <div style="font-size:.78rem;color:rgba(255,255,255,.8);margin-top:4px;">אין פעילות – התחל סיבוב כדי להישאר</div>`;
+    document.body.appendChild(banner);
+    setTimeout(()=>{
+      banner.style.animation='bannerFade .35s ease forwards';
+      setTimeout(()=>banner.remove(),350);
+    },8000);
+  }
+
+  function handleRoomDeleted(){
+    document.getElementById('expiry-warning-banner')?.remove();
+    clearInterval(S.timerInt);
+    detach();detachChat();clearSession();
+    S.roomId='';S.isHost=false;S.warnedExpiry=false;
+    showChatFab(false);
+    showScreen('home');
+    // Show prominent full-screen notice
+    const overlay=document.createElement('div');
+    overlay.style.cssText=`position:fixed;inset:0;z-index:2500;
+      background:rgba(10,10,25,.92);backdrop-filter:blur(10px);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:16px;padding:24px;`;
+    overlay.innerHTML=`
+      <div style="font-size:3rem;">🕐</div>
+      <div style="font-size:1.4rem;font-weight:900;color:#fff;text-align:center;">החדר נמחק</div>
+      <div style="font-size:.95rem;color:rgba(255,255,255,.65);text-align:center;">לא הייתה פעילות במשך 15 דקות</div>
+      <button style="margin-top:8px;background:var(--red);color:#fff;border:none;border-radius:12px;
+        padding:12px 32px;font-family:'Heebo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;">
+        חזור לדף הבית
+      </button>`;
+    overlay.querySelector('button').addEventListener('click',()=>overlay.remove());
+    document.body.appendChild(overlay);
+    setTimeout(()=>overlay.remove(),6000);
   }
 
   // ─── ENTRY EFFECT ─────────────────────────────────────────────────
@@ -1601,13 +1767,20 @@
     showScreen('lobby');
     enterRoom();
 
-    // Show room name
+    // Show room name + save permanent room for this participant
     (async()=>{
-      const snap=await get(ref(db,`rooms/${S.roomId}/roomName`));
-      const rn=snap.val();
+      const snap=await get(ref(db,`rooms/${S.roomId}`));
+      const rd=snap.val()||{};
+      const rn=rd.roomName;
       const wrap=document.getElementById('lobby-room-name-wrap');
       const txt=document.getElementById('lobby-room-name-text');
       if(rn&&wrap&&txt){wrap.style.display='block';txt.textContent='🏠 '+rn;}
+      // If permanent room, save to this participant's my-rooms
+      if(rd.isPermanent){
+        S.isPermanent=true;
+        saveMyRoom(S.roomId, rn||S.roomId, (rd.categories||[]).slice(0,5));
+        renderMyRooms();
+      }
     })();
 
     let prevPlayerIds=new Set();
@@ -1721,17 +1894,66 @@
     }
   }
 
-  async function leaveRoom(){
-    clearInterval(S.timerInt);detach();
-    if(S.roomId&&S.pId){
+  function leaveRoom(){
+    const isPerm=S.isPermanent;
+    // Show exit options modal
+    const modal=document.createElement('div');
+    modal.style.cssText=`position:fixed;inset:0;z-index:2500;background:rgba(10,10,25,.88);
+      backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px;`;
+    modal.innerHTML=`
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;
+        padding:28px 24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+        <div style="font-size:1.2rem;font-weight:900;margin-bottom:6px;text-align:center;">יציאה מהחדר</div>
+        <div style="font-size:.85rem;color:var(--muted);margin-bottom:20px;text-align:center;">איך תרצה לצאת?</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${isPerm?`
+          <button id="ml-keep" class="btn btn-s" style="text-align:right;gap:10px;">
+            <span style="font-size:1.1rem;">📌</span>
+            <div style="text-align:right;flex:1;">
+              <div style="font-weight:800;">יציאה פשוטה</div>
+              <div style="font-size:.75rem;color:var(--muted);font-weight:400;">החדר נשאר ב"החדרים שלי"</div>
+            </div>
+          </button>
+          <button id="ml-del" class="btn btn-s" style="text-align:right;gap:10px;border-color:rgba(233,69,96,.3);">
+            <span style="font-size:1.1rem;">🗑️</span>
+            <div style="text-align:right;flex:1;">
+              <div style="font-weight:800;color:var(--red);">יציאה והסרה</div>
+              <div style="font-size:.75rem;color:var(--muted);font-weight:400;">מסיר גם מ"החדרים שלי"</div>
+            </div>
+          </button>`:`
+          <button id="ml-keep" class="btn btn-s" style="text-align:right;gap:10px;">
+            <span style="font-size:1.1rem;">🚪</span>
+            <div style="text-align:right;flex:1;">
+              <div style="font-weight:800;">יציאה מהחדר</div>
+            </div>
+          </button>`}
+          <button id="ml-cancel" class="btn btn-s" style="opacity:.6;font-size:.88rem;">ביטול</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('#ml-cancel').addEventListener('click',()=>modal.remove());
+    if(isPerm){
+      modal.querySelector('#ml-keep').addEventListener('click',()=>{modal.remove();doLeaveRoom(false);});
+      modal.querySelector('#ml-del').addEventListener('click',()=>{modal.remove();doLeaveRoom(true);});
+    } else {
+      modal.querySelector('#ml-keep').addEventListener('click',()=>{modal.remove();doLeaveRoom(false);});
+    }
+  }
+
+  async function doLeaveRoom(removeFromMyRooms){
+    const roomId=S.roomId;
+    clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
+    if(roomId&&S.pId){
       if(S.isHost){
         await transferHost();
-        if(S.visibility!=='private') remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});
+        if(S.visibility!=='private') remove(ref(db,'publicRooms/'+roomId)).catch(()=>{});
       }
-      await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
+      await remove(ref(db,`rooms/${roomId}/players/${S.pId}`)).catch(()=>{});
     }
-    detachChat();clearSession();S.roomId='';S.isHost=false;S.isSpectator=false;
+    if(removeFromMyRooms) deleteMyRoom(roomId);
+    detachChat();clearSession();S.roomId='';S.isHost=false;S.isSpectator=false;S.isPermanent=false;
     showChatFab(false);
+    renderMyRooms();
     showScreen('home');
   };
 
@@ -2097,7 +2319,7 @@
 
   // ─── VOTING ───────────────────────────────────────────────────────
   async function showVoting(){
-    clearInterval(S.timerInt);detach();
+    clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
     enterRoom();
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
@@ -2281,7 +2503,7 @@
 
   // ─── RESULTS ──────────────────────────────────────────────────────
   async function showResults(){
-    clearInterval(S.timerInt);detach();
+    clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
     enterRoom();
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
@@ -2641,7 +2863,7 @@
   }
 
   async function showFinal(){
-    clearInterval(S.timerInt);detach();clearSession();
+    clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();clearSession();
     const snap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=snap.val()||{};
     renderSB('final-sb',players);
@@ -2695,7 +2917,7 @@
   }
 
   function goHome(){
-    clearInterval(S.timerInt);detach();detachChat();clearSession();
+    clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();detachChat();clearSession();
     S.roomId='';S.isHost=false;S.totScores={};S.isSpectator=false;
     showChatFab(false);
     showScreen('home');
@@ -2703,7 +2925,7 @@
 
   async function exitGame(){
     if(!confirm('לצאת מהמשחק?'))return;
-    clearInterval(S.timerInt);detach();
+    clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
     if(S.roomId&&S.pId){
       if(S.isHost)await transferHost();
       await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
