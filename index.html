@@ -365,6 +365,23 @@
   .entry-glitch{animation:entryGlitch .7s steps(1)!important;}
   .entry-drop{animation:entryDrop .65s cubic-bezier(.34,1.56,.64,1)!important;}
   .entry-pop{animation:entryPop .6s cubic-bezier(.34,1.56,.64,1)!important;}
+  /* settings modal */
+  .settings-modal-backdrop{position:fixed;inset:0;z-index:2400;background:rgba(10,10,25,.88);backdrop-filter:blur(10px);overflow-y:auto;padding:20px 16px;}
+  .settings-modal-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;max-width:540px;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+  .settings-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .settings-modal-hdr h2{font-size:1.15rem;font-weight:900;}
+  .settings-modal-close{background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;padding:2px 8px;border-radius:8px;line-height:1;}
+  .settings-modal-close:hover{color:var(--text);}
+  /* invite */
+  .invite-link-box{background:var(--s2);border:1.5px dashed rgba(168,85,247,.4);border-radius:12px;padding:12px 14px;margin-top:10px;display:flex;align-items:center;gap:10px;word-break:break-all;}
+  .invite-link-txt{flex:1;font-size:.75rem;color:#a855f7;font-weight:700;}
+  .invite-copy-btn{background:rgba(168,85,247,.15);color:#a855f7;border:1.5px solid rgba(168,85,247,.3);border-radius:8px;padding:6px 12px;font-family:'Heebo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0;}
+  .invite-copy-btn:hover{background:rgba(168,85,247,.3);}
+  .invite-item{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px 14px;margin-bottom:7px;}
+  .invite-item-info{flex:1;font-size:.82rem;}
+  .invite-item-exp{font-size:.72rem;color:var(--muted);}
+  .invite-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 5px;border-radius:6px;}
+  .invite-del:hover{color:var(--red);}
   /* my rooms */
   .my-room-card{background:var(--surface);border:1px solid rgba(168,85,247,.3);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;box-shadow:var(--sh);}
   .my-room-card:hover{border-color:#a855f7;transform:translateY(-1px);}
@@ -565,6 +582,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <button class="btn btn-s btn-sm" style="width:auto" id="btn-leave-room">← יציאה</button>
       <span class="sp"><span class="dot"></span>ממתין לשחקנים</span>
+      <button id="btn-room-settings" style="display:none;background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color .2s;" title="הגדרות חדר">⚙️</button>
     </div>
     <div id="lobby-room-name-wrap" style="display:none;margin-bottom:10px;">
       <div class="lobby-room-name" id="lobby-room-name-text"></div>
@@ -589,6 +607,7 @@
       </div>
       <button class="btn btn-g" id="start-btn" disabled>🎯 התחל משחק</button>
       <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
+      <button id="btn-invite-tmp" class="btn btn-s" style="display:none;margin-top:10px;">📨 הזמן משתמש זמני</button>
     </div>
     <div id="guest-wait" style="display:none;">
       <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
@@ -1274,11 +1293,32 @@
   (function checkUrlRoom(){
     const params=new URLSearchParams(window.location.search);
     const rc=params.get('room');
+    const inv=params.get('inv');
+    window.history.replaceState({},'',window.location.pathname);
     if(rc){
       const inp=document.getElementById('join-code');
       if(inp)inp.value=rc.toUpperCase();
-      // Clean URL without reload
-      window.history.replaceState({},'',window.location.pathname);
+    }
+    if(inv&&rc){
+      // Validate invite token then auto-join
+      (async()=>{
+        const tokRef=ref(db,`rooms/${rc}/invites/${inv}`);
+        const snap=await get(tokRef);
+        if(!snap.exists()){toast('קישור הזמנה לא תקין 😕');return;}
+        const t=snap.val();
+        if(t.exp<Date.now()){toast('קישור ההזמנה פג תוקף ⏰');remove(tokRef);return;}
+        if(t.maxUses>0&&t.uses>=t.maxUses){toast('קישור ההזמנה מוצה 🚫');return;}
+        // Increment use count
+        await update(tokRef,{uses:(t.uses||0)+1});
+        // Auto join once profile loads
+        const tryJoin=()=>{
+          const n=document.getElementById('player-name').value.trim();
+          if(!n){setTimeout(tryJoin,300);return;}
+          document.getElementById('join-code').value=rc.toUpperCase();
+          joinRoom(false);
+        };
+        setTimeout(tryJoin,400);
+      })();
     }
   })();
   const DCATS=[
@@ -1622,6 +1662,210 @@
     }
   };
 
+
+  // ─── ROOM SETTINGS MODAL ─────────────────────────────────────────
+  async function openRoomSettings(){
+    const snap=await get(ref(db,'rooms/'+S.roomId));
+    const room=snap.val()||{};
+    const curCats=(room.categories||[]).map(c=>c.id);
+    const curCustom=(room.categories||[]).filter(c=>c.id.startsWith('cc_')).map(c=>c.name);
+    const curTime=room.roundTime||30;
+    const curName=room.roomName||'';
+    const curShowVoters=room.showVoters||false;
+    const curSB=room.cumulativeSB!==false;
+    const curVis=room.visibility||'private';
+    const backdrop=document.createElement('div');
+    backdrop.className='settings-modal-backdrop';
+    const catsHtml=DCATS.map(c=>`
+      <div class="cat-tog${curCats.includes(c.id)?' active':''}" data-id="${c.id}">
+        <span class="em">${c.emoji}</span><span class="cn">${c.name}</span><span class="ck"></span>
+      </div>`).join('');
+    const timeBtns=[30,45,60,90].map(v=>`<button class="time-btn${v===curTime?' active':''}" data-v="${v}">${v} שנ'</button>`).join('');
+    backdrop.innerHTML=`<div class="settings-modal-box">
+      <div class="settings-modal-hdr">
+        <h2>⚙️ הגדרות חדר</h2>
+        <button class="settings-modal-close" id="smc-close">×</button>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3>🏠 שם החדר</h3>
+        <input type="text" id="smc-name" value="${curName}" maxlength="30" style="margin-top:8px;">
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3>📋 קטגוריות</h3>
+        <div class="cats-grid" id="smc-cats-grid">${catsHtml}</div>
+        <div style="margin-top:14px;"><h3>➕ קטגוריה מותאמת</h3>
+          <div class="cc-row">
+            <input type="text" id="smc-cc-inp" placeholder="לדוגמה: סרט..." maxlength="20">
+            <button class="btn btn-s btn-sm" id="smc-add-cc">הוסף</button>
+          </div>
+          <div class="cc-tags" id="smc-cc-tags"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3>⏱️ זמן לקטגוריה</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">${timeBtns}
+          <button class="time-btn${[30,45,60,90].includes(curTime)?'':' active'}" data-v="custom" id="smc-custom-btn">✏️ מותאם</button>
+        </div>
+        <div id="smc-custom-row" style="display:${[30,45,60,90].includes(curTime)?'none':'flex'};margin-top:10px;align-items:center;gap:10px;">
+          <input type="number" id="smc-custom-inp" min="10" max="300" value="${[30,45,60,90].includes(curTime)?'':curTime}" placeholder="שניות..." style="width:120px;text-align:center;font-size:1rem;">
+          <span style="color:var(--muted);font-size:.85rem;">שניות (10–300)</span>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3>⚙️ הגדרות</h3>
+        <div class="tog-wrap" style="margin-bottom:14px;">
+          <div class="tog${curShowVoters?' on':''}" id="smc-tog-voters"></div>
+          <span class="tog-label">הצג מי הצביע פסול</span>
+        </div>
+        <div class="tog-wrap" style="margin-bottom:14px;">
+          <div class="tog${curSB?' on':''}" id="smc-tog-sb"></div>
+          <span class="tog-label">לוח ניקוד מצטבר</span>
+        </div>
+        <h3 style="margin-bottom:10px;">🌐 נראות</h3>
+        <div class="vis-opts" id="smc-vis-opts">
+          <div class="vis-opt${curVis==='private'?' sel':''}" data-v="private"><div class="vo-radio"></div><div><div class="vo-label">🔒 פרטי</div></div></div>
+          <div class="vis-opt${curVis==='request'?' sel':''}" data-v="request"><div class="vo-radio"></div><div><div class="vo-label">🔔 בקשה</div></div></div>
+          <div class="vis-opt${curVis==='public'?' sel':''}" data-v="public"><div class="vo-radio"></div><div><div class="vo-label">🌐 ציבורי</div></div></div>
+        </div>
+      </div>
+      <button class="btn btn-p" id="smc-save">💾 שמור הגדרות</button>
+    </div>`;
+    document.body.appendChild(backdrop);
+    let smcCustom=[...curCustom];
+    let smcTime=curTime;
+    function renderSmcCcTags(){
+      const wrap=backdrop.querySelector('#smc-cc-tags');
+      wrap.innerHTML='';
+      smcCustom.forEach((c,i)=>{
+        const el=document.createElement('div');
+        el.className='cc-tag';el.textContent=c;
+        el.onclick=()=>{smcCustom.splice(i,1);renderSmcCcTags();};
+        wrap.appendChild(el);
+      });
+    }
+    renderSmcCcTags();
+    backdrop.querySelector('#smc-close').addEventListener('click',()=>backdrop.remove());
+    backdrop.addEventListener('click',e=>{if(e.target===backdrop)backdrop.remove();});
+    backdrop.querySelector('#smc-add-cc').addEventListener('click',()=>{
+      const v=backdrop.querySelector('#smc-cc-inp').value.trim();
+      if(!v)return;
+      if(!smcCustom.includes(v))smcCustom.push(v);
+      backdrop.querySelector('#smc-cc-inp').value='';
+      renderSmcCcTags();
+    });
+    backdrop.querySelector('#smc-cc-inp').addEventListener('keydown',e=>{if(e.key==='Enter')backdrop.querySelector('#smc-add-cc').click();});
+    backdrop.querySelectorAll('#smc-cats-grid .cat-tog').forEach(el=>el.addEventListener('click',()=>el.classList.toggle('active')));
+    backdrop.querySelectorAll('.time-btn').forEach(btn=>btn.addEventListener('click',()=>{
+      const v=btn.dataset.v;
+      backdrop.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const cr=backdrop.querySelector('#smc-custom-row');
+      if(v==='custom'){cr.style.display='flex';}
+      else{cr.style.display='none';smcTime=parseInt(v);}
+    }));
+    backdrop.querySelector('#smc-custom-inp').addEventListener('input',e=>{smcTime=Math.min(300,Math.max(10,parseInt(e.target.value)||10));});
+    backdrop.querySelector('#smc-tog-voters').addEventListener('click',function(){this.classList.toggle('on');});
+    backdrop.querySelector('#smc-tog-sb').addEventListener('click',function(){this.classList.toggle('on');});
+    backdrop.querySelectorAll('#smc-vis-opts .vis-opt').forEach(opt=>opt.addEventListener('click',()=>{
+      backdrop.querySelectorAll('#smc-vis-opts .vis-opt').forEach(o=>o.classList.remove('sel'));
+      opt.classList.add('sel');
+    }));
+    backdrop.querySelector('#smc-save').addEventListener('click',async()=>{
+      const active=[...backdrop.querySelectorAll('#smc-cats-grid .cat-tog.active')].map(el=>{
+        const c=DCATS.find(x=>x.id===el.dataset.id);
+        return c?{id:c.id,name:c.name,emoji:c.emoji}:null;
+      }).filter(Boolean);
+      smcCustom.forEach((name,i)=>active.push({id:'cc_'+i,name,emoji:'⭐'}));
+      if(!active.length){toast('בחר לפחות קטגוריה אחת');return;}
+      const ci=backdrop.querySelector('#smc-custom-inp');
+      if(backdrop.querySelector('#smc-custom-row').style.display!=='none'&&ci.value){
+        smcTime=Math.min(300,Math.max(10,parseInt(ci.value)||10));
+      }
+      const newName=backdrop.querySelector('#smc-name').value.trim()||curName||('החדר של '+S.pName);
+      const newVis=(backdrop.querySelector('#smc-vis-opts .vis-opt.sel')||{dataset:{v:curVis}}).dataset.v;
+      const newShowVoters=backdrop.querySelector('#smc-tog-voters').classList.contains('on');
+      const newSB=backdrop.querySelector('#smc-tog-sb').classList.contains('on');
+      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.visibility=newVis;
+      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,visibility:newVis,roomName:newName});
+      if(newVis!=='private'){
+        await set(ref(db,'publicRooms/'+S.roomId),{hostName:S.pName,visibility:newVis,roomName:newName,cats:active.slice(0,5).map(c=>({emoji:c.emoji,name:c.name})),roundTime:smcTime,playerCount:Object.keys(room.players||{}).length,status:'lobby',createdAt:room.createdAt||Date.now()});
+      }else{remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});}
+      if(S.isPermanent)saveMyRoom(S.roomId,newName,active.slice(0,5));
+      document.getElementById('lobby-cats').innerHTML=active.map(c=>'<span class="cb">'+c.emoji+' '+c.name+'</span>').join('');
+      const rntxt=document.getElementById('lobby-room-name-text');
+      if(rntxt){rntxt.textContent='🏠 '+newName;document.getElementById('lobby-room-name-wrap').style.display='block';}
+      backdrop.remove();
+      toast('✅ הגדרות עודכנו!');
+    });
+  }
+
+  // ─── TEMP INVITE ──────────────────────────────────────────────────
+  async function openInvitePanel(){
+    const backdrop=document.createElement('div');
+    backdrop.className='settings-modal-backdrop';
+    async function buildInviteHtml(){
+      const snap=await get(ref(db,'rooms/'+S.roomId+'/invites'));
+      const invites=snap.val()||{};
+      const now=Date.now();
+      const valid=Object.entries(invites).filter(([,v])=>v.exp>now);
+      if(!valid.length)return '<div style="color:var(--muted);font-size:.85rem;text-align:center;padding:10px 0;">אין הזמנות פעילות</div>';
+      return valid.map(([tok,v])=>{
+        const h=Math.ceil((v.exp-now)/3600000);
+        const link=location.origin+location.pathname+'?inv='+tok+'&room='+S.roomId;
+        return '<div class="invite-item"><div class="invite-item-info"><div style="font-weight:700;font-size:.85rem;">'+v.label+'</div><div class="invite-item-exp">⏳ '+h+' שעות נותרו · '+v.uses+' שימושים</div></div><button class="invite-copy-btn" data-link="'+link+'">📋 העתק</button><button class="invite-del" data-tok="'+tok+'">🗑️</button></div>';
+      }).join('');
+    }
+    backdrop.innerHTML=`<div class="settings-modal-box">
+      <div class="settings-modal-hdr"><h2>📨 הזמנות זמניות</h2><button class="settings-modal-close" id="inv-close">×</button></div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 style="margin-bottom:12px;">✨ צור הזמנה חדשה</h3>
+        <input type="text" id="inv-label" placeholder='תווית (לדוגמה: "שחקן אורח")' maxlength="20" style="margin-bottom:10px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+          <span style="font-size:.82rem;color:var(--muted);">תוקף:</span>
+          <button class="time-btn active" data-exp="3600000">שעה</button>
+          <button class="time-btn" data-exp="86400000">יום</button>
+          <button class="time-btn" data-exp="604800000">שבוע</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+          <span style="font-size:.82rem;color:var(--muted);">שימושים:</span>
+          <button class="time-btn active" data-uses="1">× 1</button>
+          <button class="time-btn" data-uses="5">× 5</button>
+          <button class="time-btn" data-uses="0">ללא הגבלה</button>
+        </div>
+        <button class="btn btn-p" id="inv-create">✨ צור והעתק לינק</button>
+      </div>
+      <div class="card"><h3 style="margin-bottom:10px;">🔗 הזמנות פעילות</h3><div id="inv-list">טוען...</div></div>
+    </div>`;
+    document.body.appendChild(backdrop);
+    buildInviteHtml().then(h=>{backdrop.querySelector('#inv-list').innerHTML=h;});
+    let selExp=3600000,selUses=1;
+    backdrop.querySelector('#inv-close').addEventListener('click',()=>backdrop.remove());
+    backdrop.addEventListener('click',e=>{if(e.target===backdrop)backdrop.remove();});
+    backdrop.querySelectorAll('[data-exp]').forEach(btn=>btn.addEventListener('click',()=>{
+      backdrop.querySelectorAll('[data-exp]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');selExp=parseInt(btn.dataset.exp);
+    }));
+    backdrop.querySelectorAll('[data-uses]').forEach(btn=>btn.addEventListener('click',()=>{
+      backdrop.querySelectorAll('[data-uses]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');selUses=parseInt(btn.dataset.uses);
+    }));
+    backdrop.querySelector('#inv-create').addEventListener('click',async()=>{
+      const label=backdrop.querySelector('#inv-label').value.trim()||'הזמנה';
+      const tok=gid(12);
+      const exp=Date.now()+selExp;
+      await set(ref(db,'rooms/'+S.roomId+'/invites/'+tok),{exp,maxUses:selUses,uses:0,label,by:S.pName});
+      const link=location.origin+location.pathname+'?inv='+tok+'&room='+S.roomId;
+      navigator.clipboard.writeText(link).catch(()=>{});
+      toast('✅ הזמנה נוצרה והועתקה!');
+      backdrop.querySelector('#inv-list').innerHTML=await buildInviteHtml();
+      backdrop.querySelector('#inv-label').value='';
+    });
+    backdrop.querySelector('#inv-list').addEventListener('click',async e=>{
+      if(e.target.classList.contains('invite-copy-btn')){navigator.clipboard.writeText(e.target.dataset.link).then(()=>toast('לינק הועתק! 🔗'));}
+      if(e.target.classList.contains('invite-del')){await remove(ref(db,'rooms/'+S.roomId+'/invites/'+e.target.dataset.tok));backdrop.querySelector('#inv-list').innerHTML=await buildInviteHtml();}
+    });
+  }
+
   // ─── LOBBY ────────────────────────────────────────────────────────
   function enterRoom(){
     showChatFab(true);
@@ -1762,6 +2006,10 @@
     S.totalRounds=S.totalRounds||0;
     document.getElementById('lobby-code').textContent=S.roomId;
     document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
+    const _settingsBtn=document.getElementById('btn-room-settings');
+    const _inviteBtn=document.getElementById('btn-invite-tmp');
+    if(_settingsBtn) _settingsBtn.style.display=S.isHost?'inline-flex':'none';
+    if(_inviteBtn) _inviteBtn.style.display=(S.isHost&&S.isPermanent)?'flex':'none';
     document.getElementById('guest-wait').style.display=S.isHost?'none':'block';
     document.getElementById('lobby-cats').innerHTML=S.cats.map(c=>`<span class="cb">${c.emoji} ${c.name}</span>`).join('');
     showScreen('lobby');
@@ -3114,6 +3362,9 @@
   document.getElementById('btn-add-cc').addEventListener('click',addCC);
   document.getElementById('btn-create-room').addEventListener('click',createRoom);
   document.getElementById('btn-leave-room').addEventListener('click',leaveRoom);
+  document.getElementById('btn-room-settings').addEventListener('click',openRoomSettings);
+  document.getElementById('btn-invite-tmp').addEventListener('click',openInvitePanel);
+
   document.getElementById('code-box').addEventListener('click',copyCode);
   document.getElementById('btn-share-link').addEventListener('click',shareLink);
   document.getElementById('start-btn').addEventListener('click',startGame);
