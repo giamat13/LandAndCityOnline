@@ -67,7 +67,67 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 .cats-prev{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
 .cb{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.25);color:var(--muted);padding:4px 10px;border-radius:100px;font-size:.78rem}
 /* game header */
-.r-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+/* letter reveal animation */
+.ltr-slot{position:relative;display:inline-block;min-width:120px;min-height:100px;perspective:600px}
+.ltr-slot .slot-letter{
+  display:block;font-size:5rem;font-weight:900;line-height:1;
+  background:linear-gradient(135deg,var(--red),var(--orange));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  transition:opacity .08s;
+  transform-origin:center;
+}
+.ltr-slot .slot-letter.spin-in{
+  animation:slotReveal .5s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes slotReveal{
+  0%{transform:scale(.3) rotateY(90deg);opacity:0}
+  60%{transform:scale(1.3) rotateY(-10deg);opacity:1}
+  80%{transform:scale(.95) rotateY(5deg)}
+  100%{transform:scale(1) rotateY(0deg)}
+}
+.ltr-slot .slot-letter.rolling{
+  animation:slotRoll .1s ease-in-out infinite;
+}
+@keyframes slotRoll{
+  0%{transform:translateY(-6px) scaleY(1.1);opacity:.6}
+  50%{transform:translateY(6px) scaleY(.9);opacity:.9}
+  100%{transform:translateY(-6px) scaleY(1.1);opacity:.6}
+}
+.ltr-slot .slot-glow{
+  position:absolute;inset:-12px;border-radius:24px;
+  background:radial-gradient(circle,rgba(233,69,96,.35) 0%,transparent 70%);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.ltr-slot.revealed .slot-glow{opacity:1;animation:glowPulse 1s ease-out forwards}
+@keyframes glowPulse{
+  0%{opacity:1;transform:scale(.8)}50%{opacity:.8;transform:scale(1.2)}100%{opacity:0;transform:scale(1.4)}
+}
+.ltr-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(10,10,20,.85);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  backdrop-filter:blur(6px);
+}
+.ltr-overlay .ol-label{color:var(--muted);font-size:1rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.ltr-overlay .ol-cat{color:var(--text);font-size:1.1rem;font-weight:700;opacity:.8}
+.ltr-overlay .ol-big{font-size:9rem;font-weight:900;line-height:1;
+  background:linear-gradient(135deg,var(--red),var(--orange),var(--blue));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 30px rgba(233,69,96,.6));
+}
+.ltr-overlay .ol-big.roll{animation:slotRoll .08s ease-in-out infinite}
+.ltr-overlay .ol-big.land{animation:bigLand .6s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes bigLand{
+  0%{transform:scale(0) rotate(-15deg);opacity:0}
+  60%{transform:scale(1.25) rotate(3deg);opacity:1}
+  80%{transform:scale(.95) rotate(-1deg)}
+  100%{transform:scale(1) rotate(0deg)}
+}
+.ltr-overlay .ol-go{
+  margin-top:8px;font-size:1.6rem;font-weight:900;color:var(--green);
+  opacity:0;animation:fadeUp .4s .7s ease forwards;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .ltr{text-align:center;margin-bottom:12px}
 .big-l{font-size:5rem;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:lp .4s cubic-bezier(.34,1.56,.64,1)}
 @keyframes lp{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
@@ -276,6 +336,11 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 
 </div><!-- /#app -->
 <div id="toast"></div>
+<div id="ltr-overlay" class="ltr-overlay" style="display:none;">
+  <div class="ol-label">האות של הסיבוב</div>
+  <div class="ol-big" id="ol-letter">א</div>
+  <div class="ol-go">יאללה! 🚀</div>
+</div>
 
 <script type="module">
 // Suppress browser-extension message-channel noise
@@ -592,8 +657,38 @@ async function loadRound(){
   startCat(r);
 }
 
+// ─── LETTER REVEAL ANIMATION ─────────────────────────────────────
+function animateLetter(finalLetter, isFirstCat){
+  return new Promise(resolve=>{
+    if(!isFirstCat){resolve();return;}
+    const overlay=document.getElementById('ltr-overlay');
+    const olLetter=document.getElementById('ol-letter');
+    overlay.style.display='flex';
+    olLetter.className='ol-big roll';
+    olLetter.style.animation='none';
+
+    let count=0;
+    const total=18;
+    const interval=setInterval(()=>{
+      const rndLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+      olLetter.textContent=rndLetter;
+      count++;
+      if(count>=total){
+        clearInterval(interval);
+        olLetter.textContent=finalLetter;
+        olLetter.className='ol-big land';
+        setTimeout(()=>{
+          overlay.style.display='none';
+          olLetter.className='ol-big';
+          resolve();
+        },1500);
+      }
+    },80);
+  });
+}
+
 // ─── START CAT UI ─────────────────────────────────────────────────
-function startCat(roomData){
+async function startCat(roomData){
   detach();clearInterval(S.timerInt);
   const cat=S.cats[S.currentCatIndex];
   if(!cat)return;
@@ -617,14 +712,18 @@ function startCat(roomData){
     document.getElementById('answer-area').style.display='block';
     document.getElementById('wait-others').style.display='none';
     document.getElementById('submit-btn').disabled=false;
-    setTimeout(()=>inp.focus(),150);
   }
   showScreen('game');
 
   // Timer from catStartedAt
   const elapsed=Math.floor((Date.now()-(roomData?.catStartedAt||Date.now()))/1000);
   S.timeLeft=Math.max(0,S.rTime-elapsed);
+
+  // Play letter animation only on first cat of each round
+  const isFirstCat=(S.currentCatIndex===0);
+  await animateLetter(S.letter, isFirstCat);
   if(!S.catSubmitted){
+    setTimeout(()=>inp.focus(),80);
     if(S.timeLeft>0)startTimer();
     else doSubmit(''); // time already expired on reconnect
   }else{
