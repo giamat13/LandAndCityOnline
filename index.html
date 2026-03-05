@@ -516,7 +516,7 @@
     </div>
     <div class="card">
       <h3>🏠 שם החדר</h3>
-      <input type="text" id="room-name-inp" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30" style="margin-top:8px;">
+      <input type="text" id="room-name-inp" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30" style="margin-top:8px;" oninput="roomNameManuallyChanged=true">
       <div id="room-public-hint" style="font-size:.74rem;color:var(--muted);margin-top:6px;">יוצג ברשימת החדרים הציבוריים</div>
     </div>
     <div class="card">
@@ -538,11 +538,12 @@
         <button class="time-btn" data-v="45">45 שנ'</button>
         <button class="time-btn" data-v="60">60 שנ'</button>
         <button class="time-btn" data-v="90">90 שנ'</button>
+        <button class="time-btn" data-v="0">∞ ללא הגבלה</button>
         <button class="time-btn" data-v="custom" id="time-btn-custom">✏️ מותאם</button>
       </div>
       <div id="custom-time-row" style="display:none;margin-top:10px;display:none;align-items:center;gap:10px;">
-        <input type="number" id="custom-time-inp" min="10" max="300" placeholder="שניות..." style="width:120px;text-align:center;font-size:1rem;">
-        <span style="color:var(--muted);font-size:.85rem;">שניות (10–300)</span>
+        <input type="number" id="custom-time-inp" min="1" placeholder="שניות..." style="width:120px;text-align:center;font-size:1rem;">
+        <span style="color:var(--muted);font-size:.85rem;">שניות</span>
       </div>
     </div>
     <div class="card">
@@ -611,6 +612,7 @@
     <div id="guest-wait" style="display:none;">
       <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
       <button id="btn-spectator-upgrade" style="display:none;margin-top:12px;" class="btn btn-s">🎮 הצטרף כשחקן רגיל</button>
+      <button id="btn-become-spectator" style="display:none;margin-top:8px;" class="btn btn-s" style="opacity:.7;font-size:.88rem;">👁 עבור למצב צופה</button>
     </div>
   </div>
 
@@ -1178,10 +1180,15 @@
     }
   }
 
+  let profRoomNameManuallyChanged=false;
   // Profile screen setup
   function setupProfileScreen(){
-    document.getElementById('prof-name').value=S.pName||'';
-    document.getElementById('prof-room-name').value=S_pRoomName||'';
+    const nameVal=S.pName||'';
+    document.getElementById('prof-name').value=nameVal;
+    // Auto-fill default room name if not manually set
+    const autoRoomName=nameVal?`החדר של ${nameVal}`:'';
+    document.getElementById('prof-room-name').value=S_pRoomName||autoRoomName;
+    profRoomNameManuallyChanged=!!S_pRoomName;
     initAvPicker();
     initEmojiPicker();
     initFramePicker();
@@ -1191,7 +1198,16 @@
   }
 
   // Wire input listener once
-  document.getElementById('prof-name').addEventListener('input',updateProfilePreview);
+  document.getElementById('prof-name').addEventListener('input',()=>{
+    updateProfilePreview();
+    if(!profRoomNameManuallyChanged){
+      const n=document.getElementById('prof-name').value.trim();
+      document.getElementById('prof-room-name').value=n?`החדר של ${n}`:'';
+    }
+  });
+  document.getElementById('prof-room-name').addEventListener('input',()=>{
+    profRoomNameManuallyChanged=true;
+  });
 
   document.getElementById('btn-profile-continue').addEventListener('click',()=>{
     const n=document.getElementById('prof-name').value.trim();
@@ -1240,7 +1256,7 @@
       const el=document.getElementById('pub-rooms-list');
       if(!el)return;
       const rooms=Object.entries(data)
-        .filter(([,r])=>r.status==='lobby')
+        .filter(([,r])=>r.status==='lobby'||r.status==='playing')
         .sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
       if(!rooms.length){el.innerHTML='<div class="pub-empty">אין חדרים פתוחים כרגע</div>';return;}
       el.innerHTML='';
@@ -1250,13 +1266,24 @@
         const isReq=r.visibility==='request';
         const badge=`<span class="pub-room-badge ${isReq?'pub-badge-req':'pub-badge-pub'}">${isReq?'🔔 בקשה':'🌐 ציבורי'}</span>`;
         const cats=(r.cats||[]).slice(0,3).map(c=>c.emoji).join('');
+        const timeDisplay=r.roundTime===0?'∞':r.roundTime+"שנ'";
         card.innerHTML=`
           <div style="flex:1;">
             <div class="pub-room-host">${r.roomName||`👑 ${r.hostName}`}</div>
-            <div class="pub-room-meta">👑 ${r.hostName} · ${r.playerCount||1} שחקנים · ${cats} · ${r.roundTime||30}שנ'</div>
+            <div class="pub-room-meta">👑 ${r.hostName} · ${r.playerCount||1} שחקנים · ${cats} · ${timeDisplay}</div>
           </div>
-          ${badge}`;
-        card.addEventListener('click',()=>joinPublicRoom(roomId,r));
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            ${badge}
+            <span class="pub-spec-btn" data-rid="${roomId}" style="font-size:.68rem;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:6px;border:1px solid var(--border);">👁 צופה</span>
+          </div>`;
+        card.addEventListener('click',(e)=>{
+          if(e.target.classList.contains('pub-spec-btn'))return;
+          joinPublicRoom(roomId,r,false);
+        });
+        card.querySelector('.pub-spec-btn').addEventListener('click',(e)=>{
+          e.stopPropagation();
+          joinPublicRoom(roomId,r,true);
+        });
         el.appendChild(card);
       });
     };
@@ -1276,19 +1303,19 @@
   initPublicRooms();
   renderMyRooms();
 
-  async function joinPublicRoom(roomId, pubData){
+  async function joinPublicRoom(roomId, pubData, asSpectator=false){
     const n=document.getElementById('player-name').value.trim();
     if(!n){toast('נא להזין שם שחקן קודם');return;}
     S.pName=n;
     const snap=await get(ref(db,'rooms/'+roomId));
     if(!snap.exists()){toast('החדר כבר לא קיים 😕');initPublicRooms();return;}
     const room=snap.val();
-    if(room.status!=='lobby'){toast('המשחק כבר התחיל');initPublicRooms();return;}
+    if(room.status!=='lobby'&&!asSpectator){toast('המשחק כבר התחיל — אפשר להצטרף כצופה 👁');initPublicRooms();return;}
 
     if(pubData.visibility==='public'){
       // Join directly
       document.getElementById('join-code').value=roomId;
-      await joinRoom(false);
+      await joinRoom(asSpectator);
     } else if(pubData.visibility==='request'){
       // Send join request and wait for approval
       S.pId=S.pId||gid(10);
@@ -1522,7 +1549,7 @@
       const inp=document.getElementById('custom-time-inp');
       inp.focus();
       inp.oninput=()=>{
-        const val=Math.min(300,Math.max(10,parseInt(inp.value)||10));
+        const val=Math.max(1,parseInt(inp.value)||1);
         S.rTime=val;
       };
       return;
@@ -1530,7 +1557,7 @@
     customRow.style.display='none';
     document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    S.rTime=parseInt(v);
+    S.rTime=parseInt(v); // 0 = infinity
   }
 
   // ─── APPROVAL WAIT SCREEN ─────────────────────────────────────────
@@ -1583,13 +1610,18 @@
   }
 
   // ─── HOME → CREATE ─────────────────────────────────────────────────
+  let roomNameManuallyChanged=false;
   function showCreate(){
     const n=document.getElementById('player-name').value.trim();
     if(!n){toast('נא להזין שם שחקן');return;}
     S.pName=n;
-    // pre-fill room name from profile default
     const rni=document.getElementById('room-name-inp');
-    if(rni&&!rni.value&&S_pRoomName) rni.value=S_pRoomName;
+    if(rni){
+      // Use profile default if set, otherwise "החדר של [name]"
+      if(!roomNameManuallyChanged){
+        rni.value=S_pRoomName||`החדר של ${n}`;
+      }
+    }
     showScreen('create');
   }
 
@@ -1699,7 +1731,7 @@
       <div class="cat-tog${curCats.includes(c.id)?' active':''}" data-id="${c.id}">
         <span class="em">${c.emoji}</span><span class="cn">${c.name}</span><span class="ck"></span>
       </div>`).join('');
-    const timeBtns=[30,45,60,90].map(v=>`<button class="time-btn${v===curTime?' active':''}" data-v="${v}">${v} שנ'</button>`).join('');
+    const timeBtns=[30,45,60,90].map(v=>`<button class="time-btn${v===curTime?' active':''}" data-v="${v}">${v} שנ'</button>`).join('')+`<button class="time-btn${curTime===0?' active':''}" data-v="0">∞ ללא הגבלה</button>`;
     backdrop.innerHTML=`<div class="settings-modal-box">
       <div class="settings-modal-hdr">
         <h2>⚙️ הגדרות חדר</h2>
@@ -1723,11 +1755,11 @@
       <div class="card" style="margin-bottom:14px;">
         <h3>⏱️ זמן לקטגוריה</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">${timeBtns}
-          <button class="time-btn${[30,45,60,90].includes(curTime)?'':' active'}" data-v="custom" id="smc-custom-btn">✏️ מותאם</button>
+          <button class="time-btn${(curTime>0&&![30,45,60,90].includes(curTime))?' active':''}" data-v="custom" id="smc-custom-btn">✏️ מותאם</button>
         </div>
-        <div id="smc-custom-row" style="display:${[30,45,60,90].includes(curTime)?'none':'flex'};margin-top:10px;align-items:center;gap:10px;">
-          <input type="number" id="smc-custom-inp" min="10" max="300" value="${[30,45,60,90].includes(curTime)?'':curTime}" placeholder="שניות..." style="width:120px;text-align:center;font-size:1rem;">
-          <span style="color:var(--muted);font-size:.85rem;">שניות (10–300)</span>
+        <div id="smc-custom-row" style="display:${(curTime>0&&![30,45,60,90].includes(curTime))?'flex':'none'};margin-top:10px;align-items:center;gap:10px;">
+          <input type="number" id="smc-custom-inp" min="1" value="${[30,45,60,90].includes(curTime)?'':curTime}" placeholder="שניות..." style="width:120px;text-align:center;font-size:1rem;">
+          <span style="color:var(--muted);font-size:.85rem;">שניות</span>
         </div>
       </div>
       <div class="card" style="margin-bottom:14px;">
@@ -1782,7 +1814,7 @@
       if(v==='custom'){cr.style.display='flex';}
       else{cr.style.display='none';smcTime=parseInt(v);}
     }));
-    backdrop.querySelector('#smc-custom-inp').addEventListener('input',e=>{smcTime=Math.min(300,Math.max(10,parseInt(e.target.value)||10));});
+    backdrop.querySelector('#smc-custom-inp').addEventListener('input',e=>{smcTime=Math.max(1,parseInt(e.target.value)||1);});
     backdrop.querySelector('#smc-tog-voters').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelector('#smc-tog-sb').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelectorAll('#smc-vis-opts .vis-opt').forEach(opt=>opt.addEventListener('click',()=>{
@@ -1798,7 +1830,7 @@
       if(!active.length){toast('בחר לפחות קטגוריה אחת');return;}
       const ci=backdrop.querySelector('#smc-custom-inp');
       if(backdrop.querySelector('#smc-custom-row').style.display!=='none'&&ci.value){
-        smcTime=Math.min(300,Math.max(10,parseInt(ci.value)||10));
+        smcTime=Math.max(1,parseInt(ci.value)||1);
       }
       const newName=backdrop.querySelector('#smc-name').value.trim()||curName||('החדר של '+S.pName);
       const newVis=(backdrop.querySelector('#smc-vis-opts .vis-opt.sel')||{dataset:{v:curVis}}).dataset.v;
@@ -2052,6 +2084,8 @@
     if(_settingsBtn) _settingsBtn.style.display=S.isHost?'inline-flex':'none';
     if(_inviteBtn) _inviteBtn.style.display=(S.isHost&&S.isPermanent)?'flex':'none';
     if(_upBtn) _upBtn.style.display=S.isSpectator?'block':'none';
+    const _becomeSpecBtn=document.getElementById('btn-become-spectator');
+    if(_becomeSpecBtn) _becomeSpecBtn.style.display=(!S.isSpectator&&!S.isHost)?'block':'none';
     document.getElementById('guest-wait').style.display=S.isHost?'none':'block';
     document.getElementById('lobby-cats').innerHTML=S.cats.map(c=>`<span class="cb">${c.emoji} ${c.name}</span>`).join('');
     showScreen('lobby');
@@ -2460,8 +2494,15 @@
     if(isFirstCat)SFX.play('start');
     if(!S.catSubmitted){
       setTimeout(()=>inp.focus(),80);
-      if(S.timeLeft>0)startTimer();
-      else doSubmit(''); // time already expired on reconnect
+      if(S.rTime===0){
+        // Infinity mode: no timer, show ∞
+        document.getElementById('timer-txt').textContent='∞';
+        document.getElementById('timer-bar').style.width='100%';
+      } else if(S.timeLeft>0){
+        startTimer();
+      } else {
+        doSubmit(''); // time already expired on reconnect
+      }
     }else{
       // Show frozen timer at 0
       document.getElementById('timer-txt').textContent=0;
@@ -2532,8 +2573,8 @@
           if(val)addAnswerTag(val);
           await doSubmit(S.currentAnswers);
         }
-        // Host: grace period then force-advance
-        if(S.isHost){
+        // Host: grace period then force-advance (skip in infinity mode)
+        if(S.isHost&&S.rTime!==0){
           setTimeout(async()=>{
             const snap=await get(ref(db,`rooms/${S.roomId}/currentCatIndex`));
             if((snap.val()||0)===S.currentCatIndex)await advanceCat();
@@ -3549,10 +3590,17 @@
     floatEmojiListener={r,fn};
   }
   document.getElementById('home-identity').addEventListener('click',()=>{ setupProfileScreen(); showScreen('profile'); });
+  document.getElementById('player-name').addEventListener('input',()=>{
+    if(!roomNameManuallyChanged){
+      const rni=document.getElementById('room-name-inp');
+      const n=document.getElementById('player-name').value.trim();
+      if(rni&&n) rni.value=S_pRoomName||`החדר של ${n}`;
+    }
+  });
   document.getElementById('btn-show-create').addEventListener('click',showCreate);
   document.getElementById('btn-join').addEventListener('click',()=>joinRoom(false));
   document.getElementById('btn-join-spec').addEventListener('click',()=>joinRoom(true));
-  document.getElementById('btn-back-home').addEventListener('click',()=>showScreen('home'));
+  document.getElementById('btn-back-home').addEventListener('click',()=>{roomNameManuallyChanged=false;showScreen('home');});
   document.getElementById('btn-add-cc').addEventListener('click',addCC);
   document.getElementById('btn-create-room').addEventListener('click',createRoom);
   document.getElementById('btn-leave-room').addEventListener('click',leaveRoom);
@@ -3562,7 +3610,17 @@
     await update(ref(db,'rooms/'+S.roomId+'/players/'+S.pId),{spectator:false});
     S.isSpectator=false;
     document.getElementById('btn-spectator-upgrade').style.display='none';
+    document.getElementById('btn-become-spectator').style.display='block';
     toast('🎮 אתה עכשיו שחקן רגיל!');
+  });
+  document.getElementById('btn-become-spectator').addEventListener('click',async()=>{
+    if(!S.roomId||!S.pId)return;
+    if(!confirm('לעבור למצב צופה? לא תוכל להגיש תשובות עד שתחזור לשחקן רגיל.'))return;
+    await update(ref(db,'rooms/'+S.roomId+'/players/'+S.pId),{spectator:true});
+    S.isSpectator=true;
+    document.getElementById('btn-become-spectator').style.display='none';
+    document.getElementById('btn-spectator-upgrade').style.display='block';
+    toast('👁 אתה עכשיו צופה');
   });
   document.getElementById('btn-room-settings').addEventListener('click',openRoomSettings);
   document.getElementById('btn-invite-tmp').addEventListener('click',openInvitePanel);
