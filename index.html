@@ -365,6 +365,23 @@
   .entry-glitch{animation:entryGlitch .7s steps(1)!important;}
   .entry-drop{animation:entryDrop .65s cubic-bezier(.34,1.56,.64,1)!important;}
   .entry-pop{animation:entryPop .6s cubic-bezier(.34,1.56,.64,1)!important;}
+  /* settings modal */
+  .settings-modal-backdrop{position:fixed;inset:0;z-index:2400;background:rgba(10,10,25,.88);backdrop-filter:blur(10px);overflow-y:auto;padding:20px 16px;}
+  .settings-modal-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;max-width:540px;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+  .settings-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .settings-modal-hdr h2{font-size:1.15rem;font-weight:900;}
+  .settings-modal-close{background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;padding:2px 8px;border-radius:8px;line-height:1;}
+  .settings-modal-close:hover{color:var(--text);}
+  /* invite */
+  .invite-link-box{background:var(--s2);border:1.5px dashed rgba(168,85,247,.4);border-radius:12px;padding:12px 14px;margin-top:10px;display:flex;align-items:center;gap:10px;word-break:break-all;}
+  .invite-link-txt{flex:1;font-size:.75rem;color:#a855f7;font-weight:700;}
+  .invite-copy-btn{background:rgba(168,85,247,.15);color:#a855f7;border:1.5px solid rgba(168,85,247,.3);border-radius:8px;padding:6px 12px;font-family:'Heebo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0;}
+  .invite-copy-btn:hover{background:rgba(168,85,247,.3);}
+  .invite-item{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px 14px;margin-bottom:7px;}
+  .invite-item-info{flex:1;font-size:.82rem;}
+  .invite-item-exp{font-size:.72rem;color:var(--muted);}
+  .invite-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 5px;border-radius:6px;}
+  .invite-del:hover{color:var(--red);}
   /* my rooms */
   .my-room-card{background:var(--surface);border:1px solid rgba(168,85,247,.3);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;box-shadow:var(--sh);}
   .my-room-card:hover{border-color:#a855f7;transform:translateY(-1px);}
@@ -499,7 +516,7 @@
     <div class="card">
       <h3>🏠 שם החדר</h3>
       <input type="text" id="room-name-inp" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30" style="margin-top:8px;">
-      <div style="font-size:.74rem;color:var(--muted);margin-top:6px;">יוצג ברשימת החדרים הציבוריים</div>
+      <div id="room-public-hint" style="font-size:.74rem;color:var(--muted);margin-top:6px;">יוצג ברשימת החדרים הציבוריים</div>
     </div>
     <div class="card">
       <h3>📋 קטגוריות</h3>
@@ -565,6 +582,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <button class="btn btn-s btn-sm" style="width:auto" id="btn-leave-room">← יציאה</button>
       <span class="sp"><span class="dot"></span>ממתין לשחקנים</span>
+      <button id="btn-room-settings" style="display:none;background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color .2s;" title="הגדרות חדר">⚙️</button>
     </div>
     <div id="lobby-room-name-wrap" style="display:none;margin-bottom:10px;">
       <div class="lobby-room-name" id="lobby-room-name-text"></div>
@@ -580,6 +598,7 @@
       <h3>👥 שחקנים (<span id="pl-count">0</span>)</h3>
       <div class="pl-list" id="pl-list"></div>
     </div>
+    <div id="lobby-perm-lb-wrap" style="display:none;"></div>
     <div id="host-ctrl" style="display:none;">
       <div id="join-requests-wrap" style="display:none;margin-bottom:14px;">
         <div class="card" style="border-color:rgba(245,166,35,.3);">
@@ -589,9 +608,11 @@
       </div>
       <button class="btn btn-g" id="start-btn" disabled>🎯 התחל משחק</button>
       <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
+      <button id="btn-invite-tmp" class="btn btn-s" style="display:none;margin-top:10px;">📨 הזמן משתמש זמני</button>
     </div>
     <div id="guest-wait" style="display:none;">
       <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
+      <button id="btn-spectator-upgrade" style="display:none;margin-top:12px;" class="btn btn-s">🎮 הצטרף כשחקן רגיל</button>
     </div>
   </div>
 
@@ -715,6 +736,7 @@
     </div>
     <div id="podium-wrap" class="podium-wrap"></div>
     <div class="card"><h3>🏆 תוצאות סופיות</h3><div class="sb" id="final-sb"></div></div>
+    <div id="final-perm-lb-wrap"></div>
     <button class="btn btn-p" id="btn-go-home" style="margin-top:8px;">🏠 חזור לתפריט</button>
     <button class="btn btn-s" onclick="exitGame()" style="margin-top:8px;">🚪 יציאה</button>
   </div>
@@ -760,7 +782,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
   import {
-    getDatabase,ref,set,get,update,onValue,off,remove
+    getDatabase,ref,set,get,update,onValue,off,remove,onDisconnect
   } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
   const fb = initializeApp({
@@ -1274,11 +1296,32 @@
   (function checkUrlRoom(){
     const params=new URLSearchParams(window.location.search);
     const rc=params.get('room');
+    const inv=params.get('inv');
+    window.history.replaceState({},'',window.location.pathname);
     if(rc){
       const inp=document.getElementById('join-code');
       if(inp)inp.value=rc.toUpperCase();
-      // Clean URL without reload
-      window.history.replaceState({},'',window.location.pathname);
+    }
+    if(inv&&rc){
+      // Validate invite token then auto-join
+      (async()=>{
+        const tokRef=ref(db,`rooms/${rc}/invites/${inv}`);
+        const snap=await get(tokRef);
+        if(!snap.exists()){toast('קישור הזמנה לא תקין 😕');return;}
+        const t=snap.val();
+        if(t.exp<Date.now()){toast('קישור ההזמנה פג תוקף ⏰');remove(tokRef);return;}
+        if(t.maxUses>0&&t.uses>=t.maxUses){toast('קישור ההזמנה מוצה 🚫');return;}
+        // Increment use count
+        await update(tokRef,{uses:(t.uses||0)+1});
+        // Auto join once profile loads
+        const tryJoin=()=>{
+          const n=document.getElementById('player-name').value.trim();
+          if(!n){setTimeout(tryJoin,300);return;}
+          document.getElementById('join-code').value=rc.toUpperCase();
+          joinRoom(false);
+        };
+        setTimeout(tryJoin,400);
+      })();
     }
   })();
   const DCATS=[
@@ -1588,7 +1631,7 @@
     const code=document.getElementById('join-code').value.trim().toUpperCase();
     if(code.length!==6){toast('קוד חדר לא תקין');return;}
     const snap=await get(ref(db,'rooms/'+code));
-    if(!snap.exists()){toast('חדר לא נמצא 😕');return;}
+    if(!snap.exists()){toast('החדר לא נמצא – ייתכן שנמחק 😕');return;}
     const room=snap.val();
     const inProgress=room.status!=='lobby'&&room.status!=='ended';
 
@@ -1599,6 +1642,11 @@
       asSpectator=!choice;
     }
 
+    // For permanent ended rooms — reset to lobby
+    if(room.isPermanent && room.status==='ended'){
+      await update(ref(db,'rooms/'+code),{status:'lobby',catAnswers:null,vetoes:null,disqualified:null,continueVotes:null,round:0,letter:''});
+      room.status='lobby';
+    }
     S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
     S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;
     S.currentCatIndex=room.currentCatIndex||0;
@@ -1622,14 +1670,239 @@
     }
   };
 
+
+  // ─── ROOM SETTINGS MODAL ─────────────────────────────────────────
+  async function openRoomSettings(){
+    const snap=await get(ref(db,'rooms/'+S.roomId));
+    const room=snap.val()||{};
+    const curCats=(room.categories||[]).map(c=>c.id);
+    const curCustom=(room.categories||[]).filter(c=>c.id.startsWith('cc_')).map(c=>c.name);
+    const curTime=room.roundTime||30;
+    const curName=room.roomName||'';
+    const curShowVoters=room.showVoters||false;
+    const curSB=room.cumulativeSB!==false;
+    const curVis=room.visibility||'private';
+    const backdrop=document.createElement('div');
+    backdrop.className='settings-modal-backdrop';
+    const catsHtml=DCATS.map(c=>`
+      <div class="cat-tog${curCats.includes(c.id)?' active':''}" data-id="${c.id}">
+        <span class="em">${c.emoji}</span><span class="cn">${c.name}</span><span class="ck"></span>
+      </div>`).join('');
+    const timeBtns=[30,45,60,90].map(v=>`<button class="time-btn${v===curTime?' active':''}" data-v="${v}">${v} שנ'</button>`).join('');
+    backdrop.innerHTML=`<div class="settings-modal-box">
+      <div class="settings-modal-hdr">
+        <h2>⚙️ הגדרות חדר</h2>
+        <button class="settings-modal-close" id="smc-close">×</button>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3>🏠 שם החדר</h3>
+        <input type="text" id="smc-name" value="${curName}" maxlength="30" style="margin-top:8px;">
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3>📋 קטגוריות</h3>
+        <div class="cats-grid" id="smc-cats-grid">${catsHtml}</div>
+        <div style="margin-top:14px;"><h3>➕ קטגוריה מותאמת</h3>
+          <div class="cc-row">
+            <input type="text" id="smc-cc-inp" placeholder="לדוגמה: סרט..." maxlength="20">
+            <button class="btn btn-s btn-sm" id="smc-add-cc">הוסף</button>
+          </div>
+          <div class="cc-tags" id="smc-cc-tags"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3>⏱️ זמן לקטגוריה</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">${timeBtns}
+          <button class="time-btn${[30,45,60,90].includes(curTime)?'':' active'}" data-v="custom" id="smc-custom-btn">✏️ מותאם</button>
+        </div>
+        <div id="smc-custom-row" style="display:${[30,45,60,90].includes(curTime)?'none':'flex'};margin-top:10px;align-items:center;gap:10px;">
+          <input type="number" id="smc-custom-inp" min="10" max="300" value="${[30,45,60,90].includes(curTime)?'':curTime}" placeholder="שניות..." style="width:120px;text-align:center;font-size:1rem;">
+          <span style="color:var(--muted);font-size:.85rem;">שניות (10–300)</span>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3>⚙️ הגדרות</h3>
+        <div class="tog-wrap" style="margin-bottom:14px;">
+          <div class="tog${curShowVoters?' on':''}" id="smc-tog-voters"></div>
+          <span class="tog-label">הצג מי הצביע פסול</span>
+        </div>
+        <div class="tog-wrap" style="margin-bottom:14px;">
+          <div class="tog${curSB?' on':''}" id="smc-tog-sb"></div>
+          <span class="tog-label">לוח ניקוד מצטבר</span>
+        </div>
+        <h3 style="margin-bottom:10px;">🌐 נראות</h3>
+        <div class="vis-opts" id="smc-vis-opts">
+          <div class="vis-opt${curVis==='private'?' sel':''}" data-v="private"><div class="vo-radio"></div><div><div class="vo-label">🔒 פרטי</div></div></div>
+          <div class="vis-opt${curVis==='request'?' sel':''}" data-v="request"><div class="vo-radio"></div><div><div class="vo-label">🔔 בקשה</div></div></div>
+          <div class="vis-opt${curVis==='public'?' sel':''}" data-v="public"><div class="vo-radio"></div><div><div class="vo-label">🌐 ציבורי</div></div></div>
+        </div>
+      </div>
+      <button class="btn btn-p" id="smc-save">💾 שמור הגדרות</button>
+    </div>`;
+    document.body.appendChild(backdrop);
+    let smcCustom=[...curCustom];
+    let smcTime=curTime;
+    function renderSmcCcTags(){
+      const wrap=backdrop.querySelector('#smc-cc-tags');
+      wrap.innerHTML='';
+      smcCustom.forEach((c,i)=>{
+        const el=document.createElement('div');
+        el.className='cc-tag';el.textContent=c;
+        el.onclick=()=>{smcCustom.splice(i,1);renderSmcCcTags();};
+        wrap.appendChild(el);
+      });
+    }
+    renderSmcCcTags();
+    backdrop.querySelector('#smc-close').addEventListener('click',()=>backdrop.remove());
+    backdrop.addEventListener('click',e=>{if(e.target===backdrop)backdrop.remove();});
+    backdrop.querySelector('#smc-add-cc').addEventListener('click',()=>{
+      const v=backdrop.querySelector('#smc-cc-inp').value.trim();
+      if(!v)return;
+      if(!smcCustom.includes(v))smcCustom.push(v);
+      backdrop.querySelector('#smc-cc-inp').value='';
+      renderSmcCcTags();
+    });
+    backdrop.querySelector('#smc-cc-inp').addEventListener('keydown',e=>{if(e.key==='Enter')backdrop.querySelector('#smc-add-cc').click();});
+    backdrop.querySelectorAll('#smc-cats-grid .cat-tog').forEach(el=>el.addEventListener('click',()=>el.classList.toggle('active')));
+    backdrop.querySelectorAll('.time-btn').forEach(btn=>btn.addEventListener('click',()=>{
+      const v=btn.dataset.v;
+      backdrop.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const cr=backdrop.querySelector('#smc-custom-row');
+      if(v==='custom'){cr.style.display='flex';}
+      else{cr.style.display='none';smcTime=parseInt(v);}
+    }));
+    backdrop.querySelector('#smc-custom-inp').addEventListener('input',e=>{smcTime=Math.min(300,Math.max(10,parseInt(e.target.value)||10));});
+    backdrop.querySelector('#smc-tog-voters').addEventListener('click',function(){this.classList.toggle('on');});
+    backdrop.querySelector('#smc-tog-sb').addEventListener('click',function(){this.classList.toggle('on');});
+    backdrop.querySelectorAll('#smc-vis-opts .vis-opt').forEach(opt=>opt.addEventListener('click',()=>{
+      backdrop.querySelectorAll('#smc-vis-opts .vis-opt').forEach(o=>o.classList.remove('sel'));
+      opt.classList.add('sel');
+    }));
+    backdrop.querySelector('#smc-save').addEventListener('click',async()=>{
+      const active=[...backdrop.querySelectorAll('#smc-cats-grid .cat-tog.active')].map(el=>{
+        const c=DCATS.find(x=>x.id===el.dataset.id);
+        return c?{id:c.id,name:c.name,emoji:c.emoji}:null;
+      }).filter(Boolean);
+      smcCustom.forEach((name,i)=>active.push({id:'cc_'+i,name,emoji:'⭐'}));
+      if(!active.length){toast('בחר לפחות קטגוריה אחת');return;}
+      const ci=backdrop.querySelector('#smc-custom-inp');
+      if(backdrop.querySelector('#smc-custom-row').style.display!=='none'&&ci.value){
+        smcTime=Math.min(300,Math.max(10,parseInt(ci.value)||10));
+      }
+      const newName=backdrop.querySelector('#smc-name').value.trim()||curName||('החדר של '+S.pName);
+      const newVis=(backdrop.querySelector('#smc-vis-opts .vis-opt.sel')||{dataset:{v:curVis}}).dataset.v;
+      const newShowVoters=backdrop.querySelector('#smc-tog-voters').classList.contains('on');
+      const newSB=backdrop.querySelector('#smc-tog-sb').classList.contains('on');
+      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.visibility=newVis;
+      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,visibility:newVis,roomName:newName});
+      if(newVis!=='private'){
+        await set(ref(db,'publicRooms/'+S.roomId),{hostName:S.pName,visibility:newVis,roomName:newName,cats:active.slice(0,5).map(c=>({emoji:c.emoji,name:c.name})),roundTime:smcTime,playerCount:Object.keys(room.players||{}).length,status:'lobby',createdAt:room.createdAt||Date.now()});
+      }else{remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});}
+      if(S.isPermanent)saveMyRoom(S.roomId,newName,active.slice(0,5));
+      document.getElementById('lobby-cats').innerHTML=active.map(c=>'<span class="cb">'+c.emoji+' '+c.name+'</span>').join('');
+      const rntxt=document.getElementById('lobby-room-name-text');
+      if(rntxt){rntxt.textContent='🏠 '+newName;document.getElementById('lobby-room-name-wrap').style.display='block';}
+      backdrop.remove();
+      toast('✅ הגדרות עודכנו!');
+    });
+  }
+
+  // ─── TEMP INVITE ──────────────────────────────────────────────────
+  async function openInvitePanel(){
+    const backdrop=document.createElement('div');
+    backdrop.className='settings-modal-backdrop';
+    async function buildInviteHtml(){
+      const snap=await get(ref(db,'rooms/'+S.roomId+'/invites'));
+      const invites=snap.val()||{};
+      const now=Date.now();
+      const valid=Object.entries(invites).filter(([,v])=>v.exp>now);
+      if(!valid.length)return '<div style="color:var(--muted);font-size:.85rem;text-align:center;padding:10px 0;">אין הזמנות פעילות</div>';
+      return valid.map(([tok,v])=>{
+        const h=Math.ceil((v.exp-now)/3600000);
+        const link=location.origin+location.pathname+'?inv='+tok+'&room='+S.roomId;
+        return '<div class="invite-item"><div class="invite-item-info"><div style="font-weight:700;font-size:.85rem;">'+v.label+'</div><div class="invite-item-exp">⏳ '+h+' שעות נותרו · '+v.uses+' שימושים</div></div><button class="invite-copy-btn" data-link="'+link+'">📋 העתק</button><button class="invite-del" data-tok="'+tok+'">🗑️</button></div>';
+      }).join('');
+    }
+    backdrop.innerHTML=`<div class="settings-modal-box">
+      <div class="settings-modal-hdr"><h2>📨 הזמנות זמניות</h2><button class="settings-modal-close" id="inv-close">×</button></div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 style="margin-bottom:12px;">✨ צור הזמנה חדשה</h3>
+        <input type="text" id="inv-label" placeholder='תווית (לדוגמה: "שחקן אורח")' maxlength="20" style="margin-bottom:10px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+          <span style="font-size:.82rem;color:var(--muted);">תוקף:</span>
+          <button class="time-btn active" data-exp="3600000">שעה</button>
+          <button class="time-btn" data-exp="86400000">יום</button>
+          <button class="time-btn" data-exp="604800000">שבוע</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+          <span style="font-size:.82rem;color:var(--muted);">שימושים:</span>
+          <button class="time-btn active" data-uses="1">× 1</button>
+          <button class="time-btn" data-uses="5">× 5</button>
+          <button class="time-btn" data-uses="0">ללא הגבלה</button>
+        </div>
+        <button class="btn btn-p" id="inv-create">✨ צור והעתק לינק</button>
+      </div>
+      <div class="card"><h3 style="margin-bottom:10px;">🔗 הזמנות פעילות</h3><div id="inv-list">טוען...</div></div>
+    </div>`;
+    document.body.appendChild(backdrop);
+    buildInviteHtml().then(h=>{backdrop.querySelector('#inv-list').innerHTML=h;});
+    let selExp=3600000,selUses=1;
+    backdrop.querySelector('#inv-close').addEventListener('click',()=>backdrop.remove());
+    backdrop.addEventListener('click',e=>{if(e.target===backdrop)backdrop.remove();});
+    backdrop.querySelectorAll('[data-exp]').forEach(btn=>btn.addEventListener('click',()=>{
+      backdrop.querySelectorAll('[data-exp]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');selExp=parseInt(btn.dataset.exp);
+    }));
+    backdrop.querySelectorAll('[data-uses]').forEach(btn=>btn.addEventListener('click',()=>{
+      backdrop.querySelectorAll('[data-uses]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');selUses=parseInt(btn.dataset.uses);
+    }));
+    backdrop.querySelector('#inv-create').addEventListener('click',async()=>{
+      const label=backdrop.querySelector('#inv-label').value.trim()||'הזמנה';
+      const tok=gid(12);
+      const exp=Date.now()+selExp;
+      await set(ref(db,'rooms/'+S.roomId+'/invites/'+tok),{exp,maxUses:selUses,uses:0,label,by:S.pName});
+      const link=location.origin+location.pathname+'?inv='+tok+'&room='+S.roomId;
+      navigator.clipboard.writeText(link).catch(()=>{});
+      toast('✅ הזמנה נוצרה והועתקה!');
+      backdrop.querySelector('#inv-list').innerHTML=await buildInviteHtml();
+      backdrop.querySelector('#inv-label').value='';
+    });
+    backdrop.querySelector('#inv-list').addEventListener('click',async e=>{
+      if(e.target.classList.contains('invite-copy-btn')){navigator.clipboard.writeText(e.target.dataset.link).then(()=>toast('לינק הועתק! 🔗'));}
+      if(e.target.classList.contains('invite-del')){await remove(ref(db,'rooms/'+S.roomId+'/invites/'+e.target.dataset.tok));backdrop.querySelector('#inv-list').innerHTML=await buildInviteHtml();}
+    });
+  }
+
+
+  // ─── ELIGIBLE PLAYERS ────────────────────────────────────────────
+  // For permanent rooms: only online players count. For regular: all non-spectators.
+  function getEligible(players){
+    return Object.fromEntries(
+      Object.entries(players).filter(([,p])=>{
+        if(p.spectator)return false;
+        if(S.isPermanent && p.online===false)return false;
+        return true;
+      })
+    );
+  }
   // ─── LOBBY ────────────────────────────────────────────────────────
   function enterRoom(){
     showChatFab(true);
     initChat();
     initFloatEmojis();
     startExpiryWatcher();
+    setupPresence();
   }
 
+
+  // ─── PRESENCE TRACKING ───────────────────────────────────────────
+  function setupPresence(){
+    if(!S.roomId||!S.pId)return;
+    const presRef=ref(db,'rooms/'+S.roomId+'/players/'+S.pId+'/online');
+    set(presRef,true).catch(()=>{});
+    onDisconnect(presRef).set(false).catch(()=>{});
+  }
   // ─── EXPIRY WATCHER ───────────────────────────────────────────────
   function startExpiryWatcher(){
     clearInterval(S.expiryInt);
@@ -1762,6 +2035,12 @@
     S.totalRounds=S.totalRounds||0;
     document.getElementById('lobby-code').textContent=S.roomId;
     document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
+    const _settingsBtn=document.getElementById('btn-room-settings');
+    const _inviteBtn=document.getElementById('btn-invite-tmp');
+    const _upBtn=document.getElementById('btn-spectator-upgrade');
+    if(_settingsBtn) _settingsBtn.style.display=S.isHost?'inline-flex':'none';
+    if(_inviteBtn) _inviteBtn.style.display=(S.isHost&&S.isPermanent)?'flex':'none';
+    if(_upBtn) _upBtn.style.display=S.isSpectator?'block':'none';
     document.getElementById('guest-wait').style.display=S.isHost?'none':'block';
     document.getElementById('lobby-cats').innerHTML=S.cats.map(c=>`<span class="cb">${c.emoji} ${c.name}</span>`).join('');
     showScreen('lobby');
@@ -1775,6 +2054,11 @@
       const wrap=document.getElementById('lobby-room-name-wrap');
       const txt=document.getElementById('lobby-room-name-text');
       if(rn&&wrap&&txt){wrap.style.display='block';txt.textContent='🏠 '+rn;}
+      // Load permanent leaderboard
+      if(rd.isPermanent){
+        const lbSnap=await get(ref(db,'rooms/'+S.roomId+'/permLeaderboard'));
+        renderPermLeaderboard('lobby-perm-lb-wrap', lbSnap.val()||{});
+      }
       // If permanent room, save to this participant's my-rooms
       if(rd.isPermanent){
         S.isPermanent=true;
@@ -1820,16 +2104,40 @@
             <div class="pl-name">${p.name}</div>
             ${p.tag?`<div style="font-size:.68rem;color:var(--muted);margin-top:1px;">${p.tag}</div>`:''}
           </div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">${badges.join('')}</div>`;
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
+            ${badges.join('')}
+            ${S.isHost&&pid!==S.pId?`<button class="kick-btn" data-pid="${pid}" data-name="${p.name}" title="הוצא מהחדר" style="background:none;border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;margin-right:2px;">✕</button>`:''}
+          </div>`;
         list.appendChild(el);
       });
+      // Kick button handler
+      list.querySelectorAll('.kick-btn').forEach(btn=>{
+        btn.addEventListener('click',async()=>{
+          const pid=btn.dataset.pid;
+          const name=btn.dataset.name;
+          if(!confirm(`להוציא את ${name} מהחדר?`))return;
+          await remove(ref(db,'rooms/'+S.roomId+'/players/'+pid));
+          toast(name+' הוצא מהחדר');
+        });
+      });
       const btn=document.getElementById('start-btn');
-      if(btn)btn.disabled=activePlayers.length<2;
+      if(btn)btn.disabled=Object.keys(getEligible(ps)).length<2;
       if(S.isHost&&S.visibility!=='private'){
         update(ref(db,'publicRooms/'+S.roomId),{playerCount:activePlayers.length}).catch(()=>{});
       }
     });
 
+
+    // Detect being kicked by host
+    addL(ref(db,'rooms/'+S.roomId+'/players/'+S.pId),snap=>{
+      if(!snap.exists()&&S.roomId){
+        clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();detachChat();clearSession();
+        S.roomId='';S.isHost=false;S.isSpectator=false;S.isPermanent=false;
+        showChatFab(false);
+        showScreen('home');
+        toast('👢 הוצאת מהחדר על ידי המארח');
+      }
+    });
     // Host: handle join requests
     if(S.isHost){
       addL(ref(db,`rooms/${S.roomId}/joinRequests`),snap=>{
@@ -1960,8 +2268,9 @@
   // ─── START GAME ───────────────────────────────────────────────────
   async function startGame(){
     const s=await get(ref(db,`rooms/${S.roomId}/players`));
-    const activePlayers=Object.entries(s.val()||{}).filter(([,p])=>!p.spectator);
-    if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים פעילים');return;}
+    const allPs=s.val()||{};
+    const activePlayers=Object.entries(getEligible(allPs));
+    if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
     await update(ref(db,`rooms/${S.roomId}`),{
@@ -2099,15 +2408,13 @@
       const subs=snap.val()||{};
       const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
       const players=psSnap.val()||{};
-      // Only count active players who joined BEFORE this category started
+      // Only count eligible players who joined BEFORE this category started
       const catStartedAt=roomData?.catStartedAt||0;
-      const activePlayers=Object.fromEntries(
-        Object.entries(players).filter(([,p])=>!p.spectator&&(p.joinedAt||0)<=catStartedAt+3000)
+      const allEligible=getEligible(players);
+      const joinedBefore=Object.fromEntries(
+        Object.entries(allEligible).filter(([,p])=>(p.joinedAt||0)<=catStartedAt+3000)
       );
-      // Fallback: if no one qualifies (e.g. all joined after), count everyone non-spectator
-      const eligiblePlayers=Object.keys(activePlayers).length>0
-        ? activePlayers
-        : Object.fromEntries(Object.entries(players).filter(([,p])=>!p.spectator));
+      const eligiblePlayers=Object.keys(joinedBefore).length>0 ? joinedBefore : allEligible;
       const total=Object.keys(eligiblePlayers).length;
       const cnt=Object.keys(subs).filter(pid=>eligiblePlayers[pid]).length;
       const map={};Object.keys(eligiblePlayers).forEach(pid=>{map[pid]=!!subs[pid];});
@@ -2862,12 +3169,52 @@
       </div>`).join('');
   }
 
+
+  // ─── PERMANENT LEADERBOARD ───────────────────────────────────────
+  function renderPermLeaderboard(wrapId, lb){
+    const wrap=document.getElementById(wrapId);
+    if(!wrap)return;
+    const entries=Object.entries(lb).sort((a,b)=>(b[1].total||0)-(a[1].total||0));
+    if(!entries.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    const medals=['🥇','🥈','🥉'];
+    wrap.innerHTML='<div class="card" style="margin-top:16px;"><h3>🏆 לוח התהילה</h3>'
+      +entries.map(([,p],i)=>{
+        const c=avc(p.name,p.color);
+        const avg=p.games>0?Math.round(p.total/p.games):0;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="width:24px;text-align:center;font-size:1rem;">${medals[i]||'#'+(i+1)}</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">${p.emoji||p.name.charAt(0)}</div>
+          <div style="flex:1;">
+            <div style="font-weight:800;font-size:.9rem;">${p.name}</div>
+            <div style="font-size:.72rem;color:var(--muted);">${p.games} משחקים · ממוצע ${avg} נק'</div>
+          </div>
+          <div style="font-size:1.1rem;font-weight:900;color:var(--blue);">${p.total}</div>
+        </div>`;
+      }).join('')+'</div>';
+  }
   async function showFinal(){
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();clearSession();
     const snap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=snap.val()||{};
+    // Update permanent leaderboard
+    if(S.isPermanent&&S.isHost){
+      const lbSnap=await get(ref(db,'rooms/'+S.roomId+'/permLeaderboard'));
+      const lb=lbSnap.val()||{};
+      Object.entries(players).filter(([,p])=>!p.spectator).forEach(([pid,p])=>{
+        const key=p.name.replace(/[.#$/\[\]]/g,'_');
+        const prev=lb[key]||{name:p.name,total:0,games:0,color:p.color,emoji:p.emoji};
+        lb[key]={name:p.name,total:(prev.total||0)+(p.score||0),games:(prev.games||0)+1,color:p.color,emoji:p.emoji};
+      });
+      await set(ref(db,'rooms/'+S.roomId+'/permLeaderboard'),lb).catch(()=>{});
+    }
     renderSB('final-sb',players);
     renderPodium(players);
+    // Show permanent leaderboard section in final screen
+    if(S.isPermanent){
+      const lbSnap2=await get(ref(db,'rooms/'+S.roomId+'/permLeaderboard'));
+      renderPermLeaderboard('final-perm-lb-wrap', lbSnap2.val()||{});
+    }
     enterRoom();
     showScreen('final');
     // Find our placement
@@ -2910,9 +3257,12 @@
       await update(ref(db,`rooms/${S.roomId}`),{host:next[0]});
       await set(ref(db,`rooms/${S.roomId}/players/${next[0]}/isHost`),true);
       toast(`👑 הבעלות עברה ל-${next[1].name}`);
-    }else{
-      // No other active players — delete the room
+    }else if(!S.isPermanent){
+      // No other active players and not permanent — delete the room
       await remove(ref(db,`rooms/${S.roomId}`));
+    }else{
+      // Permanent room: keep it, just clear host
+      await update(ref(db,`rooms/${S.roomId}`),{host:null,status:'lobby'});
     }
   }
 
@@ -3114,6 +3464,17 @@
   document.getElementById('btn-add-cc').addEventListener('click',addCC);
   document.getElementById('btn-create-room').addEventListener('click',createRoom);
   document.getElementById('btn-leave-room').addEventListener('click',leaveRoom);
+
+  document.getElementById('btn-spectator-upgrade').addEventListener('click',async()=>{
+    if(!S.roomId||!S.pId)return;
+    await update(ref(db,'rooms/'+S.roomId+'/players/'+S.pId),{spectator:false});
+    S.isSpectator=false;
+    document.getElementById('btn-spectator-upgrade').style.display='none';
+    toast('🎮 אתה עכשיו שחקן רגיל!');
+  });
+  document.getElementById('btn-room-settings').addEventListener('click',openRoomSettings);
+  document.getElementById('btn-invite-tmp').addEventListener('click',openInvitePanel);
+
   document.getElementById('code-box').addEventListener('click',copyCode);
   document.getElementById('btn-share-link').addEventListener('click',shareLink);
   document.getElementById('start-btn').addEventListener('click',startGame);
