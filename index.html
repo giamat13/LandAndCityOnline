@@ -179,6 +179,27 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 @keyframes spin{to{transform:rotate(360deg)}}
 .wait p{color:var(--muted);font-size:.92rem}
 @media(max-width:400px){.big-l{font-size:4rem}.logo h1{font-size:2.5rem}}
+/* voting screen */
+.vote-cat-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--sh)}
+.vote-cat-title{font-size:1rem;font-weight:900;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.vote-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--s2);margin-bottom:7px;transition:background .2s}
+.vote-row:last-child{margin-bottom:0}
+.vote-name{font-size:.82rem;color:var(--muted);min-width:64px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vote-answer{flex:1;font-size:.95rem;font-weight:700}
+.vote-answer.disq{text-decoration:line-through;color:var(--red);opacity:.6}
+.vote-count{font-size:.78rem;color:var(--muted);min-width:32px;text-align:center;font-weight:700}
+.vote-count.hot{color:var(--red)}
+.btn-veto{background:rgba(233,69,96,.12);color:var(--red);border:1.5px solid rgba(233,69,96,.25);border-radius:8px;padding:5px 12px;font-family:'Heebo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.btn-veto:hover{background:rgba(233,69,96,.25)}
+.btn-veto.voted{background:rgba(233,69,96,.3);border-color:var(--red);color:#fff}
+.vote-empty{color:var(--muted);font-size:.85rem;font-style:italic;padding:4px 0}
+.tog-wrap{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.tog{width:40px;height:22px;background:var(--s2);border:1.5px solid var(--border);border-radius:100px;position:relative;transition:background .2s;flex-shrink:0}
+.tog.on{background:var(--green);border-color:var(--green)}
+.tog::after{content:'';position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s}
+.tog.on::after{transform:translateX(-18px)}
+.tog-label{font-size:.85rem;color:var(--muted);font-weight:600}
+@media(max-width:400px){.vote-name{min-width:48px}.btn-veto{padding:5px 8px;font-size:.75rem}}
 </style>
 </head>
 <body>
@@ -225,6 +246,13 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
       <button class="time-btn" data-v="45">45 שנ'</button>
       <button class="time-btn active" data-v="60">60 שנ'</button>
       <button class="time-btn" data-v="90">90 שנ'</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>⚙️ הגדרות</h3>
+    <div class="tog-wrap" id="tog-show-voters">
+      <div class="tog" id="tog-voters-el"></div>
+      <span class="tog-label">הצג מי הצביע פסול (ברירת מחדל: כבוי)</span>
     </div>
   </div>
   <button class="btn btn-p" id="btn-create-room">🚀 צור חדר</button>
@@ -297,6 +325,25 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
         <span class="sub-label" id="sub-label-wait"></span>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- VOTING -->
+<div id="screen-vote" class="screen">
+  <div style="text-align:center;margin-bottom:20px;padding-top:10px;">
+    <div style="font-size:2.5rem;margin-bottom:6px;">🗳️</div>
+    <h2 style="font-size:1.6rem;font-weight:900;">הצבעת פסילה</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin-top:4px;">לחצו 👎 על תשובות שנראות לכם לא תקינות</p>
+  </div>
+  <div id="vote-cats"></div>
+  <div style="background:rgba(76,201,240,.06);border:1px solid rgba(76,201,240,.15);border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:.8rem;color:var(--muted);">
+    💡 תשובה תיפסל אם <strong style="color:var(--red);">מעל 50%</strong> מהשחקנים יצביעו נגדה. תשובות זהות נפסלות ביחד.
+  </div>
+  <div id="host-vote-ctrl" style="display:none;">
+    <button class="btn btn-p" id="btn-show-results">📊 לוח תוצאות</button>
+  </div>
+  <div id="guest-vote-wait" style="display:none;">
+    <div class="wait"><div class="spin"></div><p>ממתין למארח לסיים הצבעה...</p></div>
   </div>
 </div>
 
@@ -388,7 +435,7 @@ let S={
   pName:'',pId:'',roomId:'',isHost:false,
   listeners:[],rTime:60,timerInt:null,timeLeft:60,
   cats:[],cCats:[],letter:'',rNum:0,totScores:{},
-  currentCatIndex:0,catSubmitted:false
+  currentCatIndex:0,catSubmitted:false,showVoters:false
 };
 
 // ─── SESSION PERSISTENCE ──────────────────────────────────────────
@@ -423,6 +470,7 @@ async function restoreSession(){
     toast('ברוך השב! מחבר מחדש...');
     if(room.status==='lobby')enterLobby();
     else if(room.status==='playing')await loadRound();
+    else if(room.status==='voting')await showVoting();
     else if(room.status==='results')await showResults();
     else if(room.status==='ended')await showFinal();
   }catch(e){clearSession();}
@@ -554,7 +602,7 @@ async function createRoom(){
   do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
   S.roomId=roomId;
   await set(ref(db,'rooms/'+roomId),{
-    host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,
+    host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,
     round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
     players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now()}}
   });
@@ -574,6 +622,7 @@ async function joinRoom(){
   if(room.status!=='lobby'){toast('המשחק כבר התחיל');return;}
   S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;
   S.cats=room.categories||[];S.rTime=room.roundTime||60;S.totScores={};S.currentCatIndex=0;
+  S.showVoters=room.showVoters||false;
   await set(ref(db,`rooms/${code}/players/${S.pId}`),{name:n,score:0,joinedAt:Date.now()});
   touchActivity();saveSession();
   enterLobby();
@@ -608,6 +657,7 @@ function enterLobby(){
   addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
     const st=snap.val();
     if(st==='playing')await loadRound();
+    else if(st==='voting')await showVoting();
     else if(st==='results')await showResults();
     else if(st==='ended')await showFinal();
   });
@@ -761,8 +811,9 @@ async function startCat(roomData){
     }
   });
 
-  // Listen: status → results / ended
+  // Listen: status → voting / results / ended
   addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
+    if(snap.val()==='voting')await showVoting();
     if(snap.val()==='results')await showResults();
     if(snap.val()==='ended')await showFinal();
   });
@@ -817,12 +868,156 @@ async function advanceCat(){
   if((snap.val()||0)!==S.currentCatIndex)return;
   const nextIdx=S.currentCatIndex+1;
   if(nextIdx>=S.cats.length){
-    await update(ref(db,`rooms/${S.roomId}`),{status:'results',lastActivity:Date.now()});
+    // All cats done → go to voting phase
+    await update(ref(db,`rooms/${S.roomId}`),{status:'voting',lastActivity:Date.now()});
+    await showVoting();
   }else{
     await update(ref(db,`rooms/${S.roomId}`),{
       currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now()
     });
   }
+}
+
+// ─── VOTING ───────────────────────────────────────────────────────
+async function showVoting(){
+  clearInterval(S.timerInt);detach();
+  const snap=await get(ref(db,`rooms/${S.roomId}`));
+  const room=snap.val();
+  const catAnswers=room.catAnswers||{};
+  const cats=room.categories||S.cats;
+  S.showVoters=room.showVoters||false;
+  const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
+  const players=psSnap.val()||{};
+  const totalPlayers=Object.keys(players).length;
+
+  const container=document.getElementById('vote-cats');
+  container.innerHTML='';
+
+  cats.forEach(cat=>{
+    const block=document.createElement('div');
+    block.className='vote-cat-block';
+    block.innerHTML=`<div class="vote-cat-title">${cat.emoji} ${cat.name}</div><div id="vrows-${cat.id}"></div>`;
+    container.appendChild(block);
+  });
+
+  document.getElementById('host-vote-ctrl').style.display=S.isHost?'block':'none';
+  document.getElementById('guest-vote-wait').style.display=S.isHost?'none':'block';
+  showScreen('vote');
+
+  // Render rows reactively
+  function renderVoteRows(catId,catData,vetoes){
+    const rows=document.getElementById('vrows-'+catId);
+    if(!rows)return;
+    rows.innerHTML='';
+    const entries=Object.entries(players);
+    if(!entries.length){rows.innerHTML='<div class="vote-empty">אין תשובות</div>';return;}
+    entries.forEach(([pid,p])=>{
+      const d=catData[pid];
+      const answer=(d&&d.answer||'').trim();
+      const vetoCount=vetoes[catId]?Object.values(vetoes[catId]).filter(v=>v===pid).length:0;
+      const myVote=vetoes[catId]&&vetoes[catId][S.pId]===pid;
+      const othersCount=totalPlayers-1;
+      const isDisq=othersCount>0&&vetoCount>othersCount/2;
+
+      const row=document.createElement('div');
+      row.className='vote-row';
+
+      const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>`;
+      const answerEl=`<span class="vote-answer${isDisq?' disq':''}">${answer||'—'}</span>`;
+      const countEl=vetoCount>0?`<span class="vote-count hot">${vetoCount}👎</span>`:'<span class="vote-count"></span>';
+
+      // Show veto button for all other players (even empty answer)
+      let vetoBtn='';
+      if(pid!==S.pId){
+        vetoBtn=`<button class="btn-veto${myVote?' voted':''}" data-cat="${catId}" data-pid="${pid}">${myVote?'✓ פסול':'👎 פסול'}</button>`;
+      }
+      row.innerHTML=nameEl+answerEl+countEl+vetoBtn;
+      rows.appendChild(row);
+    });
+
+    // Wire veto buttons
+    rows.querySelectorAll('.btn-veto').forEach(btn=>{
+      btn.addEventListener('click',async()=>{
+        const cId=btn.dataset.cat;
+        const targetPid=btn.dataset.pid;
+        const voteRef=ref(db,`rooms/${S.roomId}/vetoes/${cId}/${S.pId}`);
+        const currentTarget=vetoes[cId]&&vetoes[cId][S.pId];
+        if(currentTarget===targetPid){
+          await remove(voteRef);
+        }else{
+          await set(voteRef,targetPid);
+        }
+        touchActivity();
+      });
+    });
+  }
+
+  // Initial render immediately with already-fetched catAnswers
+  cats.forEach(cat=>{
+    renderVoteRows(cat.id,catAnswers[cat.id]||{},{});
+  });
+
+  // Listen for veto changes and re-render
+  addL(ref(db,`rooms/${S.roomId}/vetoes`),async vSnap=>{
+    const vetoes=vSnap.val()||{};
+    const caSnap=await get(ref(db,`rooms/${S.roomId}/catAnswers`));
+    const catAnswers2=caSnap.val()||{};
+    cats.forEach(cat=>{
+      renderVoteRows(cat.id,catAnswers2[cat.id]||{},vetoes);
+    });
+  });
+
+  // Guest: listen for status→results
+  if(!S.isHost){
+    addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
+      if(snap.val()==='results')await showResults();
+      if(snap.val()==='ended')await showFinal();
+    });
+  }
+}
+
+async function commitVotingAndShowResults(){
+  // Read all vetoes + answers + players
+  const snap=await get(ref(db,`rooms/${S.roomId}`));
+  const room=snap.val();
+  const catAnswers=room.catAnswers||{};
+  const cats=room.categories||S.cats;
+  const vetoes=room.vetoes||{};
+  const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
+  const players=psSnap.val()||{};
+  const totalPlayers=Object.keys(players).length;
+
+  // Compute disqualified answers per cat
+  // key: catId → Set of lowercase answers that are disqualified
+  const disqAnswers={};
+  cats.forEach(cat=>{
+    disqAnswers[cat.id]=new Set();
+    const catData=catAnswers[cat.id]||{};
+    const catVetoes=vetoes[cat.id]||{};
+    Object.entries(players).forEach(([pid])=>{
+      const d=catData[pid];
+      const answer=(d&&d.answer||'').trim();
+      if(!answer)return;
+      // Count votes against this pid
+      const vetoCount=Object.values(catVetoes).filter(v=>v===pid).length;
+      const othersCount=totalPlayers-1;
+      if(othersCount>0&&vetoCount>othersCount/2){
+        disqAnswers[cat.id].add(answer.toLowerCase());
+      }
+    });
+  });
+
+  // Write disqualified set to Firebase so guests see it in results
+  const disqSave={};
+  cats.forEach(cat=>{
+    if(disqAnswers[cat.id].size>0){
+      disqSave[cat.id]=[...disqAnswers[cat.id]];
+    }
+  });
+  await update(ref(db,`rooms/${S.roomId}`),{
+    status:'results',disqualified:disqSave,lastActivity:Date.now()
+  });
+  await showResults();
 }
 
 // ─── RESULTS ──────────────────────────────────────────────────────
@@ -835,6 +1030,13 @@ async function showResults(){
   const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
   const players=psSnap.val()||{};
 
+  // Build disqualified sets
+  const disqMap=room.disqualified||{};
+  const disqSets={};
+  cats.forEach(cat=>{
+    disqSets[cat.id]=new Set((disqMap[cat.id]||[]).map(a=>a.toLowerCase()));
+  });
+
   document.getElementById('res-rnd').textContent=room.round;
   document.getElementById('res-letter').textContent=room.letter;
 
@@ -845,14 +1047,17 @@ async function showResults(){
   bycat.innerHTML='';
   cats.forEach(cat=>{
     const catData=catAnswers[cat.id]||{};
+    const disqSet=disqSets[cat.id]||new Set();
+    // Count only non-disqualified answers
     const counts={};
     Object.values(catData).forEach(d=>{
       const a=(d.answer||'').trim();
-      if(a)counts[a.toLowerCase()]=(counts[a.toLowerCase()]||0)+1;
+      if(a&&!disqSet.has(a.toLowerCase()))counts[a.toLowerCase()]=(counts[a.toLowerCase()]||0)+1;
     });
     Object.entries(catData).forEach(([pid,d])=>{
       const a=(d.answer||'').trim();
       if(!a)return;
+      if(disqSet.has(a.toLowerCase()))return; // disqualified = 0 pts
       const base=counts[a.toLowerCase()]===1?10:5;
       const timeBonus=d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
       rScores[pid]=(rScores[pid]||0)+base+timeBonus;
@@ -860,15 +1065,18 @@ async function showResults(){
     const rows=Object.entries(players).map(([pid,p])=>{
       const d=catData[pid];
       const a=d?(d.answer||'').trim():'';
-      const u=a&&counts[a.toLowerCase()]===1;
-      const cls=!a?'empty':(u?'unique':'shared');
-      const base=!a?0:(u?10:5);
-      const timeBonus=a&&d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
+      const isDisq=a&&disqSet.has(a.toLowerCase());
+      const u=a&&!isDisq&&counts[a.toLowerCase()]===1;
+      const cls=isDisq?'disq':(!a?'empty':(u?'unique':'shared'));
+      const base=isDisq||!a?0:(u?10:5);
+      const timeBonus=!isDisq&&a&&d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
       const pts=base+timeBonus;
+      const disqLabel=isDisq?'<span style="color:var(--red);font-size:.72rem;margin-right:4px;">❌ נפסל</span>':'';
       return `<tr>
         <td>${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</td>
-        <td class="${cls}">${a||'—'}</td>
-        <td style="text-align:center;font-weight:700;color:${base===10?'var(--green)':base===5?'var(--orange)':'var(--muted)'}">+${base}${timeBonus>0?`<span style="color:var(--blue);font-size:.75rem;"> +${timeBonus}⚡</span>`:''}</td>
+        <td class="${cls}">${disqLabel}${a||'—'}</td>
+        <td style="text-align:center;font-weight:700;color:${isDisq?'var(--red)':base===10?'var(--green)':base===5?'var(--orange)':'var(--muted)'}">
+          ${isDisq?'<span style="text-decoration:line-through;opacity:.5">0</span>':'+'+base+(timeBonus>0?`<span style="color:var(--blue);font-size:.75rem;"> +${timeBonus}⚡</span>`:'')}</td>
       </tr>`;
     }).join('');
     const card=document.createElement('div');
@@ -930,7 +1138,7 @@ async function nextRound(){
   await update(ref(db,`rooms/${S.roomId}`),{
     status:'playing',round:S.rNum,letter,
     catStartedAt:Date.now(),currentCatIndex:0,
-    catAnswers:null,lastActivity:Date.now()
+    catAnswers:null,vetoes:null,disqualified:null,lastActivity:Date.now()
   });
   await loadRound();
 }
@@ -968,12 +1176,18 @@ document.getElementById('code-box').addEventListener('click',copyCode);
 document.getElementById('start-btn').addEventListener('click',startGame);
 document.getElementById('submit-btn').addEventListener('click',submitCatAnswer);
 document.getElementById('btn-exit-game').addEventListener('click',exitGame);
+document.getElementById('btn-show-results').addEventListener('click',commitVotingAndShowResults);
 document.getElementById('btn-next-round').addEventListener('click',nextRound);
 document.getElementById('btn-end-game').addEventListener('click',endGame);
 document.getElementById('btn-go-home').addEventListener('click',goHome);
 document.getElementById('cat-answer').addEventListener('keydown',e=>{if(e.key==='Enter')submitCatAnswer();});
 document.getElementById('cc-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addCC();});
 document.querySelectorAll('.time-btn').forEach(btn=>btn.addEventListener('click',()=>selTime(btn)));
+// Show voters toggle
+document.getElementById('tog-show-voters').addEventListener('click',()=>{
+  S.showVoters=!S.showVoters;
+  document.getElementById('tog-voters-el').classList.toggle('on',S.showVoters);
+});
 
 // ─── INIT: try restoring session on page load ─────────────────────
 restoreSession();
