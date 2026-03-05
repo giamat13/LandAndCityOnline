@@ -200,6 +200,16 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 .tog.on::after{transform:translateX(-18px)}
 .tog-label{font-size:.85rem;color:var(--muted);font-weight:600}
 @media(max-width:400px){.vote-name{min-width:48px}.btn-veto{padding:5px 8px;font-size:.75rem}}
+/* multi-answer tags */
+.ans-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:0}
+.ans-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(15,186,129,.15);border:1px solid rgba(15,186,129,.35);color:var(--green);padding:5px 12px;border-radius:100px;font-size:.9rem;font-weight:700}
+.ans-tag .rm{background:none;border:none;color:var(--green);cursor:pointer;font-size:1rem;padding:0;line-height:1;opacity:.7}
+.ans-tag .rm:hover{opacity:1}
+.add-ans-row{display:flex;gap:8px;margin-top:10px}
+.add-ans-row input{flex:1}
+.btn-add-ans{background:rgba(15,186,129,.15);color:var(--green);border:1.5px solid rgba(15,186,129,.3);border-radius:10px;padding:10px 16px;font-family:'Heebo',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-add-ans:hover{background:rgba(15,186,129,.3)}
+.btn-add-ans:disabled{opacity:.4;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -303,7 +313,13 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
     <div class="cat-answer-card">
       <div class="cat-title" id="cat-emoji-name"></div>
       <div class="cat-subtitle" id="cat-hint"></div>
-      <input type="text" id="cat-answer" placeholder="..." maxlength="30">
+      <!-- existing answers tags -->
+      <div class="ans-tags" id="ans-tags"></div>
+      <!-- input row -->
+      <div class="add-ans-row" style="margin-top:12px;">
+        <input type="text" id="cat-answer" placeholder="הכנס תשובה..." maxlength="30">
+        <button class="btn-add-ans" id="btn-add-ans">+ הוסף</button>
+      </div>
     </div>
     <!-- live submission counter (visible to all while still answering) -->
     <div class="sub-row">
@@ -311,7 +327,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
       <span class="sub-label" id="sub-label-live"></span>
     </div>
     <div style="margin-top:14px;">
-      <button class="btn btn-g" id="submit-btn">✅ שלח תשובה</button>
+      <button class="btn btn-g" id="submit-btn">✅ שלח תשובות</button>
     </div>
   </div>
 
@@ -435,7 +451,8 @@ let S={
   pName:'',pId:'',roomId:'',isHost:false,
   listeners:[],rTime:60,timerInt:null,timeLeft:60,
   cats:[],cCats:[],letter:'',rNum:0,totScores:{},
-  currentCatIndex:0,catSubmitted:false,showVoters:false
+  currentCatIndex:0,catSubmitted:false,showVoters:false,
+  currentAnswers:[]  // multi-answer per cat
 };
 
 // ─── SESSION PERSISTENCE ──────────────────────────────────────────
@@ -755,6 +772,10 @@ async function startCat(roomData){
   const inp=document.getElementById('cat-answer');
   inp.value='';inp.disabled=S.catSubmitted;
 
+  // Reset multi-answers
+  S.currentAnswers=[];
+  renderAnsTags();
+
   if(S.catSubmitted){
     document.getElementById('answer-area').style.display='none';
     document.getElementById('wait-others').style.display='block';
@@ -826,7 +847,10 @@ function startTimer(){
     S.timeLeft--;updateTimer();
     if(S.timeLeft<=0){
       clearInterval(S.timerInt);
-      await doSubmit(document.getElementById('cat-answer').value.trim());
+      const inp=document.getElementById('cat-answer');
+      const val=inp.value.trim();
+      if(val)addAnswerTag(val);
+      await doSubmit(S.currentAnswers);
       // Host: grace period then force-advance
       if(S.isHost){
         setTimeout(async()=>{
@@ -845,18 +869,54 @@ function updateTimer(){
   bar.className='tbar'+(pct<30?' warn':'');
 }
 
-// ─── SUBMIT ANSWER ────────────────────────────────────────────────
-function submitCatAnswer(){doSubmit(document.getElementById('cat-answer').value.trim());}
+// ─── MULTI-ANSWER TAG HELPERS ─────────────────────────────────────
+function renderAnsTags(){
+  const container=document.getElementById('ans-tags');
+  if(!container)return;
+  container.innerHTML='';
+  S.currentAnswers.forEach((ans,i)=>{
+    const tag=document.createElement('span');
+    tag.className='ans-tag';
+    tag.innerHTML=`${ans}<button class="rm" title="הסר">×</button>`;
+    tag.querySelector('.rm').addEventListener('click',()=>{
+      S.currentAnswers.splice(i,1);
+      renderAnsTags();
+    });
+    container.appendChild(tag);
+  });
+}
 
-async function doSubmit(answer){
+function addAnswerTag(val){
+  const clean=val.trim();
+  if(!clean)return;
+  if(S.currentAnswers.map(a=>a.toLowerCase()).includes(clean.toLowerCase()))return;
+  S.currentAnswers.push(clean);
+  renderAnsTags();
+}
+
+// ─── SUBMIT ANSWER ────────────────────────────────────────────────
+function submitCatAnswer(){
+  // Add current input value to tags if not empty
+  const inp=document.getElementById('cat-answer');
+  const val=inp.value.trim();
+  if(val){
+    addAnswerTag(val);
+    inp.value='';
+  }
+  doSubmit(S.currentAnswers);
+}
+
+async function doSubmit(answers){
   if(S.catSubmitted)return;
   S.catSubmitted=true;clearInterval(S.timerInt);
   const cat=S.cats[S.currentCatIndex];
   document.getElementById('answer-area').style.display='none';
   document.getElementById('wait-others').style.display='block';
   document.getElementById('cat-answer').disabled=true;
+  // answers can be array or legacy single string
+  const ansArr=Array.isArray(answers)?answers:(answers?[answers]:[]);
   await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
-    name:S.pName,answer:answer,submittedAt:Date.now(),timeLeft:S.timeLeft
+    name:S.pName,answers:ansArr,answer:ansArr[0]||'',submittedAt:Date.now(),timeLeft:S.timeLeft
   });
   touchActivity();saveSession();
 }
@@ -904,48 +964,63 @@ async function showVoting(){
   document.getElementById('guest-vote-wait').style.display=S.isHost?'none':'block';
   showScreen('vote');
 
-  // Render rows reactively
+  // Render rows reactively — each answer is its own row
   function renderVoteRows(catId,catData,vetoes){
     const rows=document.getElementById('vrows-'+catId);
     if(!rows)return;
     rows.innerHTML='';
     const entries=Object.entries(players);
     if(!entries.length){rows.innerHTML='<div class="vote-empty">אין תשובות</div>';return;}
+    let anyAnswer=false;
     entries.forEach(([pid,p])=>{
       const d=catData[pid];
-      const answer=(d&&d.answer||'').trim();
-      const vetoCount=vetoes[catId]?Object.values(vetoes[catId]).filter(v=>v===pid).length:0;
-      const myVote=vetoes[catId]&&vetoes[catId][S.pId]===pid;
-      const othersCount=totalPlayers-1;
-      const isDisq=othersCount>0&&vetoCount>othersCount/2;
-
-      const row=document.createElement('div');
-      row.className='vote-row';
-
-      const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>`;
-      const answerEl=`<span class="vote-answer${isDisq?' disq':''}">${answer||'—'}</span>`;
-      const countEl=vetoCount>0?`<span class="vote-count hot">${vetoCount}👎</span>`:'<span class="vote-count"></span>';
-
-      // Show veto button for all other players (even empty answer)
-      let vetoBtn='';
-      if(pid!==S.pId){
-        vetoBtn=`<button class="btn-veto${myVote?' voted':''}" data-cat="${catId}" data-pid="${pid}">${myVote?'✓ פסול':'👎 פסול'}</button>`;
+      const ansArr=d?(Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[])):[]; 
+      if(!ansArr.length){
+        // Show empty row
+        const row=document.createElement('div');
+        row.className='vote-row';
+        const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>`;
+        row.innerHTML=nameEl+`<span class="vote-answer" style="opacity:.4;font-style:italic">—</span>`;
+        rows.appendChild(row);
+        return;
       }
-      row.innerHTML=nameEl+answerEl+countEl+vetoBtn;
-      rows.appendChild(row);
+      anyAnswer=true;
+      ansArr.forEach((answer,ai)=>{
+        const vetoKey=`${pid}_${ai}`;
+        const vetoCount=vetoes[catId]?Object.values(vetoes[catId]).filter(v=>v===vetoKey).length:0;
+        const myVote=vetoes[catId]&&vetoes[catId][S.pId]===vetoKey;
+        const othersCount=totalPlayers-1;
+        const isDisq=othersCount>0&&vetoCount>othersCount/2;
+
+        const row=document.createElement('div');
+        row.className='vote-row';
+
+        // Only show player name on first answer row
+        const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>`
+          :`<span class="vote-name" style="opacity:.3">↳</span>`;
+        const answerEl=`<span class="vote-answer${isDisq?' disq':''}">${answer}</span>`;
+        const countEl=vetoCount>0?`<span class="vote-count hot">${vetoCount}👎</span>`:'<span class="vote-count"></span>';
+
+        let vetoBtn='';
+        if(pid!==S.pId){
+          vetoBtn=`<button class="btn-veto${myVote?' voted':''}" data-cat="${catId}" data-vkey="${vetoKey}">${myVote?'✓ פסול':'👎 פסול'}</button>`;
+        }
+        row.innerHTML=nameEl+answerEl+countEl+vetoBtn;
+        rows.appendChild(row);
+      });
     });
 
     // Wire veto buttons
     rows.querySelectorAll('.btn-veto').forEach(btn=>{
       btn.addEventListener('click',async()=>{
         const cId=btn.dataset.cat;
-        const targetPid=btn.dataset.pid;
+        const vKey=btn.dataset.vkey;
         const voteRef=ref(db,`rooms/${S.roomId}/vetoes/${cId}/${S.pId}`);
         const currentTarget=vetoes[cId]&&vetoes[cId][S.pId];
-        if(currentTarget===targetPid){
+        if(currentTarget===vKey){
           await remove(voteRef);
         }else{
-          await set(voteRef,targetPid);
+          await set(voteRef,vKey);
         }
         touchActivity();
       });
@@ -996,14 +1071,16 @@ async function commitVotingAndShowResults(){
     const catVetoes=vetoes[cat.id]||{};
     Object.entries(players).forEach(([pid])=>{
       const d=catData[pid];
-      const answer=(d&&d.answer||'').trim();
-      if(!answer)return;
-      // Count votes against this pid
-      const vetoCount=Object.values(catVetoes).filter(v=>v===pid).length;
-      const othersCount=totalPlayers-1;
-      if(othersCount>0&&vetoCount>othersCount/2){
-        disqAnswers[cat.id].add(answer.toLowerCase());
-      }
+      const ansArr=d?(Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[])):[]; 
+      ansArr.forEach((answer,ai)=>{
+        if(!answer)return;
+        const vKey=`${pid}_${ai}`;
+        const vetoCount=Object.values(catVetoes).filter(v=>v===vKey).length;
+        const othersCount=totalPlayers-1;
+        if(othersCount>0&&vetoCount>othersCount/2){
+          disqAnswers[cat.id].add(answer.toLowerCase());
+        }
+      });
     });
   });
 
@@ -1048,37 +1125,62 @@ async function showResults(){
   cats.forEach(cat=>{
     const catData=catAnswers[cat.id]||{};
     const disqSet=disqSets[cat.id]||new Set();
-    // Count only non-disqualified answers
+    // Count only non-disqualified answers across all players' answer arrays
     const counts={};
     Object.values(catData).forEach(d=>{
-      const a=(d.answer||'').trim();
-      if(a&&!disqSet.has(a.toLowerCase()))counts[a.toLowerCase()]=(counts[a.toLowerCase()]||0)+1;
+      const ansArr=Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[]);
+      ansArr.forEach(a=>{
+        const al=(a||'').trim();
+        if(al&&!disqSet.has(al.toLowerCase()))counts[al.toLowerCase()]=(counts[al.toLowerCase()]||0)+1;
+      });
     });
     Object.entries(catData).forEach(([pid,d])=>{
-      const a=(d.answer||'').trim();
-      if(!a)return;
-      if(disqSet.has(a.toLowerCase()))return; // disqualified = 0 pts
-      const base=counts[a.toLowerCase()]===1?10:5;
+      const ansArr=Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[]);
       const timeBonus=d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
-      rScores[pid]=(rScores[pid]||0)+base+timeBonus;
+      ansArr.forEach(a=>{
+        const al=(a||'').trim();
+        if(!al)return;
+        if(disqSet.has(al.toLowerCase()))return;
+        const base=counts[al.toLowerCase()]===1?10:5;
+        rScores[pid]=(rScores[pid]||0)+base;
+      });
+      // Time bonus only once per player (on first valid answer)
+      const firstValid=ansArr.find(a=>{const al=(a||'').trim();return al&&!disqSet.has(al.toLowerCase());});
+      if(firstValid&&timeBonus>0)rScores[pid]=(rScores[pid]||0)+timeBonus;
     });
-    const rows=Object.entries(players).map(([pid,p])=>{
+    // Build table rows — one row per answer per player
+    const rowsArr=[];
+    Object.entries(players).forEach(([pid,p])=>{
       const d=catData[pid];
-      const a=d?(d.answer||'').trim():'';
-      const isDisq=a&&disqSet.has(a.toLowerCase());
-      const u=a&&!isDisq&&counts[a.toLowerCase()]===1;
-      const cls=isDisq?'disq':(!a?'empty':(u?'unique':'shared'));
-      const base=isDisq||!a?0:(u?10:5);
-      const timeBonus=!isDisq&&a&&d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
-      const pts=base+timeBonus;
-      const disqLabel=isDisq?'<span style="color:var(--red);font-size:.72rem;margin-right:4px;">❌ נפסל</span>':'';
-      return `<tr>
-        <td>${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</td>
-        <td class="${cls}">${disqLabel}${a||'—'}</td>
-        <td style="text-align:center;font-weight:700;color:${isDisq?'var(--red)':base===10?'var(--green)':base===5?'var(--orange)':'var(--muted)'}">
-          ${isDisq?'<span style="text-decoration:line-through;opacity:.5">0</span>':'+'+base+(timeBonus>0?`<span style="color:var(--blue);font-size:.75rem;"> +${timeBonus}⚡</span>`:'')}</td>
-      </tr>`;
-    }).join('');
+      const ansArr=d?(Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[])):[]; 
+      const timeBonus=d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
+      if(!ansArr.length){
+        rowsArr.push(`<tr>
+          <td>${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</td>
+          <td class="empty">—</td><td style="text-align:center;color:var(--muted)">+0</td></tr>`);
+        return;
+      }
+      let firstValidDone=false;
+      ansArr.forEach((a,ai)=>{
+        const al=(a||'').trim();
+        const isDisq=al&&disqSet.has(al.toLowerCase());
+        const u=al&&!isDisq&&counts[al.toLowerCase()]===1;
+        const cls=isDisq?'disq':(!al?'empty':(u?'unique':'shared'));
+        const base=isDisq||!al?0:(u?10:5);
+        const tb=(!firstValidDone&&!isDisq&&al&&timeBonus>0)?timeBonus:0;
+        if(!isDisq&&al)firstValidDone=true;
+        const disqLabel=isDisq?'<span style="color:var(--red);font-size:.72rem;margin-right:4px;">❌ נפסל</span>':'';
+        const nameCell=ai===0?`${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}`
+          :`<span style="opacity:.3">↳</span>`;
+        rowsArr.push(`<tr>
+          <td>${nameCell}</td>
+          <td class="${cls}">${disqLabel}${al||'—'}</td>
+          <td style="text-align:center;font-weight:700;color:${isDisq?'var(--red)':base===10?'var(--green)':base===5?'var(--orange)':'var(--muted)'}">
+            ${isDisq?'<span style="text-decoration:line-through;opacity:.5">0</span>':'+'+base+(tb>0?`<span style="color:var(--blue);font-size:.75rem;"> +${tb}⚡</span>`:'')}</td>
+        </tr>`);
+      });
+    });
+    const rows=rowsArr.join('');
     const card=document.createElement('div');
     card.className='card';card.style.marginBottom='12px';
     card.innerHTML=`<h3>${cat.emoji} ${cat.name}</h3>
@@ -1180,7 +1282,17 @@ document.getElementById('btn-show-results').addEventListener('click',commitVotin
 document.getElementById('btn-next-round').addEventListener('click',nextRound);
 document.getElementById('btn-end-game').addEventListener('click',endGame);
 document.getElementById('btn-go-home').addEventListener('click',goHome);
-document.getElementById('cat-answer').addEventListener('keydown',e=>{if(e.key==='Enter')submitCatAnswer();});
+document.getElementById('cat-answer').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const val=document.getElementById('cat-answer').value.trim();
+    if(val){addAnswerTag(val);document.getElementById('cat-answer').value='';}
+  }
+});
+document.getElementById('btn-add-ans').addEventListener('click',()=>{
+  const inp=document.getElementById('cat-answer');
+  const val=inp.value.trim();
+  if(val){addAnswerTag(val);inp.value='';inp.focus();}
+});
 document.getElementById('cc-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addCC();});
 document.querySelectorAll('.time-btn').forEach(btn=>btn.addEventListener('click',()=>selTime(btn)));
 // Show voters toggle
