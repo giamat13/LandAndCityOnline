@@ -612,6 +612,7 @@
     <div id="guest-wait" style="display:none;">
       <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
       <button id="btn-spectator-upgrade" style="display:none;margin-top:12px;" class="btn btn-s">🎮 הצטרף כשחקן רגיל</button>
+      <button id="btn-become-spectator" style="display:none;margin-top:8px;" class="btn btn-s" style="opacity:.7;font-size:.88rem;">👁 עבור למצב צופה</button>
     </div>
   </div>
 
@@ -2083,6 +2084,8 @@
     if(_settingsBtn) _settingsBtn.style.display=S.isHost?'inline-flex':'none';
     if(_inviteBtn) _inviteBtn.style.display=(S.isHost&&S.isPermanent)?'flex':'none';
     if(_upBtn) _upBtn.style.display=S.isSpectator?'block':'none';
+    const _becomeSpecBtn=document.getElementById('btn-become-spectator');
+    if(_becomeSpecBtn) _becomeSpecBtn.style.display=(!S.isSpectator&&!S.isHost)?'block':'none';
     document.getElementById('guest-wait').style.display=S.isHost?'none':'block';
     document.getElementById('lobby-cats').innerHTML=S.cats.map(c=>`<span class="cb">${c.emoji} ${c.name}</span>`).join('');
     showScreen('lobby');
@@ -3607,7 +3610,17 @@
     await update(ref(db,'rooms/'+S.roomId+'/players/'+S.pId),{spectator:false});
     S.isSpectator=false;
     document.getElementById('btn-spectator-upgrade').style.display='none';
+    document.getElementById('btn-become-spectator').style.display='block';
     toast('🎮 אתה עכשיו שחקן רגיל!');
+  });
+  document.getElementById('btn-become-spectator').addEventListener('click',async()=>{
+    if(!S.roomId||!S.pId)return;
+    if(!confirm('לעבור למצב צופה? לא תוכל להגיש תשובות עד שתחזור לשחקן רגיל.'))return;
+    await update(ref(db,'rooms/'+S.roomId+'/players/'+S.pId),{spectator:true});
+    S.isSpectator=true;
+    document.getElementById('btn-become-spectator').style.display='none';
+    document.getElementById('btn-spectator-upgrade').style.display='block';
+    toast('👁 אתה עכשיו צופה');
   });
   document.getElementById('btn-room-settings').addEventListener('click',openRoomSettings);
   document.getElementById('btn-invite-tmp').addEventListener('click',openInvitePanel);
