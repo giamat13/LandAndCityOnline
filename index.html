@@ -270,13 +270,16 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
 .share-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(76,201,240,.12);border:1.5px solid rgba(76,201,240,.3);color:var(--blue);border-radius:10px;padding:8px 16px;font-family:'Heebo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:10px;width:100%;justify-content:center;}
 .share-btn:hover{background:rgba(76,201,240,.25);}
 /* victory overlay */
-#victory-overlay{position:fixed;inset:0;z-index:1000;pointer-events:none;display:none;}
+#victory-overlay{position:fixed;inset:0;z-index:2000;pointer-events:none;display:none;}
 .confetti-piece{position:absolute;width:10px;height:10px;opacity:0;animation:confettiFall linear forwards;}
 @keyframes confettiFall{0%{opacity:1;transform:translateY(-20px) rotate(0deg);}100%{opacity:0;transform:translateY(100vh) rotate(720deg);}}
-.victory-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);z-index:1001;text-align:center;pointer-events:none;animation:bannerPop .7s .2s cubic-bezier(.34,1.56,.64,1) forwards;}
-@keyframes bannerPop{0%{transform:translate(-50%,-50%) scale(0) rotate(-10deg);opacity:0;}60%{transform:translate(-50%,-50%) scale(1.1) rotate(3deg);opacity:1;}100%{transform:translate(-50%,-50%) scale(1) rotate(0deg);opacity:1;}}
-.victory-banner.hide{animation:bannerFade .5s ease forwards;}
-@keyframes bannerFade{to{opacity:0;transform:translate(-50%,-50%) scale(.8);}}
+.victory-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2001;text-align:center;pointer-events:auto;
+  background:rgba(10,10,25,.92);border:1px solid rgba(255,255,255,.15);border-radius:28px;padding:32px 52px;
+  backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,.7);
+  animation:bannerPop .65s .05s cubic-bezier(.34,1.56,.64,1) both;min-width:260px;}
+@keyframes bannerPop{0%{transform:translate(-50%,-50%) scale(0) rotate(-8deg);opacity:0;}60%{transform:translate(-50%,-50%) scale(1.06) rotate(2deg);opacity:1;}80%{transform:translate(-50%,-50%) scale(.97);}100%{transform:translate(-50%,-50%) scale(1);opacity:1;}}
+.victory-banner.hide{animation:bannerFade .4s ease forwards;}
+@keyframes bannerFade{to{opacity:0;transform:translate(-50%,-50%) scale(.85);}}
 .v-emoji{font-size:5rem;display:block;filter:drop-shadow(0 0 20px rgba(255,255,255,.5));}
 .v-text{font-size:1.8rem;font-weight:900;margin-top:8px;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 .v-text.gold{background:linear-gradient(135deg,#f5a623,#ffd700,#f5a623);}
@@ -342,10 +345,15 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <div class="card">
     <h3>⏱️ זמן לכל קטגוריה</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="time-btn" data-v="30">30 שנ'</button>
+      <button class="time-btn active" data-v="30">30 שנ'</button>
       <button class="time-btn" data-v="45">45 שנ'</button>
-      <button class="time-btn active" data-v="60">60 שנ'</button>
+      <button class="time-btn" data-v="60">60 שנ'</button>
       <button class="time-btn" data-v="90">90 שנ'</button>
+      <button class="time-btn" data-v="custom" id="time-btn-custom">✏️ מותאם</button>
+    </div>
+    <div id="custom-time-row" style="display:none;margin-top:10px;display:none;align-items:center;gap:10px;">
+      <input type="number" id="custom-time-inp" min="10" max="300" placeholder="שניות..." style="width:120px;text-align:center;font-size:1rem;">
+      <span style="color:var(--muted);font-size:.85rem;">שניות (10–300)</span>
     </div>
   </div>
   <div class="card">
@@ -497,10 +505,10 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <button class="btn btn-s" onclick="exitGame()" style="margin-top:8px;">🚪 יציאה</button>
 </div>
 
-<!-- VICTORY OVERLAY -->
-<div id="victory-overlay"></div>
-
 </div><!-- /#app -->
+
+<!-- VICTORY OVERLAY (outside #app to avoid stacking context issues) -->
+<div id="victory-overlay"></div>
 
 <!-- CHAT FAB + PANEL (shown when in a room) -->
 <button id="chat-fab" class="chat-fab" style="display:none;" title="צ'אט">
@@ -670,7 +678,7 @@ const INACTIVITY_MS = 10 * 60 * 1000;
 
 let S={
   pName:'',pId:'',roomId:'',isHost:false,
-  listeners:[],rTime:60,timerInt:null,timeLeft:60,
+  listeners:[],rTime:30,timerInt:null,timeLeft:30,
   cats:[],cCats:[],letter:'',rNum:0,totScores:{},
   currentCatIndex:0,catSubmitted:false,showVoters:false,
   currentAnswers:[],
@@ -709,7 +717,7 @@ async function restoreSession(){
     S.rNum=room.round||1;
     S.totScores=sess.totScores||{};
     S.cats=room.categories||[];
-    S.rTime=room.roundTime||60;
+    S.rTime=room.roundTime||30;
     S.currentCatIndex=room.currentCatIndex||0;
     S.isSpectator=sess.isSpectator||false;
     S.totalRounds=room.totalRounds||0;
@@ -830,9 +838,24 @@ function renderCCTags(){
   });
 }
 function selTime(btn){
+  const v=btn.dataset.v;
+  const customRow=document.getElementById('custom-time-row');
+  if(v==='custom'){
+    document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    customRow.style.display='flex';
+    const inp=document.getElementById('custom-time-inp');
+    inp.focus();
+    inp.oninput=()=>{
+      const val=Math.min(300,Math.max(10,parseInt(inp.value)||10));
+      S.rTime=val;
+    };
+    return;
+  }
+  customRow.style.display='none';
   document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  S.rTime=parseInt(btn.dataset.v);
+  S.rTime=parseInt(v);
 }
 
 // ─── HOME → CREATE ────────────────────────────────────────────────
@@ -884,7 +907,7 @@ async function joinRoom(asSpectator=false){
   }
 
   S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
-  S.cats=room.categories||[];S.rTime=room.roundTime||60;S.totScores={};
+  S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};
   S.currentCatIndex=room.currentCatIndex||0;
   S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
   S.cumulativeSB=room.cumulativeSB!==false;
@@ -1120,11 +1143,6 @@ async function startCat(roomData){
     if(newIdx!==null&&newIdx!==S.currentCatIndex){
       S.currentCatIndex=newIdx;S.catSubmitted=false;
       clearInterval(S.timerInt);
-      // Lock edit bar — no more editing once category advances
-      const eb=document.getElementById('edit-bar');
-      if(eb)eb.style.display='none';
-      const updateBtn=document.getElementById('btn-update-ans');
-      if(updateBtn)updateBtn.disabled=true;
       await loadRound();
     }
   });
@@ -1184,15 +1202,6 @@ function startTimer(){
         const val=inp.value.trim();
         if(val)addAnswerTag(val);
         await doSubmit(S.currentAnswers);
-        // After time runs out — lock editing
-        setTimeout(()=>{
-          const editBar=document.getElementById('edit-bar');
-          if(editBar){
-            editBar.innerHTML='<div style="color:var(--muted);font-size:.82rem;">⏰ הזמן נגמר — לא ניתן לערוך</div>';
-          }
-          const upBtn=document.getElementById('btn-update-ans');
-          if(upBtn)upBtn.disabled=true;
-        },100);
       }
       // Host: grace period then force-advance
       if(S.isHost){
@@ -1334,9 +1343,11 @@ async function updateAnswer(){
   if(val){ addAnswerTag(val); inp.value=''; }
   const cat=S.cats[S.currentCatIndex];
   const ansArr=[...S.currentAnswers];
-  // timeLeft=0 on edit — מונע בונוס זמן לעורכים
+  // שמור timeLeft מהשליחה המקורית כדי לשמור בונוס מהירות
+  const origSnap=await get(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`));
+  const origTimeLeft=origSnap.val()?.timeLeft||0;
   await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
-    name:S.pName,answers:ansArr,answer:ansArr[0]||'',submittedAt:Date.now(),timeLeft:0
+    name:S.pName,answers:ansArr,answer:ansArr[0]||'',submittedAt:Date.now(),timeLeft:origTimeLeft
   });
   toast('✅ תשובות עודכנו!');
   touchActivity();
@@ -1585,7 +1596,7 @@ async function showResults(){
     });
     Object.entries(catData).forEach(([pid,d])=>{
       const ansArr=Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[]);
-      const timeBonus=d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
+      const timeBonus=d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||30))*5):0;
       ansArr.forEach(a=>{
         const al=(a||'').trim();
         if(!al)return;
@@ -1604,7 +1615,7 @@ async function showResults(){
     Object.entries(players).filter(([,p])=>!p.spectator).forEach(([pid,p])=>{
       const d=catData[pid];
       const ansArr=d?(Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[])):[]; 
-      const timeBonus=d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
+      const timeBonus=d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||30))*5):0;
       if(!ansArr.length){
         rowsArr.push(`<tr>
           <td>${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</td>
@@ -1678,6 +1689,14 @@ async function showResults(){
 
   showScreen('results');
 
+  // Victory animation based on THIS ROUND's score ranking
+  const sortedByRound=Object.entries(ps2val)
+    .filter(([,p])=>!p.spectator)
+    .sort((a,b)=>(rScores[b[0]]||0)-(rScores[a[0]]||0));
+  const myRoundPlace=sortedByRound.findIndex(([pid])=>pid===S.pId)+1;
+  const roundWinnerName=sortedByRound[0]?.[1]?.name||'';
+  setTimeout(()=>showVictoryAnim(myRoundPlace, roundWinnerName),500);
+
   if(!S.isHost){
     addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
       if(snap.val()==='playing')await loadRound();
@@ -1722,36 +1741,49 @@ function renderPodium(players){
 function showVictoryAnim(place,winnerName){
   const overlay=document.getElementById('victory-overlay');
   if(!overlay)return;
-  overlay.style.display='block';
-  // Remove any old banner
+
+  // Remove any leftover pieces from last game
+  overlay.innerHTML='';
   document.querySelectorAll('.victory-banner').forEach(b=>b.remove());
+
+  overlay.style.display='block';
 
   const banner=document.createElement('div');
   banner.className='victory-banner';
 
   if(place===1){
     SFX.play('win');
-    spawnConfetti(80);
     banner.innerHTML=`<span class="v-emoji">🥇</span><div class="v-text gold">ניצחת!</div><div class="v-sub">מקום ראשון 🎉</div>`;
+    spawnConfetti(80);
   }else if(place===2){
     SFX.play('place2');
-    spawnConfetti(30,'silver');
     banner.innerHTML=`<span class="v-emoji">🥈</span><div class="v-text silver">כמעט!</div><div class="v-sub">מקום שני – עוד קצת!</div>`;
+    spawnConfetti(30,'silver');
   }else if(place===3){
     SFX.play('place3');
-    spawnConfetti(15,'bronze');
     banner.innerHTML=`<span class="v-emoji">🥉</span><div class="v-text bronze">כבוד!</div><div class="v-sub">מקום שלישי</div>`;
-  }else if(place>3){
-    banner.innerHTML=`<span class="v-emoji">🎮</span><div class="v-text silver">משחק גמור!</div><div class="v-sub">${winnerName} ניצח!</div>`;
-  }else{return;}
+    spawnConfetti(15,'bronze');
+  }else{
+    // place>3 or place===0 (spectator / not found) — show winner
+    banner.innerHTML=`<span class="v-emoji">🎊</span><div class="v-text gold">המשחק נגמר!</div><div class="v-sub">${winnerName?winnerName+' ניצח!':''}</div>`;
+  }
+
+  // Click to dismiss early
+  banner.style.cursor='pointer';
+  banner.addEventListener('click',()=>dismissBanner(banner,overlay));
 
   document.body.appendChild(banner);
-  // Auto-dismiss after 3.5s
-  setTimeout(()=>{
-    banner.classList.add('hide');
-    overlay.style.display='none';
-    setTimeout(()=>banner.remove(),600);
-  },3500);
+
+  // Auto-dismiss after 4s
+  const t=setTimeout(()=>dismissBanner(banner,overlay),4000);
+  banner._dismissTimer=t;
+}
+
+function dismissBanner(banner,overlay){
+  clearTimeout(banner._dismissTimer);
+  banner.classList.add('hide');
+  overlay.style.display='none';
+  setTimeout(()=>{banner.remove();overlay.innerHTML='';},500);
 }
 
 function spawnConfetti(count,style){
@@ -1874,11 +1906,14 @@ function showChatFab(show){
 
 function openChatPanel(){
   document.getElementById('chat-panel').classList.add('open');
-  S.chatOpen=true;S.chatUnread=0;
+  S.chatOpen=true;
+  S.chatUnread=0;
+  // Mark all current messages as read
+  const msgs=document.getElementById('chat-msgs');
+  S.lastReadTs=S.lastIncomingTs||0;
   document.getElementById('chat-unread').style.display='none';
   document.getElementById('chat-unread').textContent='';
   setTimeout(()=>{
-    const msgs=document.getElementById('chat-msgs');
     msgs.scrollTop=msgs.scrollHeight;
     document.getElementById('chat-inp').focus();
   },200);
@@ -1890,6 +1925,8 @@ function closeChatPanel(){
 
 function initChat(){
   detachChat();
+  S.lastReadTs = S.lastReadTs || Date.now(); // treat all existing msgs as read on join
+  S.lastIncomingTs = S.lastReadTs;
   const chatRef=ref(db,`rooms/${S.roomId}/chat`);
   const fn=snap=>{
     const data=snap.val()||{};
@@ -1911,13 +1948,27 @@ function initChat(){
       container.appendChild(wrap);
     });
     container.scrollTop=container.scrollHeight;
-    // Unread badge
-    if(!S.chatOpen&&msgs.length>0){
-      const last=msgs[msgs.length-1];
-      if(last.pId!==S.pId){
-        S.chatUnread=Math.min(S.chatUnread+1,99);
-        const badge=document.getElementById('chat-unread');
-        badge.textContent=S.chatUnread;badge.style.display='flex';
+
+    // Count only messages newer than lastReadTs, not mine
+    const unread=msgs.filter(m=>!m.system&&m.pId!==S.pId&&m.ts>(S.lastReadTs||0));
+    // Track the latest incoming ts we've seen
+    const latestIncoming=msgs.filter(m=>!m.system&&m.pId!==S.pId);
+    if(latestIncoming.length>0){
+      S.lastIncomingTs=latestIncoming[latestIncoming.length-1].ts;
+    }
+    if(S.chatOpen){
+      // Panel is open — mark everything as read immediately
+      S.lastReadTs=S.lastIncomingTs||S.lastReadTs;
+      S.chatUnread=0;
+      document.getElementById('chat-unread').style.display='none';
+    }else{
+      S.chatUnread=unread.length;
+      const badge=document.getElementById('chat-unread');
+      if(S.chatUnread>0){
+        badge.textContent=Math.min(S.chatUnread,99);
+        badge.style.display='flex';
+      }else{
+        badge.style.display='none';
       }
     }
   };
@@ -1940,7 +1991,7 @@ async function sendChat(){
 function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ─── QUICK EMOJI REACTIONS ────────────────────────────────────────
-const QUICK_EMOJIS=['🔥','😂','❤️','😮','👏','💀','🥳','😭','💯','🤯'];
+const QUICK_EMOJIS=['👍','🔥','😂','❤️','😮','👏','💀','🥳','😭','💯','🤯'];
 let reactPickerOpen=false;
 
 function closeReactPicker(){
@@ -2062,6 +2113,16 @@ document.getElementById('cat-answer').addEventListener('keydown',e=>{
   if(e.key==='Enter'){
     const val=document.getElementById('cat-answer').value.trim();
     if(val){addAnswerTag(val);document.getElementById('cat-answer').value='';}
+  }
+});
+document.getElementById('cat-answer').addEventListener('input',e=>{
+  const inp=e.target;
+  const val=inp.value;
+  if(val.includes(',')){
+    const parts=val.split(',');
+    // last part stays in input, all before the comma get added
+    parts.slice(0,-1).forEach(p=>{const t=p.trim();if(t)addAnswerTag(t);});
+    inp.value=parts[parts.length-1];
   }
 });
 document.getElementById('btn-add-ans').addEventListener('click',()=>{
