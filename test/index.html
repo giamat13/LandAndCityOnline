@@ -200,6 +200,7 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
   <div class="r-hdr">
     <span class="rbadge">סיבוב <span id="rnd-num">1</span></span>
     <span id="timer-txt" style="font-size:1.3rem;font-weight:900;color:var(--orange);">60</span>
+    <button class="btn btn-s btn-sm" style="width:auto;padding:7px 14px;font-size:.78rem;" onclick="exitGame()">🚪 יציאה</button>
   </div>
   <!-- category progress bar -->
   <div class="cat-prog-wrap">
@@ -250,6 +251,10 @@ input[type=text]:disabled{opacity:.5;cursor:not-allowed}
     </p>
   </div>
   <div id="res-cats"></div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);border-radius:10px;padding:10px 14px;">
+    <span style="font-size:1.1rem;">⚡</span>
+    <span style="color:var(--blue);font-size:.82rem;font-weight:600;">בונוס מהירות – ככל שענית מהר יותר, כך מרוויחים עד <strong>+5 נקודות</strong> בונוס!</span>
+  </div>
   <div class="card"><h3>🏅 ניקוד</h3><div class="sb" id="scoreboard"></div></div>
   <div id="host-next" style="display:none;">
     <button class="btn btn-p" onclick="nextRound()">▶️ סיבוב הבא</button>
@@ -509,8 +514,6 @@ window.joinRoom=async()=>{
   touchActivity();saveSession();
   enterLobby();
 };
-
-// ─── LOBBY ────────────────────────────────────────────────────────
 function enterLobby(){
   document.getElementById('lobby-code').textContent=S.roomId;
   document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
@@ -555,10 +558,10 @@ window.leaveRoom=async()=>{
     if(S.isHost)await remove(ref(db,`rooms/${S.roomId}`));
   }
   clearSession();S.roomId='';S.isHost=false;showScreen('home');
-};
+}
 
 // ─── START GAME ───────────────────────────────────────────────────
-window.startGame=async()=>{
+async function startGame(){
   const s=await get(ref(db,`rooms/${S.roomId}/players`));
   if(Object.keys(s.val()||{}).length<2){toast('צריך לפחות 2 שחקנים');return;}
   const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
@@ -568,7 +571,7 @@ window.startGame=async()=>{
     catStartedAt:Date.now(),currentCatIndex:0,
     catAnswers:null,lastActivity:Date.now()
   });
-};
+}
 
 // ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
 async function loadRound(){
@@ -692,7 +695,7 @@ function updateTimer(){
 }
 
 // ─── SUBMIT ANSWER ────────────────────────────────────────────────
-window.submitCatAnswer=()=>doSubmit(document.getElementById('cat-answer').value.trim());
+function submitCatAnswer(){doSubmit(document.getElementById('cat-answer').value.trim());}
 
 async function doSubmit(answer){
   if(S.catSubmitted)return;
@@ -702,7 +705,7 @@ async function doSubmit(answer){
   document.getElementById('wait-others').style.display='block';
   document.getElementById('cat-answer').disabled=true;
   await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
-    name:S.pName,answer:answer,submittedAt:Date.now()
+    name:S.pName,answer:answer,submittedAt:Date.now(),timeLeft:S.timeLeft
   });
   touchActivity();saveSession();
 }
@@ -750,18 +753,22 @@ async function showResults(){
     Object.entries(catData).forEach(([pid,d])=>{
       const a=(d.answer||'').trim();
       if(!a)return;
-      rScores[pid]=(rScores[pid]||0)+(counts[a.toLowerCase()]===1?10:5);
+      const base=counts[a.toLowerCase()]===1?10:5;
+      const timeBonus=d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
+      rScores[pid]=(rScores[pid]||0)+base+timeBonus;
     });
     const rows=Object.entries(players).map(([pid,p])=>{
       const d=catData[pid];
       const a=d?(d.answer||'').trim():'';
       const u=a&&counts[a.toLowerCase()]===1;
       const cls=!a?'empty':(u?'unique':'shared');
-      const pts=!a?0:(u?10:5);
+      const base=!a?0:(u?10:5);
+      const timeBonus=a&&d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||60))*5):0;
+      const pts=base+timeBonus;
       return `<tr>
         <td>${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</td>
         <td class="${cls}">${a||'—'}</td>
-        <td style="text-align:center;font-weight:700;color:${pts===10?'var(--green)':pts===5?'var(--orange)':'var(--muted)'}">+${pts}</td>
+        <td style="text-align:center;font-weight:700;color:${base===10?'var(--green)':base===5?'var(--orange)':'var(--muted)'}">+${base}${timeBonus>0?`<span style="color:var(--blue);font-size:.75rem;"> +${timeBonus}⚡</span>`:''}</td>
       </tr>`;
     }).join('');
     const card=document.createElement('div');
@@ -818,10 +825,12 @@ window.nextRound=async()=>{
     catStartedAt:Date.now(),currentCatIndex:0,
     catAnswers:null,lastActivity:Date.now()
   });
+  await loadRound();
 };
 
 window.endGame=async()=>{
   await update(ref(db,`rooms/${S.roomId}`),{status:'ended',lastActivity:Date.now()});
+  await showFinal();
 };
 
 async function showFinal(){
@@ -834,6 +843,17 @@ async function showFinal(){
 window.goHome=()=>{
   clearInterval(S.timerInt);detach();clearSession();
   S.roomId='';S.isHost=false;S.totScores={};
+  showScreen('home');
+};
+
+window.exitGame=async()=>{
+  if(!confirm('לצאת מהמשחק?'))return;
+  clearInterval(S.timerInt);detach();
+  if(S.roomId&&S.pId){
+    await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
+    if(S.isHost)await remove(ref(db,`rooms/${S.roomId}`));
+  }
+  clearSession();S.roomId='';S.isHost=false;S.totScores={};
   showScreen('home');
 };
 
