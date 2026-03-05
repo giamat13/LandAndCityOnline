@@ -1340,7 +1340,7 @@
     let h=0;for(const c of name)h=h*31+c.charCodeAt(0);
     return AVC[Math.abs(h)%AVC.length];
   }
-  const INACTIVITY_MS = 1 * 60 * 1000; // TEST: 1 minute
+  const INACTIVITY_MS = 15 * 60 * 1000; // 15 minutes
 
   // ─── SESSION PERSISTENCE ──────────────────────────────────────────
   function saveSession(){
@@ -1923,7 +1923,7 @@
           // Cleanup hasn't run yet but we're past the limit — leave now
           clearInterval(S.expiryInt);
           handleRoomDeleted();
-        } else if(!S.warnedExpiry && age>(INACTIVITY_MS - 10000)){
+        } else if(!S.warnedExpiry && age>(INACTIVITY_MS - 60000)){
           // Within last minute before expiry — warn once
           S.warnedExpiry=true;
           showExpiryWarning();
