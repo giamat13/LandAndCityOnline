@@ -221,7 +221,7 @@
   .chat-fab:hover{transform:scale(1.1)}
   .react-fab{position:fixed;bottom:86px;left:74px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#f97316,#f5a623);border:none;cursor:pointer;font-size:1.3rem;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(249,115,22,.45);z-index:500;transition:transform .2s;display:none}
   .react-fab:hover{transform:scale(1.1)}
-  .react-quick-picker{position:fixed;bottom:148px;left:16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px 12px;display:flex;gap:8px;box-shadow:var(--sh);z-index:600;animation:fadeUp .18s ease;}
+  .react-quick-picker{position:fixed;bottom:148px;left:8px;right:8px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px 12px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;box-shadow:var(--sh);z-index:600;animation:fadeUp .18s ease;max-width:400px;margin:0 auto;}
   .react-quick-picker span{font-size:1.6rem;cursor:pointer;padding:4px 2px;border-radius:8px;transition:transform .12s;}
   .react-quick-picker span:hover{transform:scale(1.35);}
   .float-emoji{position:fixed;font-size:2.2rem;pointer-events:none;z-index:900;animation:floatUp 3s ease-out forwards;}
@@ -258,6 +258,7 @@
   /* spectator / host badges */
   .spec-b{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   .host-b{background:rgba(245,166,35,.12);color:var(--orange);border:1px solid rgba(245,166,35,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
+  .backup-b{background:rgba(15,186,129,.12);color:var(--green);border:1px solid rgba(15,186,129,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   .disq{color:var(--red);text-decoration:line-through;opacity:.6}
   /* rare answer badge */
   .rare-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(168,85,247,.18);border:1px solid rgba(168,85,247,.4);color:#a855f7;padding:2px 7px;border-radius:100px;font-size:.7rem;font-weight:800;margin-right:4px;vertical-align:middle;animation:rarePop .5s cubic-bezier(.34,1.56,.64,1)}
@@ -554,10 +555,7 @@
         <div class="tog on" id="tog-sb-el"></div>
         <span class="tog-label">לוח ניקוד מצטבר (כבוי = כל סיבוב בנפרד)</span>
       </div>
-      <div class="tog-wrap" id="tog-permanent" style="margin-bottom:16px;">
-        <div class="tog" id="tog-permanent-el"></div>
-        <span class="tog-label">📌 חדר קבוע – לא יימחק אוטומטית, יישמר ב"החדרים שלי"</span>
-      </div>
+
       <h3 style="margin-bottom:10px;">🌐 נראות חדר</h3>
       <div class="vis-opts" id="vis-opts">
         <div class="vis-opt sel" data-v="private">
@@ -867,7 +865,7 @@
     pName:'',pId:'',roomId:'',isHost:false,
     listeners:[],rTime:30,timerInt:null,timeLeft:30,
     cats:[],cCats:[],letter:'',rNum:0,totScores:{},
-    currentCatIndex:0,catSubmitted:false,showVoters:false,
+    currentCatIndex:0,catSubmitted:false,showVoters:false,advancing:false,
     currentAnswers:[],
     totalRounds:0,
     isSpectator:false,
@@ -1138,8 +1136,19 @@
           <div class="my-room-code">${r.id}</div>
         </div>
         <button class="my-room-del" title="הסר מהרשימה">🗑️</button>`;
-      card.querySelector('.my-room-del').addEventListener('click',e=>{
+      card.querySelector('.my-room-del').addEventListener('click',async e=>{
         e.stopPropagation();
+        // If permanent room — delete from Firebase for everyone
+        try{
+          const snap=await get(ref(db,'rooms/'+r.id+'/isPermanent'));
+          if(snap.exists()&&snap.val()===true){
+            await Promise.all([
+              remove(ref(db,'rooms/'+r.id)).catch(()=>{}),
+              remove(ref(db,'publicRooms/'+r.id)).catch(()=>{}),
+              remove(ref(db,'roomActivity/'+r.id)).catch(()=>{})
+            ]);
+          }
+        }catch(e){}
         deleteMyRoom(r.id);
         renderMyRooms();
       });
@@ -1483,10 +1492,7 @@
     S.cumulativeSB=!S.cumulativeSB;
     document.getElementById('tog-sb-el').classList.toggle('on',S.cumulativeSB);
   });
-  document.getElementById('tog-permanent').addEventListener('click',()=>{
-    S.isPermanent=!S.isPermanent;
-    document.getElementById('tog-permanent-el').classList.toggle('on',S.isPermanent);
-  });
+
 
   function addCC(){
     const inp=document.getElementById('cc-inp');
@@ -2094,6 +2100,8 @@
       list.innerHTML='';
       const hostSnap=await get(ref(db,`rooms/${S.roomId}/host`));
       const currentHost=hostSnap.val();
+      const backupsSnap=await get(ref(db,`rooms/${S.roomId}/backups`));
+      const backups=backupsSnap.val()||[];
       Object.entries(ps).sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).forEach(([pid,p])=>{
         const c=avc(p.name,p.color);
         const el=document.createElement('div');
@@ -2104,6 +2112,8 @@
         if(pid===S.pId)badges.push('<span class="you-b">אתה</span>');
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
+        const backupIdx=(backups||[]).indexOf(pid);
+        if(backupIdx>=0)badges.push(`<span class="backup-b">🛡️ גיבוי #${backupIdx+1}</span>`);
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
             <div class="pl-name">${p.name}</div>
@@ -2112,6 +2122,7 @@
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
             ${badges.join('')}
             ${S.isHost&&pid!==S.pId?`<button class="kick-btn" data-pid="${pid}" data-name="${p.name}" title="הוצא מהחדר" style="background:none;border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;margin-right:2px;">✕</button>`:''}
+            ${S.isHost&&pid!==S.pId?(backupIdx>=0?`<button class="remove-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הסר גיבוי" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️✕</button>`:`<button class="add-backup-btn" data-pid="${pid}" data-name="${p.name}" title="מנה גיבוי" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️+</button>`):''}
           </div>`;
         list.appendChild(el);
       });
@@ -2123,6 +2134,30 @@
           if(!confirm(`להוציא את ${name} מהחדר?`))return;
           await remove(ref(db,'rooms/'+S.roomId+'/players/'+pid));
           toast(name+' הוצא מהחדר');
+        });
+      });
+      // Add backup button handler
+      list.querySelectorAll('.add-backup-btn').forEach(btn=>{
+        btn.addEventListener('click',async()=>{
+          const pid=btn.dataset.pid;
+          const name=btn.dataset.name;
+          const bSnap=await get(ref(db,'rooms/'+S.roomId+'/backups'));
+          const bList=bSnap.val()||[];
+          if(bList.includes(pid))return;
+          bList.push(pid);
+          await set(ref(db,'rooms/'+S.roomId+'/backups'),bList);
+          toast('🛡️ '+name+' מונה כגיבוי #'+bList.length);
+        });
+      });
+      // Remove backup button handler
+      list.querySelectorAll('.remove-backup-btn').forEach(btn=>{
+        btn.addEventListener('click',async()=>{
+          const pid=btn.dataset.pid;
+          const name=btn.dataset.name;
+          const bSnap=await get(ref(db,'rooms/'+S.roomId+'/backups'));
+          const bList=(bSnap.val()||[]).filter(id=>id!==pid);
+          await set(ref(db,'rooms/'+S.roomId+'/backups'),bList);
+          toast('🛡️ '+name+' הוסר מרשימת הגיבויים');
         });
       });
       const btn=document.getElementById('start-btn');
@@ -2182,7 +2217,42 @@
         S.isHost=true;
         document.getElementById('host-ctrl').style.display='block';
         document.getElementById('guest-wait').style.display='none';
+        document.getElementById('backup-claim-btn')?.remove();
         toast('👑 אתה עכשיו המארח!');
+      }
+    });
+
+    // Listen for backups list — show "claim host" button if I'm a backup and host is gone
+    addL(ref(db,`rooms/${S.roomId}/backups`),async snap=>{
+      const backups=snap.val()||[];
+      const myIdx=backups.indexOf(S.pId);
+      let claimBtn=document.getElementById('backup-claim-btn');
+      if(myIdx>=0&&!S.isHost){
+        // Check if host is still present
+        const hSnap=await get(ref(db,`rooms/${S.roomId}/host`));
+        const hostId=hSnap.val();
+        const hPlayerSnap=await get(ref(db,`rooms/${S.roomId}/players/${hostId}`));
+        const hostMissing=!hPlayerSnap.exists();
+        if(!claimBtn){
+          claimBtn=document.createElement('button');
+          claimBtn.id='backup-claim-btn';
+          claimBtn.className='btn btn-s btn-sm';
+          claimBtn.style.cssText='border-color:var(--green);color:var(--green);margin-top:8px;';
+          claimBtn.innerHTML=`🛡️ אתה גיבוי #${myIdx+1} — קח תפקיד מארח`;
+          claimBtn.addEventListener('click',async()=>{
+            const bSnap2=await get(ref(db,`rooms/${S.roomId}/backups`));
+            const bList=bSnap2.val()||[];
+            const newBackups=bList.filter(id=>id!==S.pId);
+            await update(ref(db,`rooms/${S.roomId}`),{host:S.pId,backups:newBackups});
+            await set(ref(db,`rooms/${S.roomId}/players/${S.pId}/isHost`),true);
+          });
+          document.getElementById('guest-wait')?.appendChild(claimBtn);
+        } else {
+          claimBtn.innerHTML=`🛡️ אתה גיבוי #${myIdx+1} — קח תפקיד מארח`;
+        }
+        claimBtn.style.display=hostMissing?'block':'block';
+      } else {
+        claimBtn?.remove();
       }
     });
 
@@ -2614,9 +2684,12 @@
 
   // ─── ADVANCE CATEGORY (host only) ────────────────────────────────
   async function advanceCat(){
-    // Guard against double-advance
+    // Guard against double-advance (local + remote)
+    if(S.advancing)return;
+    S.advancing=true;
+    setTimeout(()=>{S.advancing=false;},3000);
     const snap=await get(ref(db,`rooms/${S.roomId}/currentCatIndex`));
-    if((snap.val()||0)!==S.currentCatIndex)return;
+    if((snap.val()||0)!==S.currentCatIndex){S.advancing=false;return;}
     const nextIdx=S.currentCatIndex+1;
     if(nextIdx>=S.cats.length){
       // All cats done → go to voting phase
@@ -3254,20 +3327,34 @@
     if(!S.isHost||!S.roomId)return;
     const snap=await get(ref(db,`rooms/${S.roomId}/players`));
     const ps=snap.val()||{};
-    // Find next active (non-spectator) player who isn't us
-    const next=Object.entries(ps)
-      .filter(([pid,p])=>pid!==S.pId&&!p.spectator)
-      .sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0))[0];
-    if(next){
-      await update(ref(db,`rooms/${S.roomId}`),{host:next[0]});
-      await set(ref(db,`rooms/${S.roomId}/players/${next[0]}/isHost`),true);
-      toast(`👑 הבעלות עברה ל-${next[1].name}`);
-    }else if(!S.isPermanent){
-      // No other active players and not permanent — delete the room
-      await remove(ref(db,`rooms/${S.roomId}`));
+    const bSnap=await get(ref(db,`rooms/${S.roomId}/backups`));
+    const backups=bSnap.val()||[];
+    // Try backups first (in order), then fall back to next active player
+    let nextId=null, nextName=null;
+    for(const bid of backups){
+      if(bid!==S.pId && ps[bid] && !ps[bid].spectator){
+        nextId=bid; nextName=ps[bid].name; break;
+      }
+    }
+    if(!nextId){
+      const fallback=Object.entries(ps)
+        .filter(([pid,p])=>pid!==S.pId&&!p.spectator)
+        .sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0))[0];
+      if(fallback){nextId=fallback[0];nextName=fallback[1].name;}
+    }
+    if(nextId){
+      // Remove from backups list
+      const newBackups=backups.filter(id=>id!==nextId);
+      await update(ref(db,`rooms/${S.roomId}`),{host:nextId,backups:newBackups});
+      await set(ref(db,`rooms/${S.roomId}/players/${nextId}/isHost`),true);
+      toast(`👑 הבעלות עברה ל-${nextName}`);
     }else{
-      // Permanent room: keep it, just clear host
-      await update(ref(db,`rooms/${S.roomId}`),{host:null,status:'lobby'});
+      // No other active players — delete the room for everyone (permanent or not)
+      await Promise.all([
+        remove(ref(db,`rooms/${S.roomId}`)).catch(()=>{}),
+        remove(ref(db,`publicRooms/${S.roomId}`)).catch(()=>{}),
+        remove(ref(db,`roomActivity/${S.roomId}`)).catch(()=>{})
+      ]);
     }
   }
 
@@ -3386,7 +3473,7 @@
   function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
   // ─── QUICK EMOJI REACTIONS ────────────────────────────────────────
-  const QUICK_EMOJIS=['👍','🔥','😂','❤️','😮','👏','💀','🥳','😭','💯','🤯'];
+  const QUICK_EMOJIS=['👍','🔥','😂','❤️','😮','👏','💀','🥳','😭','💯','🤯','❓','⁉️'];
   let reactPickerOpen=false;
 
   function closeReactPicker(){
