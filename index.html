@@ -1127,6 +1127,7 @@
   // ─── PUBLIC ROOMS ─────────────────────────────────────────────────
   let pubRoomsListener=null;
   function initPublicRooms(){
+    cleanupStaleRooms();
     if(pubRoomsListener){off(pubRoomsListener.r,'value',pubRoomsListener.fn);pubRoomsListener=null;}
     const r=ref(db,'publicRooms');
     const fn=snap=>{
@@ -1265,26 +1266,29 @@
     }catch(e){clearSession();}
   }
 
-  // ─── ACTIVITY & 10-MIN EXPIRY ─────────────────────────────────────
+  // ─── ACTIVITY & EXPIRY ────────────────────────────────────────────
   function touchActivity(){
-    if(S.roomId)update(ref(db,'rooms/'+S.roomId),{lastActivity:Date.now()});
-  }
-  async function checkExpiry(){
     if(!S.roomId)return;
+    const now=Date.now();
+    update(ref(db,'rooms/'+S.roomId),{lastActivity:now});
+    set(ref(db,'roomActivity/'+S.roomId),now).catch(()=>{});
+  }
+
+  // ─── GLOBAL STALE ROOM CLEANUP (runs on every page load) ──────────
+  async function cleanupStaleRooms(){
     try{
-      const snap=await get(ref(db,'rooms/'+S.roomId+'/lastActivity'));
-      if(snap.exists()&&Date.now()-snap.val()>INACTIVITY_MS){
-        const expiredId=S.roomId;
-        await remove(ref(db,'rooms/'+expiredId));
-        remove(ref(db,'publicRooms/'+expiredId)).catch(()=>{});
-        clearSession();detach();clearInterval(S.timerInt);
-        S.roomId='';S.isHost=false;
-        showScreen('home');
-        toast('החדר נמחק – אין פעילות 15 דקות');
-      }
+      const snap=await get(ref(db,'roomActivity'));
+      if(!snap.exists())return;
+      const data=snap.val();
+      const now=Date.now();
+      const stale=Object.entries(data).filter(([,ts])=>now-ts>INACTIVITY_MS);
+      await Promise.all(stale.map(([id])=>Promise.all([
+        remove(ref(db,'rooms/'+id)).catch(()=>{}),
+        remove(ref(db,'publicRooms/'+id)).catch(()=>{}),
+        remove(ref(db,'roomActivity/'+id)).catch(()=>{})
+      ])));
     }catch(e){}
   }
-  setInterval(checkExpiry,60000);
 
   // ─── UTILS ────────────────────────────────────────────────────────
   function showScreen(id){
@@ -1484,6 +1488,8 @@
         status:'lobby',createdAt:Date.now()
       });
     }
+    // Register in roomActivity index for global cleanup
+    set(ref(db,'roomActivity/'+roomId),Date.now()).catch(()=>{});
     saveSession();
     enterLobby();
   };
