@@ -259,6 +259,8 @@
   .spec-b{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   .host-b{background:rgba(245,166,35,.12);color:var(--orange);border:1px solid rgba(245,166,35,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   .backup-b{background:rgba(15,186,129,.12);color:var(--green);border:1px solid rgba(15,186,129,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
+  .main-dev-b{background:linear-gradient(135deg,rgba(233,69,96,.2),rgba(245,166,35,.2));color:#f5a623;border:1px solid rgba(245,166,35,.5);padding:2px 10px;border-radius:100px;font-size:.7rem;font-weight:800;text-shadow:0 0 8px rgba(245,166,35,.4);}
+  .dev-b{background:rgba(76,201,240,.12);color:var(--blue);border:1px solid rgba(76,201,240,.3);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700;}
   .disq{color:var(--red);text-decoration:line-through;opacity:.6}
   /* rare answer badge */
   .rare-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(168,85,247,.18);border:1px solid rgba(168,85,247,.4);color:#a855f7;padding:2px 7px;border-radius:100px;font-size:.7rem;font-weight:800;margin-right:4px;vertical-align:middle;animation:rarePop .5s cubic-bezier(.34,1.56,.64,1)}
@@ -461,6 +463,15 @@
       <input type="text" id="prof-room-name" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30"
         style="margin-top:8px;">
       <div style="font-size:.74rem;color:var(--muted);margin-top:6px;">ימולא אוטומטית בעת יצירת חדר</div>
+    </div>
+
+    <div class="card" style="margin-top:8px;" id="dev-code-card">
+      <h3>🔑 קוד מפתח</h3>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input type="text" id="prof-dev-code" placeholder="הכנס קוד..." maxlength="30" style="flex:1;letter-spacing:.1em;">
+        <button class="btn btn-s btn-sm" id="btn-redeem-dev" style="width:auto;padding:10px 16px;">מימוש</button>
+      </div>
+      <div id="dev-code-status" style="font-size:.75rem;margin-top:6px;min-height:16px;"></div>
     </div>
 
     <button class="btn btn-p" id="btn-profile-continue" style="margin-top:8px;">שמור והמשך ←</button>
@@ -904,6 +915,7 @@
   let S_pTag=null;     // null or tag string
   let S_pEntry='none'; // 'none'/'bounce'/'spin'/'flash'/'shake'
   let S_pRoomName='';  // default room name
+  let S_pDevRole=null; // null / 'dev' / 'main-dev'
 
   const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
   const PROF_FRAMES=[
@@ -1098,7 +1110,7 @@
   function saveProfile(){
     try{localStorage.setItem('lac_profile',JSON.stringify({
       name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
-      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName
+      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole
     }));}catch(e){}
   }
   function loadProfile(){
@@ -1114,6 +1126,7 @@
       S_pTag=p.tag||null;
       S_pEntry=p.entry||'none';
       S_pRoomName=p.roomName||'';
+      S_pDevRole=p.devRole||null;
       document.getElementById('player-name').value=p.name;
       return true;
     }catch(e){return false;}
@@ -1207,6 +1220,13 @@
     const autoRoomName=nameVal?`החדר של ${nameVal}`:'';
     document.getElementById('prof-room-name').value=S_pRoomName||autoRoomName;
     profRoomNameManuallyChanged=!!S_pRoomName;
+    // Show current dev status
+    const devStatus=document.getElementById('dev-code-status');
+    if(devStatus){
+      if(S_pDevRole==='main-dev') devStatus.innerHTML='<span style="color:#f5a623;">👑 מפתח ראשי פעיל</span>';
+      else if(S_pDevRole==='dev') devStatus.innerHTML='<span style="color:var(--blue);">🔧 מפתח פעיל</span>';
+      else devStatus.textContent='';
+    }
     initAvPicker();
     initEmojiPicker();
     initFramePicker();
@@ -1216,6 +1236,23 @@
   }
 
   // Wire input listener once
+  document.getElementById('btn-redeem-dev').addEventListener('click',()=>{
+    const code=document.getElementById('prof-dev-code').value.trim();
+    const status=document.getElementById('dev-code-status');
+    // Hardcoded codes — main-dev is unique, dev is for contributors
+    if(code==='main-dev=giamat13'){
+      S_pDevRole='main-dev';
+      status.innerHTML='<span style="color:#f5a623;">👑 קוד מומש! ברוך הבא, מפתח ראשי</span>';
+      document.getElementById('prof-dev-code').value='';
+    } else if(code==='dev=giamat13'){
+      S_pDevRole='dev';
+      status.innerHTML='<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>';
+      document.getElementById('prof-dev-code').value='';
+    } else {
+      status.innerHTML='<span style="color:var(--red);">❌ קוד לא תקין</span>';
+    }
+  });
+
   document.getElementById('prof-name').addEventListener('input',()=>{
     updateProfilePreview();
     if(!profRoomNameManuallyChanged){
@@ -1661,7 +1698,7 @@
       cumulativeSB:S.cumulativeSB,visibility:S.visibility,
       totalRounds:S.totalRounds,roomName,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
-      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,
+      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:S_pDevRole||null,
         emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'}}
     });
     // Register in public index if not private
@@ -1715,7 +1752,7 @@
     S.cumulativeSB=room.cumulativeSB!==false;
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
-      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,
+      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:S_pDevRole||null,
       emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'
     });
     touchActivity();saveSession();
@@ -2166,6 +2203,8 @@
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
         const backupIdx=(backups||[]).indexOf(pid);
         if(backupIdx>=0)badges.push(`<span class="backup-b">🛡️ גיבוי #${backupIdx+1}</span>`);
+        if(p.devRole==='main-dev')badges.push('<span class="main-dev-b">👑 מפתח ראשי</span>');
+        else if(p.devRole==='dev')badges.push('<span class="dev-b">🔧 מפתח</span>');
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
             <div class="pl-name">${p.name}</div>
