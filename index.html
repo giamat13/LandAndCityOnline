@@ -307,6 +307,8 @@
   .cvote-chip.end{background:rgba(233,69,96,.18);color:var(--red);border:1px solid rgba(233,69,96,.3);}
   .cvote-chip.none{background:var(--s2);color:var(--muted);border:1px solid var(--border);}
   .btn-voted{box-shadow:0 0 0 2.5px #fff5!important;}
+  /* profile screen */
+  .profile-avatar-preview{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.6rem;font-weight:900;margin:0 auto 20px;border:3px solid rgba(255,255,255,.15);transition:background .25s,color .25s;}
   /* visibility selector */
   .vis-opts{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
   .vis-opt{display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .2s;user-select:none;}
@@ -341,13 +343,34 @@
   <body>
   <div id="app">
 
-  <!-- HOME -->
-  <div id="screen-home" class="screen active">
-    <div class="logo"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
-    <div class="card"><h3>📛 שם שחקן</h3><input type="text" id="player-name" placeholder="השם שלך..." maxlength="20">
-      <h3 style="margin-top:16px;">🎨 צבע אווטאר</h3>
-      <div class="av-picker" id="av-picker"></div>
+  <!-- PROFILE -->
+  <div id="screen-profile" class="screen active">
+    <div class="logo" style="margin-bottom:28px;"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
+    <div class="card" style="text-align:center;">
+      <div class="profile-avatar-preview" id="prof-av-preview">א</div>
+      <h3 style="margin-bottom:12px;">📛 השם שלך</h3>
+      <input type="text" id="prof-name" placeholder="הכנס שם..." maxlength="20"
+        style="text-align:center;font-size:1.2rem;font-weight:700;margin-bottom:20px;">
+      <h3 style="margin-bottom:12px;">🎨 צבע אווטאר</h3>
+      <div class="av-picker" id="av-picker" style="justify-content:center;"></div>
     </div>
+    <button class="btn btn-p" id="btn-profile-continue" style="margin-top:8px;">המשך ←</button>
+  </div>
+
+  <!-- HOME -->
+  <div id="screen-home" class="screen">
+    <div class="logo"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
+    <input type="text" id="player-name" style="display:none;">
+    <!-- Player identity bar -->
+    <div id="home-identity" style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:16px;cursor:pointer;">
+      <div id="home-av" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div id="home-pname" style="font-weight:800;font-size:1rem;"></div>
+        <div style="font-size:.72rem;color:var(--muted);">לחץ לעריכת פרופיל</div>
+      </div>
+      <span style="color:var(--muted);font-size:1rem;">✏️</span>
+    </div>
+    <div class="divider" style="margin:16px 0;">צור חדר</div>
     <div class="home-actions">
       <button class="btn btn-p" id="btn-show-create">✨ צור חדר חדש</button>
       <div class="divider">הצטרף לחדר קיים</div>
@@ -709,6 +732,20 @@
   };
 
   // ─── AVATAR COLOR PICKER ──────────────────────────────────────────
+  let S={
+    pName:'',pId:'',roomId:'',isHost:false,
+    listeners:[],rTime:30,timerInt:null,timeLeft:30,
+    cats:[],cCats:[],letter:'',rNum:0,totScores:{},
+    currentCatIndex:0,catSubmitted:false,showVoters:false,
+    currentAnswers:[],
+    totalRounds:0,
+    isSpectator:false,
+    chatOpen:false,
+    chatUnread:0,
+    chatListener:null,
+    cumulativeSB:true,
+    visibility:'private'
+  };
   let S_pColor=AVATAR_COLORS[0];
   function initAvPicker(){
     const wrap=document.getElementById('av-picker');
@@ -722,11 +759,80 @@
         S_pColor=c;
         wrap.querySelectorAll('.av-swatch').forEach(s=>s.classList.remove('sel'));
         sw.classList.add('sel');
+        updateProfilePreview();
       });
       wrap.appendChild(sw);
     });
   }
+
+  function updateProfilePreview(){
+    const name=(document.getElementById('prof-name')||{}).value||'';
+    const prev=document.getElementById('prof-av-preview');
+    if(prev){
+      prev.style.background=S_pColor+'33';
+      prev.style.color=S_pColor;
+      prev.textContent=name.trim().charAt(0)||'?';
+    }
+  }
+
+  // ─── PROFILE PERSISTENCE ──────────────────────────────────────────
+  function saveProfile(){
+    try{localStorage.setItem('lac_profile',JSON.stringify({name:S.pName,color:S_pColor}));}catch(e){}
+  }
+  function loadProfile(){
+    try{
+      const raw=localStorage.getItem('lac_profile');
+      if(!raw)return false;
+      const p=JSON.parse(raw);
+      if(!p.name)return false;
+      S.pName=p.name;
+      S_pColor=p.color||AVATAR_COLORS[0];
+      document.getElementById('player-name').value=p.name;
+      return true;
+    }catch(e){return false;}
+  }
+  function updateHomeIdentity(){
+    const av=document.getElementById('home-av');
+    const nm=document.getElementById('home-pname');
+    if(av){av.style.background=S_pColor+'33';av.style.color=S_pColor;av.textContent=S.pName.charAt(0);}
+    if(nm)nm.textContent=S.pName;
+  }
+
+  // Profile screen setup
+  function setupProfileScreen(){
+    const inp=document.getElementById('prof-name');
+    inp.value=S.pName||'';
+    // re-render picker with correct selection
+    initAvPicker();
+    updateProfilePreview();
+  }
+
+  // Wire input listener once
+  document.getElementById('prof-name').addEventListener('input',updateProfilePreview);
+
+  document.getElementById('btn-profile-continue').addEventListener('click',()=>{
+    const n=document.getElementById('prof-name').value.trim();
+    if(!n){toast('נא להזין שם שחקן');return;}
+    S.pName=n;
+    document.getElementById('player-name').value=n;
+    saveProfile();
+    updateHomeIdentity();
+    showScreen('home');
+  });
+  document.getElementById('prof-name').addEventListener('keydown',e=>{
+    if(e.key==='Enter')document.getElementById('btn-profile-continue').click();
+  });
+
   initAvPicker();
+
+  // On load: check if profile exists
+  if(loadProfile()){
+    setupProfileScreen();
+    showScreen('home');
+    updateHomeIdentity();
+  } else {
+    setupProfileScreen();
+  }
 
   // ─── VISIBILITY SELECTOR ──────────────────────────────────────────
   document.querySelectorAll('.vis-opt').forEach(opt=>{
@@ -836,21 +942,6 @@
   }
   const INACTIVITY_MS = 15 * 60 * 1000;
 
-  let S={
-    pName:'',pId:'',roomId:'',isHost:false,
-    listeners:[],rTime:30,timerInt:null,timeLeft:30,
-    cats:[],cCats:[],letter:'',rNum:0,totScores:{},
-    currentCatIndex:0,catSubmitted:false,showVoters:false,
-    currentAnswers:[],
-    totalRounds:0,
-    isSpectator:false,
-    chatOpen:false,
-    chatUnread:0,
-    chatListener:null,
-    cumulativeSB:true,
-    visibility:'private'  // 'private' | 'request' | 'public'
-  };
-
   // ─── SESSION PERSISTENCE ──────────────────────────────────────────
   function saveSession(){
     try{
@@ -883,6 +974,7 @@
       S.isSpectator=sess.isSpectator||false;
       S.totalRounds=room.totalRounds||0;
       document.getElementById('player-name').value=S.pName;
+      updateHomeIdentity();
       toast('ברוך השב! מחבר מחדש...');
       if(room.status==='lobby')enterLobby();
       else if(room.status==='playing')await loadRound();
@@ -2422,6 +2514,7 @@
     onValue(r,fn);
     floatEmojiListener={r,fn};
   }
+  document.getElementById('home-identity').addEventListener('click',()=>{ setupProfileScreen(); showScreen('profile'); });
   document.getElementById('btn-show-create').addEventListener('click',showCreate);
   document.getElementById('btn-join').addEventListener('click',()=>joinRoom(false));
   document.getElementById('btn-join-spec').addEventListener('click',()=>joinRoom(true));
