@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-  <html lang="he" dir="rtl">
+  <html lang="he" dir="rtl" data-theme="dark">
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,8 +14,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
   <style>
   :root{--bg:#0f0f1a;--surface:#1a1a2e;--s2:#16213e;--red:#e94560;--orange:#f5a623;--green:#0fba81;--blue:#4cc9f0;--text:#eaeaea;--muted:#7a7a9a;--border:rgba(255,255,255,0.08);--r:16px;--sh:0 8px 32px rgba(0,0,0,0.4)}
+  [data-theme="light"]{--bg:#f0f2f5;--surface:#ffffff;--s2:#e8edf2;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.1);--sh:0 8px 32px rgba(0,0,0,0.1)}
+  @media(prefers-color-scheme:light){[data-theme="system"]{--bg:#f0f2f5;--surface:#ffffff;--s2:#e8edf2;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.1);--sh:0 8px 32px rgba(0,0,0,0.1)}}
+  .theme-toggle{display:flex;align-items:center;gap:6px;background:var(--s2);border:1.5px solid var(--border);border-radius:100px;padding:4px;cursor:pointer;}
+  .theme-btn{background:none;border:none;padding:5px 10px;border-radius:100px;cursor:pointer;font-size:.85rem;color:var(--muted);transition:all .2s;font-family:'Heebo',sans-serif;}
+  .theme-btn.active{background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);}
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+  input[type=number]{background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;color:var(--text);font-family:'Heebo',sans-serif;font-size:1.1rem;outline:none;direction:rtl;}
   body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(233,69,96,.07) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(76,201,240,.07) 0%,transparent 50%);pointer-events:none;z-index:0}
   #app{position:relative;z-index:1;min-height:100vh}
   .screen{display:none;min-height:100vh;padding:24px 16px;max-width:600px;margin:0 auto;flex-direction:column}
@@ -463,6 +469,15 @@
       <input type="text" id="prof-room-name" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30"
         style="margin-top:8px;">
       <div style="font-size:.74rem;color:var(--muted);margin-top:6px;">ימולא אוטומטית בעת יצירת חדר</div>
+    </div>
+
+    <div class="card" style="margin-top:8px;">
+      <h3>🌙 מצב תצוגה</h3>
+      <div class="theme-toggle" style="margin-top:8px;width:100%;justify-content:center;" id="theme-toggle">
+        <button class="theme-btn" data-theme="dark" id="theme-btn-dark">🌙 כהה</button>
+        <button class="theme-btn" data-theme="system" id="theme-btn-system">⚙️ מערכת</button>
+        <button class="theme-btn" data-theme="light" id="theme-btn-light">☀️ בהיר</button>
+      </div>
     </div>
 
     <div class="card" style="margin-top:8px;" id="dev-code-card">
@@ -1221,6 +1236,10 @@
     document.getElementById('prof-room-name').value=S_pRoomName||autoRoomName;
     profRoomNameManuallyChanged=!!S_pRoomName;
     // Show current dev status
+    // Reflect current theme in buttons
+    document.querySelectorAll('.theme-btn').forEach(b=>{
+      b.classList.toggle('active',b.dataset.theme===currentTheme);
+    });
     const devStatus=document.getElementById('dev-code-status');
     if(devStatus){
       if(S_pDevRole==='main-dev') devStatus.innerHTML='<span style="color:#f5a623;">👑 מפתח ראשי פעיל</span>';
@@ -1236,6 +1255,25 @@
   }
 
   // Wire input listener once
+  // ─── THEME ────────────────────────────────────────────────────────
+  let currentTheme='dark';
+  function applyTheme(theme){
+    currentTheme=theme;
+    document.documentElement.setAttribute('data-theme',theme);
+    try{localStorage.setItem('lac_theme',theme);}catch(e){}
+    document.querySelectorAll('.theme-btn').forEach(b=>{
+      b.classList.toggle('active',b.dataset.theme===theme);
+    });
+  }
+  function loadTheme(){
+    try{const t=localStorage.getItem('lac_theme');if(t)applyTheme(t);else applyTheme('dark');}
+    catch(e){applyTheme('dark');}
+  }
+  document.querySelectorAll('.theme-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>applyTheme(btn.dataset.theme));
+  });
+  loadTheme();
+
   document.getElementById('btn-redeem-dev').addEventListener('click',()=>{
     const code=document.getElementById('prof-dev-code').value.trim();
     const status=document.getElementById('dev-code-status');
@@ -2202,7 +2240,6 @@
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
         const backupIdx=(backups||[]).indexOf(pid);
-        if(backupIdx>=0)badges.push(`<span class="backup-b">🛡️ גיבוי #${backupIdx+1}</span>`);
         if(p.devRole==='main-dev')badges.push('<span class="main-dev-b">👑 מפתח ראשי</span>');
         else if(p.devRole==='dev')badges.push('<span class="dev-b">🔧 מפתח</span>');
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
@@ -2213,7 +2250,7 @@
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
             ${badges.join('')}
             ${S.isHost&&pid!==S.pId?`<button class="kick-btn" data-pid="${pid}" data-name="${p.name}" title="הוצא מהחדר" style="background:none;border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;margin-right:2px;">✕</button>`:''}
-            ${S.isHost&&pid!==S.pId?(backupIdx>=0?`<button class="remove-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הסר גיבוי" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️✕</button>`:`<button class="add-backup-btn" data-pid="${pid}" data-name="${p.name}" title="מנה גיבוי" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️+</button>`):''}
+            ${S.isHost&&pid!==S.pId?(backupIdx>=0?`<button class="remove-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הסר מגיבויים" style="background:rgba(15,186,129,.15);border:1px solid rgba(15,186,129,.4);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️ ✓</button>`:`<button class="add-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הוסף לגיבויים" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️+</button>`):''}
           </div>`;
         list.appendChild(el);
       });
@@ -2237,7 +2274,7 @@
           if(bList.includes(pid))return;
           bList.push(pid);
           await set(ref(db,'rooms/'+S.roomId+'/backups'),bList);
-          toast('🛡️ '+name+' מונה כגיבוי #'+bList.length);
+          toast('🛡️ '+name+' נוסף לרשימת הגיבויים');
         });
       });
       // Remove backup button handler
@@ -2313,39 +2350,7 @@
       }
     });
 
-    // Listen for backups list — show "claim host" button if I'm a backup and host is gone
-    addL(ref(db,`rooms/${S.roomId}/backups`),async snap=>{
-      const backups=snap.val()||[];
-      const myIdx=backups.indexOf(S.pId);
-      let claimBtn=document.getElementById('backup-claim-btn');
-      if(myIdx>=0&&!S.isHost){
-        // Check if host is still present
-        const hSnap=await get(ref(db,`rooms/${S.roomId}/host`));
-        const hostId=hSnap.val();
-        const hPlayerSnap=await get(ref(db,`rooms/${S.roomId}/players/${hostId}`));
-        const hostMissing=!hPlayerSnap.exists();
-        if(!claimBtn){
-          claimBtn=document.createElement('button');
-          claimBtn.id='backup-claim-btn';
-          claimBtn.className='btn btn-s btn-sm';
-          claimBtn.style.cssText='border-color:var(--green);color:var(--green);margin-top:8px;';
-          claimBtn.innerHTML=`🛡️ אתה גיבוי #${myIdx+1} — קח תפקיד מארח`;
-          claimBtn.addEventListener('click',async()=>{
-            const bSnap2=await get(ref(db,`rooms/${S.roomId}/backups`));
-            const bList=bSnap2.val()||[];
-            const newBackups=bList.filter(id=>id!==S.pId);
-            await update(ref(db,`rooms/${S.roomId}`),{host:S.pId,backups:newBackups});
-            await set(ref(db,`rooms/${S.roomId}/players/${S.pId}/isHost`),true);
-          });
-          document.getElementById('guest-wait')?.appendChild(claimBtn);
-        } else {
-          claimBtn.innerHTML=`🛡️ אתה גיבוי #${myIdx+1} — קח תפקיד מארח`;
-        }
-        claimBtn.style.display=hostMissing?'block':'block';
-      } else {
-        claimBtn?.remove();
-      }
-    });
+    // Backup transfer is automatic via transferHost()
 
     addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
       const st=snap.val();
@@ -3427,21 +3432,23 @@
     const ps=snap.val()||{};
     const bSnap=await get(ref(db,`rooms/${S.roomId}/backups`));
     const backups=bSnap.val()||[];
-    // Try backups first (in order), then fall back to next active player
+    // Pick randomly from available backups, then fall back to random active player
     let nextId=null, nextName=null;
-    for(const bid of backups){
-      if(bid!==S.pId && ps[bid] && !ps[bid].spectator){
-        nextId=bid; nextName=ps[bid].name; break;
-      }
+    const availableBackups=backups.filter(bid=>bid!==S.pId&&ps[bid]&&!ps[bid].spectator);
+    if(availableBackups.length>0){
+      // Random backup from pool
+      const pick=availableBackups[Math.floor(Math.random()*availableBackups.length)];
+      nextId=pick; nextName=ps[pick].name;
     }
     if(!nextId){
-      const fallback=Object.entries(ps)
-        .filter(([pid,p])=>pid!==S.pId&&!p.spectator)
-        .sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0))[0];
-      if(fallback){nextId=fallback[0];nextName=fallback[1].name;}
+      const others=Object.entries(ps).filter(([pid,p])=>pid!==S.pId&&!p.spectator);
+      if(others.length>0){
+        const pick=others[Math.floor(Math.random()*others.length)];
+        nextId=pick[0]; nextName=pick[1].name;
+      }
     }
     if(nextId){
-      // Remove from backups list
+      // Keep the rest of the backup pool (minus the new host)
       const newBackups=backups.filter(id=>id!==nextId);
       await update(ref(db,`rooms/${S.roomId}`),{host:nextId,backups:newBackups});
       await set(ref(db,`rooms/${S.roomId}/players/${nextId}/isHost`),true);
@@ -3464,11 +3471,10 @@
   }
 
   async function exitGame(){
-    if(!confirm('לצאת מהמשחק?'))return;
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
     if(S.roomId&&S.pId){
       if(S.isHost)await transferHost();
-      await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
+      await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`)).catch(()=>{});
     }
     detachChat();clearSession();S.roomId='';S.isHost=false;S.totScores={};S.isSpectator=false;
     showChatFab(false);
