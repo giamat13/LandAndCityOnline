@@ -356,6 +356,12 @@
   .sup-levels-table td{padding:6px 8px;border-bottom:1px solid var(--border);}
   .sup-levels-table tr:last-child td{border-bottom:none;}
   .sup-levels-table tr.active-row td{background:rgba(15,186,129,.07);font-weight:800;}
+  /* Badge picker */
+  .badge-picker-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .badge-pick-btn{background:var(--s2);border:2px solid var(--border);border-radius:100px;padding:6px 14px;cursor:pointer;transition:all .18s;font-family:'Heebo',sans-serif;font-size:.8rem;display:inline-flex;align-items:center;gap:5px;color:var(--muted);}
+  .badge-pick-btn:hover{border-color:var(--blue);color:var(--text);}
+  .badge-pick-btn.sel{border-color:var(--blue);background:rgba(76,201,240,.1);color:var(--text);}
+  .badge-pick-btn.sel-none{border-color:var(--muted);background:var(--s2);color:var(--muted);}
   @keyframes devPulse{
     0%{box-shadow:0 0 4px 0px rgba(76,201,240,.4);border-color:rgba(76,201,240,.4)}
     50%{box-shadow:0 0 10px 2px rgba(76,201,240,.7);border-color:rgba(76,201,240,.9)}
@@ -632,6 +638,14 @@
           <tr id="sup-row-6"><td>Supporter VI</td><td>50+</td><td><span class="sup-b sup-b-6">🔥 Supporter VI</span></td></tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="card" style="margin-top:8px;" id="badge-picker-card">
+      <h3>🏷️ תג להצגה</h3>
+      <div style="font-size:.76rem;color:var(--muted);margin-top:4px;margin-bottom:2px;">בחר איזה תג יופיע עליך במשחק. רק תגים שיש לך זמינים.</div>
+      <div class="badge-picker-grid" id="badge-picker-grid">
+        <!-- Populated by JS -->
+      </div>
     </div>
 
     <button class="btn btn-p" id="btn-profile-continue" style="margin-top:8px;">שמור והמשך ←</button>
@@ -1099,6 +1113,7 @@
   let S_pDevRole=null; // null / 'dev' / 'main-dev' / 'supporter'
   let S_pRefId=null;   // unique referral ID (persistent)
   let S_pSupporterLevel=0; // 0=none, 1-6
+  let S_pActiveBadge='auto'; // 'auto'=show all / 'none' / 'main-dev' / 'dev' / 'supporter' / 'sup-1'..'sup-6'
 
   const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
   const PROF_FRAMES=[
@@ -1294,7 +1309,7 @@
     try{localStorage.setItem('lac_profile',JSON.stringify({
       name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
       tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole,
-      refId:S_pRefId,supporterLevel:S_pSupporterLevel
+      refId:S_pRefId,supporterLevel:S_pSupporterLevel,activeBadge:S_pActiveBadge
     }));}catch(e){}
   }
   function loadProfile(){
@@ -1313,6 +1328,7 @@
       S_pDevRole=p.devRole||null;
       S_pRefId=p.refId||null;
       S_pSupporterLevel=p.supporterLevel||0;
+      S_pActiveBadge=p.activeBadge||'auto';
       document.getElementById('player-name').value=p.name;
       return true;
     }catch(e){return false;}
@@ -1386,13 +1402,12 @@
   async function initSupporterCard(){
     if(!S_pRefId){
       S_pRefId=getOrCreateRefId();
-      // Sync to profile
       saveProfile();
     }
     const count=await loadRefCount(S_pRefId);
     S_pSupporterLevel=getSupporterLevel(count);
     renderSupporterCard(S_pRefId, count);
-    // Save updated level
+    renderBadgePicker(); // re-render now we know the level
     saveProfile();
   }
 
@@ -1517,6 +1532,7 @@
     initEntryPicker();
     updateProfilePreview();
     initSupporterCard();
+    renderBadgePicker();
   }
 
   // Wire input listener once
@@ -2014,7 +2030,7 @@
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
       players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:S_pDevRole||null,
-        emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0}}
+        emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'}}
     });
     // Register in public index if not private
     if(S.visibility!=='private'){
@@ -2069,7 +2085,7 @@
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
       name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:S_pDevRole||null,
-      emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0
+      emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'
     });
     touchActivity();saveSession();
 
@@ -2481,7 +2497,7 @@
 
     overlay.appendChild(avatarEl);
     overlay.appendChild(nameEl);
-    if(player.devRole||player.supporterLevel) overlay.appendChild(Object.assign(document.createElement('div'),{innerHTML:devBadge(player.devRole,player.supporterLevel)}));
+    if(player.devRole||player.supporterLevel) overlay.appendChild(Object.assign(document.createElement('div'),{innerHTML:devBadge(player.devRole,player.supporterLevel,player.activeBadge)}));
     if(player.tag){
       const tagEl=document.createElement('div');
       tagEl.className='player-tag';tagEl.style.fontSize='.9rem';tagEl.textContent=player.tag;
@@ -2569,7 +2585,7 @@
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
         const backupIdx=(backups||[]).indexOf(pid);
-        if(p.devRole||p.supporterLevel)badges.push(devBadge(p.devRole,p.supporterLevel));
+        if(p.devRole||p.supporterLevel)badges.push(devBadge(p.devRole,p.supporterLevel,p.activeBadge));
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
             <div class="pl-name ${p.devRole==='main-dev'?'main-dev-name':''}">${p.name}</div>
@@ -3196,7 +3212,7 @@
           // Show empty row
           const row=document.createElement('div');
           row.className='vote-row';
-          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${(p.devRole||p.supporterLevel)?devBadge(p.devRole,p.supporterLevel):''}`;
+          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${(p.devRole||p.supporterLevel)?devBadge(p.devRole,p.supporterLevel,p.activeBadge):''}`;
           row.innerHTML=nameEl+`<span class="vote-answer" style="opacity:.4;font-style:italic">—</span>`;
           rows.appendChild(row);
           return;
@@ -3213,7 +3229,7 @@
           row.className='vote-row';
 
           // Only show player name on first answer row
-          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${(p.devRole||p.supporterLevel)?' '+devBadge(p.devRole,p.supporterLevel):''}</span>`
+          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${(p.devRole||p.supporterLevel)?' '+devBadge(p.devRole,p.supporterLevel,p.activeBadge):''}</span>`
             :`<span class="vote-name" style="opacity:.3">↳</span>`;
           const answerEl=`<span class="vote-answer${isDisq?' disq':''}">${answer}</span>`;
           const countEl=vetoCount>0?`<span class="vote-count hot">${vetoCount}👎</span>`:'<span class="vote-count"></span>';
@@ -3615,7 +3631,7 @@
       div.innerHTML=`
         <div class="pod-name" style="color:${isMe?'var(--blue)':'var(--text)'}">
           ${p.name}${isMe?' (אתה)':''}
-          ${(p.devRole||p.supporterLevel)?devBadge(p.devRole,p.supporterLevel):''}
+          ${(p.devRole||p.supporterLevel)?devBadge(p.devRole,p.supporterLevel,p.activeBadge):''}
           ${p.tag?`<span class="player-tag" style="font-size:.58rem;">${p.tag}</span>`:''}
         </div>
         <div class="pod-av" style="width:${ri===1?52:ri===0?42:36}px;height:${ri===1?52:ri===0?42:36}px;background:${c}22;color:${c};font-size:${ri===1?'1.4rem':ri===0?'1.1rem':'.9rem'}">${p.name.charAt(0)}</div>
@@ -3808,14 +3824,76 @@
     if(count>=1)return 1;
     return 0;
   }
-  function devBadge(role, supporterLevel){
-    let html='';
-    if(role==='main-dev') html='<span class="main-dev-b">⚡ מפתח ראשי</span>';
-    else if(role==='dev') html='<span class="dev-b">🔧 מפתח</span>';
-    else if(role==='supporter') html='<span class="supporter-b">💚 תומך</span>';
+
+  // Returns the single badge HTML to display for a player, based on their activeBadge choice
+  function devBadge(role, supporterLevel, activeBadge){
+    // activeBadge = 'auto' | 'none' | 'main-dev' | 'dev' | 'supporter' | 'sup-1'..'sup-6'
+    const ab = activeBadge||'auto';
+    if(ab==='none') return '';
+
+    // Build what's actually available for this player
+    const available=[];
+    if(role==='main-dev') available.push({key:'main-dev', html:'<span class="main-dev-b">⚡ מפתח ראשי</span>'});
+    if(role==='dev')      available.push({key:'dev',      html:'<span class="dev-b">🔧 מפתח</span>'});
+    if(role==='supporter')available.push({key:'supporter',html:'<span class="supporter-b">💚 תומך</span>'});
     const sLevel=parseInt(supporterLevel)||0;
-    if(sLevel>0) html+=(html?' ':'')+supBadgeHtml(sLevel);
-    return html;
+    for(let i=1;i<=sLevel;i++){
+      available.push({key:'sup-'+i, html:supBadgeHtml(i)});
+    }
+
+    if(ab==='auto'){
+      // Show highest single badge: prefer dev role first, then highest sup level
+      if(role==='main-dev') return '<span class="main-dev-b">⚡ מפתח ראשי</span>';
+      if(role==='dev')      return '<span class="dev-b">🔧 מפתח</span>';
+      if(role==='supporter')return '<span class="supporter-b">💚 תומך</span>';
+      if(sLevel>0) return supBadgeHtml(sLevel);
+      return '';
+    }
+    // Specific selection
+    const match=available.find(a=>a.key===ab);
+    return match?match.html:'';
+  }
+
+  // Build and render the badge picker in the profile screen
+  function renderBadgePicker(){
+    const grid=document.getElementById('badge-picker-grid');
+    if(!grid)return;
+    grid.innerHTML='';
+
+    const options=[];
+
+    // "No badge" option
+    options.push({key:'none', html:'<span style="font-size:.85rem;">🚫 ללא תג</span>'});
+
+    // Dev role badges
+    if(S_pDevRole==='main-dev') options.push({key:'main-dev', html:'<span class="main-dev-b" style="font-size:.7rem;padding:1px 7px;">⚡ מפתח ראשי</span>'});
+    if(S_pDevRole==='dev')      options.push({key:'dev',      html:'<span class="dev-b" style="font-size:.7rem;padding:1px 7px;">🔧 מפתח</span>'});
+    if(S_pDevRole==='supporter')options.push({key:'supporter',html:'<span class="supporter-b" style="font-size:.7rem;padding:1px 7px;">💚 תומך</span>'});
+
+    // Supporter level badges (all unlocked ones)
+    for(let i=1;i<=S_pSupporterLevel;i++){
+      options.push({key:'sup-'+i, html:supBadgeHtml(i)});
+    }
+
+    if(options.length===1){
+      // Only "none" — no badges earned yet
+      grid.innerHTML='<div style="font-size:.8rem;color:var(--muted);padding:8px 0;">אין לך תגים עדיין. הפץ את הלינק שלך כדי לקבל! 🌟</div>';
+      return;
+    }
+
+    options.forEach(({key, html})=>{
+      const btn=document.createElement('button');
+      btn.className='badge-pick-btn'+(S_pActiveBadge===key?' sel':'')+(key==='none'?' sel-none':'');
+      btn.innerHTML=html;
+      btn.addEventListener('click',()=>{
+        S_pActiveBadge=key;
+        saveProfile();
+        // Re-render picker
+        renderBadgePicker();
+        toast(key==='none'?'תג הוסר':'תג עודכן ✅');
+      });
+      grid.appendChild(btn);
+    });
   }
 
   async function transferHost(){
@@ -3922,7 +4000,7 @@
         const wrap=document.createElement('div');
         wrap.className='chat-msg'+(isMine?' mine':'')+(m.devRole==='main-dev'?' main-dev-msg':'');
         wrap.innerHTML=`<div class="chat-av" style="background:${c}22;color:${c}">${(m.name||'?').charAt(0)}</div>
-          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${(m.devRole||m.supporterLevel)?(" "+devBadge(m.devRole,m.supporterLevel)):""}</div>`}${escHtml(m.text)}</div>`;
+          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${(m.devRole||m.supporterLevel)?(" "+devBadge(m.devRole,m.supporterLevel,m.activeBadge)):""}</div>`}${escHtml(m.text)}</div>`;
         container.appendChild(wrap);
       });
       container.scrollTop=container.scrollHeight;
@@ -3961,7 +4039,7 @@
     inp.value='';
     const msgId=gid(12);
     await set(ref(db,`rooms/${S.roomId}/chat/${msgId}`),{
-      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null,supporterLevel:S_pSupporterLevel||0
+      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null,supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'
     });
     touchActivity();
   }
