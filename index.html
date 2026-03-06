@@ -316,6 +316,46 @@
     animation:supporterSpin 4s ease-in-out infinite, supporterGlow 3s ease-in-out infinite;
     cursor:default;
   }
+  /* ── Supporter level badges ─────────────────────────────── */
+  .sup-b{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:100px;font-size:.7rem;font-weight:800;cursor:default;white-space:nowrap;}
+  /* Level 1 – 1-4 refs: green */
+  .sup-b-1{background:rgba(15,186,129,.14);color:#0fba81;border:1.5px solid rgba(15,186,129,.45);animation:supporterSpin 5s ease-in-out infinite,supporterGlow 3s ease-in-out infinite;}
+  /* Level 2 – 5-9 refs: blue */
+  .sup-b-2{background:rgba(76,201,240,.14);color:#4cc9f0;border:1.5px solid rgba(76,201,240,.45);animation:supGlow2 3s ease-in-out infinite;}
+  @keyframes supGlow2{0%,100%{box-shadow:0 0 4px rgba(76,201,240,.3)}50%{box-shadow:0 0 12px 2px rgba(76,201,240,.6)}}
+  /* Level 3 – 10-19 refs: orange */
+  .sup-b-3{background:rgba(245,166,35,.14);color:#f5a623;border:1.5px solid rgba(245,166,35,.45);animation:supGlow3 3s ease-in-out infinite;}
+  @keyframes supGlow3{0%,100%{box-shadow:0 0 4px rgba(245,166,35,.3)}50%{box-shadow:0 0 12px 2px rgba(245,166,35,.6)}}
+  /* Level 4 – 20-29 refs: purple */
+  .sup-b-4{background:rgba(168,85,247,.14);color:#a855f7;border:1.5px solid rgba(168,85,247,.45);animation:supGlow4 3s ease-in-out infinite;}
+  @keyframes supGlow4{0%,100%{box-shadow:0 0 4px rgba(168,85,247,.3)}50%{box-shadow:0 0 14px 2px rgba(168,85,247,.7)}}
+  /* Level 5 – 30-49 refs: red */
+  .sup-b-5{background:rgba(233,69,96,.14);color:#e94560;border:1.5px solid rgba(233,69,96,.45);animation:supGlow5 3s ease-in-out infinite;}
+  @keyframes supGlow5{0%,100%{box-shadow:0 0 5px rgba(233,69,96,.3)}50%{box-shadow:0 0 14px 3px rgba(233,69,96,.7)}}
+  /* Level 6 – 50+ refs: gold animated */
+  @keyframes goldShine{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  @keyframes goldGlow{0%,100%{box-shadow:0 0 6px 1px rgba(245,200,35,.5)}50%{box-shadow:0 0 16px 4px rgba(245,200,35,.85)}}
+  .sup-b-6{
+    background:linear-gradient(270deg,#f5a623,#ffd700,#fffbe6,#f5a623,#f59e0b);
+    background-size:300% 300%;
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    border:1.5px solid rgba(245,200,35,.6);
+    animation:goldShine 2.5s ease infinite,goldGlow 2s ease-in-out infinite;
+    filter:drop-shadow(0 0 4px rgba(245,180,35,.6));
+  }
+  /* Profile – Supporter/share card */
+  .sup-ref-box{background:var(--s2);border:1.5px dashed rgba(15,186,129,.35);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px;word-break:break-all;}
+  .sup-ref-txt{flex:1;font-size:.72rem;color:var(--green);font-weight:700;letter-spacing:.01em;}
+  .sup-copy-btn{background:rgba(15,186,129,.14);color:var(--green);border:1.5px solid rgba(15,186,129,.35);border-radius:8px;padding:7px 13px;font-family:'Heebo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0;}
+  .sup-copy-btn:hover{background:rgba(15,186,129,.28);}
+  .sup-count-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:var(--s2);border-radius:10px;padding:10px 14px;}
+  .sup-count-num{font-size:1.6rem;font-weight:900;color:var(--green);}
+  .sup-badge-preview{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+  .sup-levels-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:4px;}
+  .sup-levels-table th{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;}
+  .sup-levels-table td{padding:6px 8px;border-bottom:1px solid var(--border);}
+  .sup-levels-table tr:last-child td{border-bottom:none;}
+  .sup-levels-table tr.active-row td{background:rgba(15,186,129,.07);font-weight:800;}
   @keyframes devPulse{
     0%{box-shadow:0 0 4px 0px rgba(76,201,240,.4);border-color:rgba(76,201,240,.4)}
     50%{box-shadow:0 0 10px 2px rgba(76,201,240,.7);border-color:rgba(76,201,240,.9)}
@@ -553,6 +593,45 @@
         <button class="btn btn-s btn-sm" id="btn-redeem-dev" style="width:auto;padding:10px 16px;">מימוש</button>
       </div>
       <div id="dev-code-status" style="font-size:.75rem;margin-top:6px;min-height:16px;"></div>
+    </div>
+
+    <div class="card" style="margin-top:8px;" id="supporter-card">
+      <h3>🌟 מערכת Supporter – הפצה</h3>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px;margin-top:4px;">שתף את הלינק האישי שלך ✨ ככל שתפיץ יותר, כך הבאדג' שלך יתחזק!</div>
+
+      <!-- Referral link box -->
+      <div class="sup-ref-box" id="sup-ref-box">
+        <span class="sup-ref-txt" id="sup-ref-txt">טוען לינק...</span>
+        <button class="sup-copy-btn" id="sup-copy-btn">📋 העתק</button>
+      </div>
+      <button class="btn btn-s" id="sup-share-btn" style="margin-bottom:14px;gap:8px;">
+        🔗 שתף
+      </button>
+
+      <!-- Count + badge preview -->
+      <div class="sup-count-row">
+        <div>
+          <div style="font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">הפצות</div>
+          <div class="sup-count-num" id="sup-count">0</div>
+        </div>
+        <div class="sup-badge-preview">
+          <div style="font-size:.68rem;color:var(--muted);margin-bottom:4px;">הבאדג' שלך:</div>
+          <div id="sup-badge-preview-el">—</div>
+        </div>
+      </div>
+
+      <!-- Levels table -->
+      <table class="sup-levels-table" id="sup-levels-table">
+        <thead><tr><th>רמה</th><th>הפצות</th><th>באדג'</th></tr></thead>
+        <tbody>
+          <tr id="sup-row-1"><td>Supporter I</td><td>1–4</td><td><span class="sup-b sup-b-1">🟢 Supporter I</span></td></tr>
+          <tr id="sup-row-2"><td>Supporter II</td><td>5–9</td><td><span class="sup-b sup-b-2">🔵 Supporter II</span></td></tr>
+          <tr id="sup-row-3"><td>Supporter III</td><td>10–19</td><td><span class="sup-b sup-b-3">🟠 Supporter III</span></td></tr>
+          <tr id="sup-row-4"><td>Supporter IV</td><td>20–29</td><td><span class="sup-b sup-b-4">🟣 Supporter IV</span></td></tr>
+          <tr id="sup-row-5"><td>Supporter V</td><td>30–49</td><td><span class="sup-b sup-b-5">🔴 Supporter V</span></td></tr>
+          <tr id="sup-row-6"><td>Supporter VI</td><td>50+</td><td><span class="sup-b sup-b-6">🔥 Supporter VI</span></td></tr>
+        </tbody>
+      </table>
     </div>
 
     <button class="btn btn-p" id="btn-profile-continue" style="margin-top:8px;">שמור והמשך ←</button>
@@ -1018,6 +1097,8 @@
   let S_pEntry='none'; // 'none'/'bounce'/'spin'/'flash'/'shake'
   let S_pRoomName='';  // default room name
   let S_pDevRole=null; // null / 'dev' / 'main-dev' / 'supporter'
+  let S_pRefId=null;   // unique referral ID (persistent)
+  let S_pSupporterLevel=0; // 0=none, 1-6
 
   const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
   const PROF_FRAMES=[
@@ -1212,7 +1293,8 @@
   function saveProfile(){
     try{localStorage.setItem('lac_profile',JSON.stringify({
       name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
-      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole
+      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole,
+      refId:S_pRefId,supporterLevel:S_pSupporterLevel
     }));}catch(e){}
   }
   function loadProfile(){
@@ -1229,12 +1311,106 @@
       S_pEntry=p.entry||'none';
       S_pRoomName=p.roomName||'';
       S_pDevRole=p.devRole||null;
+      S_pRefId=p.refId||null;
+      S_pSupporterLevel=p.supporterLevel||0;
       document.getElementById('player-name').value=p.name;
       return true;
     }catch(e){return false;}
   }
 
-  // ─── PERMANENT ROOMS (local storage) ────────────────────────────
+  // ─── SUPPORTER / REFERRAL SYSTEM ──────────────────────────────────
+  function getOrCreateRefId(){
+    try{
+      let id=localStorage.getItem('lac_refid');
+      if(!id){id=gid(12);localStorage.setItem('lac_refid',id);}
+      return id;
+    }catch(e){return gid(12);}
+  }
+
+  async function loadRefCount(refId){
+    try{
+      const snap=await get(ref(db,'refs/'+refId+'/count'));
+      return snap.exists()?snap.val():0;
+    }catch(e){return 0;}
+  }
+
+  async function incrementRef(refId){
+    try{
+      const snap=await get(ref(db,'refs/'+refId+'/count'));
+      const cur=snap.exists()?snap.val():0;
+      await set(ref(db,'refs/'+refId+'/count'),cur+1);
+    }catch(e){}
+  }
+
+  function renderSupporterCard(refId, count){
+    const url=location.origin+location.pathname+'?ref='+refId;
+    const txtEl=document.getElementById('sup-ref-txt');
+    if(txtEl) txtEl.textContent=url;
+
+    const countEl=document.getElementById('sup-count');
+    if(countEl) countEl.textContent=count;
+
+    const level=getSupporterLevel(count);
+    S_pSupporterLevel=level;
+
+    const previewEl=document.getElementById('sup-badge-preview-el');
+    if(previewEl) previewEl.innerHTML=level>0?supBadgeHtml(level):'<span style="color:var(--muted);font-size:.8rem;">עוד אין באדג\'</span>';
+
+    // Highlight active row in table
+    for(let i=1;i<=6;i++){
+      const row=document.getElementById('sup-row-'+i);
+      if(row) row.classList.toggle('active-row', i===level);
+    }
+
+    // Wire buttons (once)
+    const copyBtn=document.getElementById('sup-copy-btn');
+    if(copyBtn && !copyBtn._wired){
+      copyBtn._wired=true;
+      copyBtn.addEventListener('click',()=>{
+        navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🌟'));
+      });
+    }
+    const shareBtn=document.getElementById('sup-share-btn');
+    if(shareBtn && !shareBtn._wired){
+      shareBtn._wired=true;
+      shareBtn.addEventListener('click',()=>{
+        if(navigator.share){
+          navigator.share({title:'ארץ עיר אונליין',text:'🌍 בוא לשחק ארץ עיר איתי!',url}).catch(()=>{});
+        }else{
+          navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🔗'));
+        }
+      });
+    }
+  }
+
+  async function initSupporterCard(){
+    if(!S_pRefId){
+      S_pRefId=getOrCreateRefId();
+      // Sync to profile
+      saveProfile();
+    }
+    const count=await loadRefCount(S_pRefId);
+    S_pSupporterLevel=getSupporterLevel(count);
+    renderSupporterCard(S_pRefId, count);
+    // Save updated level
+    saveProfile();
+  }
+
+  // Handle incoming ?ref= param – track the visit
+  (function handleRefParam(){
+    const params=new URLSearchParams(window.location.search);
+    const refFrom=params.get('ref');
+    if(refFrom&&refFrom.length>4){
+      // Don't count your own link
+      let myId=null;
+      try{myId=localStorage.getItem('lac_refid');}catch(e){}
+      if(refFrom!==myId){
+        incrementRef(refFrom);
+      }
+    }
+  })();
+
+
   function loadMyRooms(){
     try{return JSON.parse(localStorage.getItem('lac_myrooms')||'[]');}catch(e){return [];}
   }
@@ -1340,6 +1516,7 @@
     initTagInput();
     initEntryPicker();
     updateProfilePreview();
+    initSupporterCard();
   }
 
   // Wire input listener once
@@ -1416,6 +1593,8 @@
     setupProfileScreen();
     showScreen('home');
     updateHomeIdentity();
+    // Initialize refId if missing after loading profile
+    if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
   } else {
     setupProfileScreen();
   }
@@ -1835,7 +2014,7 @@
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
       players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:S_pDevRole||null,
-        emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'}}
+        emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0}}
     });
     // Register in public index if not private
     if(S.visibility!=='private'){
@@ -1890,7 +2069,7 @@
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
       name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:S_pDevRole||null,
-      emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'
+      emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0
     });
     touchActivity();saveSession();
 
@@ -2302,7 +2481,7 @@
 
     overlay.appendChild(avatarEl);
     overlay.appendChild(nameEl);
-    if(player.devRole) overlay.appendChild(Object.assign(document.createElement('div'),{innerHTML:devBadge(player.devRole)}));
+    if(player.devRole||player.supporterLevel) overlay.appendChild(Object.assign(document.createElement('div'),{innerHTML:devBadge(player.devRole,player.supporterLevel)}));
     if(player.tag){
       const tagEl=document.createElement('div');
       tagEl.className='player-tag';tagEl.style.fontSize='.9rem';tagEl.textContent=player.tag;
@@ -2390,7 +2569,7 @@
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
         const backupIdx=(backups||[]).indexOf(pid);
-        if(p.devRole)badges.push(devBadge(p.devRole));
+        if(p.devRole||p.supporterLevel)badges.push(devBadge(p.devRole,p.supporterLevel));
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
             <div class="pl-name ${p.devRole==='main-dev'?'main-dev-name':''}">${p.name}</div>
@@ -3017,7 +3196,7 @@
           // Show empty row
           const row=document.createElement('div');
           row.className='vote-row';
-          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${p.devRole?devBadge(p.devRole):''}`;
+          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${(p.devRole||p.supporterLevel)?devBadge(p.devRole,p.supporterLevel):''}`;
           row.innerHTML=nameEl+`<span class="vote-answer" style="opacity:.4;font-style:italic">—</span>`;
           rows.appendChild(row);
           return;
@@ -3034,7 +3213,7 @@
           row.className='vote-row';
 
           // Only show player name on first answer row
-          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${p.devRole?' '+devBadge(p.devRole):''}</span>`
+          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${(p.devRole||p.supporterLevel)?' '+devBadge(p.devRole,p.supporterLevel):''}</span>`
             :`<span class="vote-name" style="opacity:.3">↳</span>`;
           const answerEl=`<span class="vote-answer${isDisq?' disq':''}">${answer}</span>`;
           const countEl=vetoCount>0?`<span class="vote-count hot">${vetoCount}👎</span>`:'<span class="vote-count"></span>';
@@ -3436,7 +3615,7 @@
       div.innerHTML=`
         <div class="pod-name" style="color:${isMe?'var(--blue)':'var(--text)'}">
           ${p.name}${isMe?' (אתה)':''}
-          ${p.devRole?devBadge(p.devRole):''}
+          ${(p.devRole||p.supporterLevel)?devBadge(p.devRole,p.supporterLevel):''}
           ${p.tag?`<span class="player-tag" style="font-size:.58rem;">${p.tag}</span>`:''}
         </div>
         <div class="pod-av" style="width:${ri===1?52:ri===0?42:36}px;height:${ri===1?52:ri===0?42:36}px;background:${c}22;color:${c};font-size:${ri===1?'1.4rem':ri===0?'1.1rem':'.9rem'}">${p.name.charAt(0)}</div>
@@ -3606,11 +3785,37 @@
     await showFinal();
   }
 
-  function devBadge(role){
-    if(role==='main-dev')return '<span class="main-dev-b">⚡ מפתח ראשי</span>';
-    if(role==='dev')return '<span class="dev-b">🔧 מפתח</span>';
-    if(role==='supporter')return '<span class="supporter-b">💚 תומך</span>';
-    return '';
+  function supBadgeHtml(level){
+    const defs=[
+      null,
+      {cls:'sup-b-1',icon:'🟢',label:'Supporter I'},
+      {cls:'sup-b-2',icon:'🔵',label:'Supporter II'},
+      {cls:'sup-b-3',icon:'🟠',label:'Supporter III'},
+      {cls:'sup-b-4',icon:'🟣',label:'Supporter IV'},
+      {cls:'sup-b-5',icon:'🔴',label:'Supporter V'},
+      {cls:'sup-b-6',icon:'🔥',label:'Supporter VI'},
+    ];
+    const d=defs[level];
+    if(!d)return '';
+    return `<span class="sup-b ${d.cls}">${d.icon} ${d.label}</span>`;
+  }
+  function getSupporterLevel(count){
+    if(count>=50)return 6;
+    if(count>=30)return 5;
+    if(count>=20)return 4;
+    if(count>=10)return 3;
+    if(count>=5)return 2;
+    if(count>=1)return 1;
+    return 0;
+  }
+  function devBadge(role, supporterLevel){
+    let html='';
+    if(role==='main-dev') html='<span class="main-dev-b">⚡ מפתח ראשי</span>';
+    else if(role==='dev') html='<span class="dev-b">🔧 מפתח</span>';
+    else if(role==='supporter') html='<span class="supporter-b">💚 תומך</span>';
+    const sLevel=parseInt(supporterLevel)||0;
+    if(sLevel>0) html+=(html?' ':'')+supBadgeHtml(sLevel);
+    return html;
   }
 
   async function transferHost(){
@@ -3717,7 +3922,7 @@
         const wrap=document.createElement('div');
         wrap.className='chat-msg'+(isMine?' mine':'')+(m.devRole==='main-dev'?' main-dev-msg':'');
         wrap.innerHTML=`<div class="chat-av" style="background:${c}22;color:${c}">${(m.name||'?').charAt(0)}</div>
-          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${m.devRole?(" "+devBadge(m.devRole)):""}</div>`}${escHtml(m.text)}</div>`;
+          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${(m.devRole||m.supporterLevel)?(" "+devBadge(m.devRole,m.supporterLevel)):""}</div>`}${escHtml(m.text)}</div>`;
         container.appendChild(wrap);
       });
       container.scrollTop=container.scrollHeight;
@@ -3756,7 +3961,7 @@
     inp.value='';
     const msgId=gid(12);
     await set(ref(db,`rooms/${S.roomId}/chat/${msgId}`),{
-      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null
+      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null,supporterLevel:S_pSupporterLevel||0
     });
     touchActivity();
   }
