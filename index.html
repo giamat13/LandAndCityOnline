@@ -1349,16 +1349,16 @@
 
   async function loadRefCount(refId){
     try{
-      const snap=await get(ref(db,'refs/'+refId+'/count'));
+      const snap=await get(ref(db,'referrals/'+refId+'/count'));
       return snap.exists()?snap.val():0;
     }catch(e){return 0;}
   }
 
   async function incrementRef(refId){
     try{
-      const snap=await get(ref(db,'refs/'+refId+'/count'));
+      const snap=await get(ref(db,'referrals/'+refId+'/count'));
       const cur=snap.exists()?snap.val():0;
-      await set(ref(db,'refs/'+refId+'/count'),cur+1);
+      await set(ref(db,'referrals/'+refId+'/count'),cur+1);
     }catch(e){}
   }
 
@@ -1570,6 +1570,22 @@
     if(code==='main-dev=giamat13') redeemed='main-dev';
     else if(code==='dev=giamat13')  redeemed='dev';
     else if(code==='supporter')     redeemed='supporter';
+    // Supporter[N] cheat code — simulate N referrals
+    const supMatch=code.match(/^[Ss]upporter(\d+)$/);
+    if(supMatch){
+      const fakeCount=Math.max(0,parseInt(supMatch[1]));
+      (async()=>{
+        if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
+        await set(ref(db,'referrals/'+S_pRefId+'/count'),fakeCount);
+        S_pSupporterLevel=getSupporterLevel(fakeCount);
+        renderSupporterCard(S_pRefId,fakeCount);
+        renderBadgePicker();
+        saveProfile();
+        status.innerHTML='<span style="color:var(--orange);">🔧 סימולציה: '+fakeCount+' הפצות הוגדרו!</span>';
+        document.getElementById('prof-dev-code').value='';
+      })();
+      return;
+    }
     if(redeemed){
       if(!S_pDevRoles.includes(redeemed)) S_pDevRoles.push(redeemed);
       const labels={'main-dev':'<span style="color:#f5a623;">👑 קוד מומש! ברוך הבא, מפתח ראשי</span>','dev':'<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>','supporter':'<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️</span>'};
