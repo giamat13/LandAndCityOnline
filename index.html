@@ -245,6 +245,15 @@
   .chat-bubble{border-radius:14px;padding:8px 12px;max-width:78%;font-size:.88rem;line-height:1.4;word-break:break-word}
   .chat-msg:not(.mine) .chat-bubble{background:var(--s2)}
   .chat-msg.mine .chat-bubble{background:rgba(76,201,240,.2);border:1px solid rgba(76,201,240,.2)}
+  .chat-msg.main-dev-msg .chat-bubble{background:linear-gradient(135deg,rgba(233,69,96,.15),rgba(168,85,247,.15));border:1px solid rgba(245,166,35,.3);box-shadow:0 0 12px rgba(245,166,35,.15)}
+  @keyframes mainDevNameGlow{0%{text-shadow:0 0 8px #e94560}25%{text-shadow:0 0 12px #f5a623}50%{text-shadow:0 0 12px #4cc9f0}75%{text-shadow:0 0 12px #a855f7}100%{text-shadow:0 0 8px #e94560}}
+  .main-dev-name{animation:mainDevNameGlow 4s ease infinite;font-weight:900!important;}
+  @keyframes rainbowSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  @keyframes starShoot0{0%{opacity:0;transform:scale(0)}50%{opacity:1}100%{opacity:0;transform:translateX(200px) scale(0)}}
+  @keyframes starShoot1{0%{opacity:0;transform:scale(0)}50%{opacity:.8}100%{opacity:0;transform:translateY(180px) scale(0)}}
+  @keyframes starShoot2{0%{opacity:0;transform:scale(0)}50%{opacity:1}100%{opacity:0;transform:translate(140px,-140px) scale(0)}}
+  .av-frame-main-dev{position:relative;}
+  .av-frame-main-dev::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(#e94560,#f5a623,#0fba81,#4cc9f0,#a855f7,#e94560);animation:rainbowSpin 2s linear infinite;z-index:-1;}
   .chat-name{font-size:.67rem;color:var(--muted);margin-bottom:2px;font-weight:600}
   .chat-system{text-align:center;color:var(--muted);font-size:.75rem;padding:4px 0;font-style:italic}
   .chat-inp-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0}
@@ -265,8 +274,65 @@
   .spec-b{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   .host-b{background:rgba(245,166,35,.12);color:var(--orange);border:1px solid rgba(245,166,35,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   .backup-b{background:rgba(15,186,129,.12);color:var(--green);border:1px solid rgba(15,186,129,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
-  .main-dev-b{background:linear-gradient(135deg,rgba(233,69,96,.2),rgba(245,166,35,.2));color:#f5a623;border:1px solid rgba(245,166,35,.5);padding:2px 10px;border-radius:100px;font-size:.7rem;font-weight:800;text-shadow:0 0 8px rgba(245,166,35,.4);}
-  .dev-b{background:rgba(76,201,240,.12);color:var(--blue);border:1px solid rgba(76,201,240,.3);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700;}
+  @keyframes devBg{
+    0%{background-position:0% 50%;transform:scale(1) rotate(-1deg)}
+    25%{background-position:50% 50%;transform:scale(1.08) rotate(1deg)}
+    50%{background-position:100% 50%;transform:scale(1) rotate(-1deg)}
+    75%{background-position:50% 50%;transform:scale(1.08) rotate(1deg)}
+    100%{background-position:0% 50%;transform:scale(1) rotate(-1deg)}
+  }
+  @keyframes devGlow{
+    0%{box-shadow:0 0 6px 1px #e94560aa}
+    25%{box-shadow:0 0 10px 2px #f5a623aa}
+    50%{box-shadow:0 0 10px 2px #4cc9f0aa}
+    75%{box-shadow:0 0 10px 2px #a855f7aa}
+    100%{box-shadow:0 0 6px 1px #e94560aa}
+  }
+  .main-dev-b{
+    display:inline-block;
+    background:linear-gradient(270deg,#e94560,#f5a623,#0fba81,#4cc9f0,#a855f7,#e94560);
+    background-size:400% 400%;
+    animation:devBg 4s ease infinite, devGlow 4s ease infinite;
+    color:#fff;border:none;
+    padding:2px 10px;border-radius:100px;font-size:.7rem;font-weight:800;
+    cursor:default;
+  }
+  @keyframes supporterSpin{
+    0%{transform:rotate(0deg) scale(1)}
+    25%{transform:rotate(3deg) scale(1.05)}
+    75%{transform:rotate(-3deg) scale(1.05)}
+    100%{transform:rotate(0deg) scale(1)}
+  }
+  @keyframes supporterGlow{
+    0%,100%{box-shadow:0 0 4px rgba(15,186,129,.3);border-color:rgba(15,186,129,.4)}
+    50%{box-shadow:0 0 12px 2px rgba(15,186,129,.6);border-color:rgba(15,186,129,.9)}
+  }
+  .supporter-b{
+    display:inline-block;
+    background:rgba(15,186,129,.13);
+    color:var(--green);
+    border:1.5px solid rgba(15,186,129,.45);
+    padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;
+    animation:supporterSpin 4s ease-in-out infinite, supporterGlow 3s ease-in-out infinite;
+    cursor:default;
+  }
+  @keyframes devPulse{
+    0%{box-shadow:0 0 4px 0px rgba(76,201,240,.4);border-color:rgba(76,201,240,.4)}
+    50%{box-shadow:0 0 10px 2px rgba(76,201,240,.7);border-color:rgba(76,201,240,.9)}
+    100%{box-shadow:0 0 4px 0px rgba(76,201,240,.4);border-color:rgba(76,201,240,.4)}
+  }
+  @keyframes devFlicker{
+    0%,100%{opacity:1} 45%{opacity:.85} 50%{opacity:1} 55%{opacity:.7} 60%{opacity:1}
+  }
+  .dev-b{
+    display:inline-block;
+    background:rgba(76,201,240,.12);
+    color:var(--blue);
+    border:1.5px solid rgba(76,201,240,.5);
+    padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;
+    animation:devPulse 2.5s ease-in-out infinite, devFlicker 5s ease-in-out infinite;
+    cursor:default;
+  }
   .disq{color:var(--red);text-decoration:line-through;opacity:.6}
   /* rare answer badge */
   .rare-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(168,85,247,.18);border:1px solid rgba(168,85,247,.4);color:#a855f7;padding:2px 7px;border-radius:100px;font-size:.7rem;font-weight:800;margin-right:4px;vertical-align:middle;animation:rarePop .5s cubic-bezier(.34,1.56,.64,1)}
@@ -483,7 +549,7 @@
     <div class="card" style="margin-top:8px;" id="dev-code-card">
       <h3>🔑 קוד מפתח</h3>
       <div style="display:flex;gap:8px;margin-top:8px;">
-        <input type="text" id="prof-dev-code" placeholder="הכנס קוד..." maxlength="30" style="flex:1;letter-spacing:.1em;">
+        <input type="password" id="prof-dev-code" placeholder="הכנס קוד..." maxlength="30" style="flex:1;letter-spacing:.15em;">
         <button class="btn btn-s btn-sm" id="btn-redeem-dev" style="width:auto;padding:10px 16px;">מימוש</button>
       </div>
       <div id="dev-code-status" style="font-size:.75rem;margin-top:6px;min-height:16px;"></div>
@@ -540,7 +606,7 @@
           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:700;transition:all .2s;"
           onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'"
           onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-          📋 טופס Google
+          📋 טופס Google — גם לבקשת תג Supporter
         </a>
         <a href="https://github.com/giamat13/LandAndCityOnline/issues" target="_blank" rel="noopener"
           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:700;transition:all .2s;"
@@ -930,7 +996,7 @@
   let S_pTag=null;     // null or tag string
   let S_pEntry='none'; // 'none'/'bounce'/'spin'/'flash'/'shake'
   let S_pRoomName='';  // default room name
-  let S_pDevRole=null; // null / 'dev' / 'main-dev'
+  let S_pDevRole=null; // null / 'dev' / 'main-dev' / 'supporter'
 
   const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
   const PROF_FRAMES=[
@@ -1244,6 +1310,7 @@
     if(devStatus){
       if(S_pDevRole==='main-dev') devStatus.innerHTML='<span style="color:#f5a623;">👑 מפתח ראשי פעיל</span>';
       else if(S_pDevRole==='dev') devStatus.innerHTML='<span style="color:var(--blue);">🔧 מפתח פעיל</span>';
+      else if(S_pDevRole==='supporter') devStatus.innerHTML='<span style="color:var(--green);">💚 תומך פעיל</span>';
       else devStatus.textContent='';
     }
     initAvPicker();
@@ -1285,6 +1352,10 @@
     } else if(code==='dev=giamat13'){
       S_pDevRole='dev';
       status.innerHTML='<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>';
+      document.getElementById('prof-dev-code').value='';
+    } else if(code==='supporter3+'){
+      S_pDevRole='supporter';
+      status.innerHTML='<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️</span>';
       document.getElementById('prof-dev-code').value='';
     } else {
       status.innerHTML='<span style="color:var(--red);">❌ קוד לא תקין</span>';
@@ -2117,54 +2188,67 @@
     const effect=player.entryEffect||'none';
     const c=avc(player.name,player.color);
     const avatarContent=player.emoji||player.name.charAt(0);
-    const frameClass=player.frame?'av-frame-'+player.frame:'';
+    const isMainDev=player.devRole==='main-dev';
+    const frameClass=isMainDev?'av-frame-main-dev':(player.frame?'av-frame-'+player.frame:'');
 
     // Full-screen overlay
     const overlay=document.createElement('div');
     overlay.style.cssText=`position:fixed;inset:0;z-index:1500;
-      background:rgba(10,10,25,.82);backdrop-filter:blur(8px);
+      background:${isMainDev?'rgba(5,5,15,.92)':'rgba(10,10,25,.82)'};backdrop-filter:blur(${isMainDev?'16':'8'}px);
       display:flex;flex-direction:column;align-items:center;justify-content:center;
       gap:18px;pointer-events:none;animation:fadeUp .25s ease;`;
 
+    if(isMainDev){
+      // Shooting stars background
+      for(let i=0;i<12;i++){
+        const star=document.createElement('div');
+        const angle=Math.random()*360;
+        const dist=80+Math.random()*120;
+        star.style.cssText=`position:absolute;width:${2+Math.random()*3}px;height:${2+Math.random()*3}px;
+          border-radius:50%;background:#fff;opacity:0;
+          top:50%;left:50%;
+          animation:starShoot${i%3} ${0.5+Math.random()*1}s ${Math.random()*0.8}s ease-out forwards;
+          transform:rotate(${angle}deg) translateX(${dist}px);`;
+        overlay.appendChild(star);
+      }
+    }
+
     const avatarEl=document.createElement('div');
-    avatarEl.className=frameClass+(effect!=='none'?' entry-'+effect:'');
-    avatarEl.style.cssText=`width:110px;height:110px;border-radius:50%;
+    avatarEl.className=frameClass+(effect!=='none'&&!isMainDev?' entry-'+effect:'');
+    if(isMainDev) avatarEl.className+=' entry-zoom';
+    avatarEl.style.cssText=`width:${isMainDev?130:110}px;height:${isMainDev?130:110}px;border-radius:50%;
       background:${c}33;color:${c};
       display:flex;align-items:center;justify-content:center;
-      font-weight:900;font-size:3rem;
-      box-shadow:0 0 40px ${c}55;`;
+      font-weight:900;font-size:${isMainDev?'3.5':'3'}rem;
+      box-shadow:0 0 ${isMainDev?60:40}px ${c}${isMainDev?'88':'55'};`;
     avatarEl.textContent=avatarContent;
 
     const nameEl=document.createElement('div');
-    nameEl.style.cssText=`font-size:1.6rem;font-weight:900;color:#fff;
-      text-shadow:0 2px 12px rgba(0,0,0,.8);text-align:center;`;
+    nameEl.className=isMainDev?'main-dev-name':'';
+    nameEl.style.cssText=`font-size:${isMainDev?'2':'1.6'}rem;font-weight:900;color:#fff;
+      text-align:center;`;
     nameEl.textContent=player.name;
 
     const joinEl=document.createElement('div');
-    joinEl.style.cssText=`font-size:1rem;font-weight:700;color:var(--green);
-      text-shadow:0 1px 8px rgba(0,0,0,.7);`;
-    joinEl.textContent='הצטרף/ה לחדר! 🎉';
+    joinEl.style.cssText=`font-size:${isMainDev?'1.1':'1'}rem;font-weight:700;
+      color:${isMainDev?'#f5a623':'var(--green)'};text-align:center;`;
+    joinEl.textContent=isMainDev?'⚡ המפתח הראשי נכנס לחדר ⚡':'הצטרף/ה לחדר! 🎉';
 
+    overlay.appendChild(avatarEl);
+    overlay.appendChild(nameEl);
+    if(player.devRole) overlay.appendChild(Object.assign(document.createElement('div'),{innerHTML:devBadge(player.devRole)}));
     if(player.tag){
       const tagEl=document.createElement('div');
-      tagEl.className='player-tag';
-      tagEl.style.fontSize='.9rem';
-      tagEl.textContent=player.tag;
-      overlay.appendChild(avatarEl);
-      overlay.appendChild(nameEl);
+      tagEl.className='player-tag';tagEl.style.fontSize='.9rem';tagEl.textContent=player.tag;
       overlay.appendChild(tagEl);
-      overlay.appendChild(joinEl);
-    } else {
-      overlay.appendChild(avatarEl);
-      overlay.appendChild(nameEl);
-      overlay.appendChild(joinEl);
     }
+    overlay.appendChild(joinEl);
 
     document.body.appendChild(overlay);
     setTimeout(()=>{
       overlay.style.animation='bannerFade .4s ease forwards';
       setTimeout(()=>overlay.remove(),400);
-    },2000);
+    },isMainDev?3500:2000);
   }
 
   function enterLobby(){
@@ -2234,17 +2318,16 @@
         const el=document.createElement('div');
         el.className='pl-item';
         const avatarContent=p.emoji||p.name.charAt(0);
-        const frameClass=p.frame?'av-frame-'+p.frame:'';
+        const frameClass=(p.devRole==='main-dev')?'av-frame-main-dev':(p.frame?'av-frame-'+p.frame:'');
         const badges=[];
         if(pid===S.pId)badges.push('<span class="you-b">אתה</span>');
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
         const backupIdx=(backups||[]).indexOf(pid);
-        if(p.devRole==='main-dev')badges.push('<span class="main-dev-b">👑 מפתח ראשי</span>');
-        else if(p.devRole==='dev')badges.push('<span class="dev-b">🔧 מפתח</span>');
+        if(p.devRole)badges.push(devBadge(p.devRole));
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
-            <div class="pl-name">${p.name}</div>
+            <div class="pl-name ${p.devRole==='main-dev'?'main-dev-name':''}">${p.name}</div>
             ${p.tag?`<div style="font-size:.68rem;color:var(--muted);margin-top:1px;">${p.tag}</div>`:''}
           </div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
@@ -3430,6 +3513,13 @@
     await showFinal();
   }
 
+  function devBadge(role){
+    if(role==='main-dev')return '<span class="main-dev-b">⚡ מפתח ראשי</span>';
+    if(role==='dev')return '<span class="dev-b">🔧 מפתח</span>';
+    if(role==='supporter')return '<span class="supporter-b">💚 תומך</span>';
+    return '';
+  }
+
   async function transferHost(){
     if(!S.isHost||!S.roomId)return;
     const snap=await get(ref(db,`rooms/${S.roomId}/players`));
@@ -3532,7 +3622,7 @@
         const isMine=m.pId===S.pId;
         const c=avc(m.name||'?');
         const wrap=document.createElement('div');
-        wrap.className='chat-msg'+(isMine?' mine':'');
+        wrap.className='chat-msg'+(isMine?' mine':'')+(m.devRole==='main-dev'?' main-dev-msg':'');
         wrap.innerHTML=`<div class="chat-av" style="background:${c}22;color:${c}">${(m.name||'?').charAt(0)}</div>
           <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${m.devRole?(" "+devBadge(m.devRole)):""}</div>`}${escHtml(m.text)}</div>`;
         container.appendChild(wrap);
