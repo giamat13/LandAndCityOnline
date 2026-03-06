@@ -671,6 +671,20 @@
         <span class="tog-label">אות שונה לכל קטגוריה</span>
       </div>
 
+      <h3 style="margin-bottom:10px;">🗳️ סף פסילה</h3>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="time-btn active" id="cr-veto-pct-btn" data-type="percent">% אחוז</button>
+        <button class="time-btn" id="cr-veto-cnt-btn" data-type="count"># מספר שחקנים</button>
+      </div>
+      <div id="cr-veto-pct-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <input type="number" id="cr-veto-pct-inp" min="1" max="100" value="50" style="width:90px;text-align:center;font-size:1rem;">
+        <span style="color:var(--muted);font-size:.85rem;">% מהשחקנים (ברירת מחדל: 50%)</span>
+      </div>
+      <div id="cr-veto-cnt-row" style="display:none;align-items:center;gap:10px;margin-bottom:16px;">
+        <input type="number" id="cr-veto-cnt-inp" min="1" value="2" style="width:90px;text-align:center;font-size:1rem;">
+        <span style="color:var(--muted);font-size:.85rem;">שחקנים לפחות</span>
+      </div>
+
       <h3 style="margin-bottom:10px;">🌐 נראות חדר</h3>
       <div class="vis-opts" id="vis-opts">
         <div class="vis-opt sel" data-v="private">
@@ -790,8 +804,8 @@
     </div>
     <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;text-align:center;">לחצו 👎 על תשובות שנראות לכם לא תקינות</p>
     <div id="vote-cats"></div>
-    <div style="background:rgba(76,201,240,.06);border:1px solid rgba(76,201,240,.15);border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:.8rem;color:var(--muted);">
-      💡 תשובה תיפסל אם <strong style="color:var(--red);">מעל 50%</strong> מהשחקנים יצביעו נגדה. תשובות זהות נפסלות ביחד.
+    <div id="veto-threshold-info" style="background:rgba(76,201,240,.06);border:1px solid rgba(76,201,240,.15);border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:.8rem;color:var(--muted);">
+      💡 תשובה תיפסל אם <strong style="color:var(--red);" id="veto-threshold-label">מעל 50%</strong> מהשחקנים יצביעו נגדה. תשובות זהות נפסלות ביחד.
     </div>
     <div id="host-vote-ctrl" style="display:none;">
       <button class="btn btn-p" id="btn-show-results">📊 לוח תוצאות</button>
@@ -993,7 +1007,9 @@
     visibility:'private',
     expiryInt:null,
     warnedExpiry:false,
-    isPermanent:false
+    isPermanent:false,
+    vetoThresholdType:'percent',
+    vetoThresholdValue:50
   };
   let S_pColor=AVATAR_COLORS[0];
   let S_pEmoji=null;   // null = use first letter
@@ -1803,6 +1819,12 @@
     S.cCats.forEach((name,i)=>active.push({id:'cc_'+i,name,emoji:'⭐'}));
     if(!active.length){toast('בחר לפחות קטגוריה אחת');return;}
     S.cats=active;S.pId=gid(10);S.isHost=true;S.totScores={};S.currentCatIndex=0;
+    // Read veto threshold from create screen
+    const crVetoType=document.getElementById('cr-veto-pct-btn').classList.contains('active')?'percent':'count';
+    const crVetoValue=crVetoType==='percent'
+      ?Math.min(100,Math.max(1,parseInt(document.getElementById('cr-veto-pct-inp').value)||50))
+      :Math.max(1,parseInt(document.getElementById('cr-veto-cnt-inp').value)||2);
+    S.vetoThresholdType=crVetoType;S.vetoThresholdValue=crVetoValue;
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
     let roomId,t=0;
     do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
@@ -1810,7 +1832,7 @@
     await set(ref(db,'rooms/'+roomId),{
       host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,
       uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,
-      totalRounds:S.totalRounds,roomName,
+      totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
       players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:S_pDevRole||null,
         emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'}}
@@ -1939,6 +1961,21 @@
           <div class="tog${curShowVoters?' on':''}" id="smc-tog-voters"></div>
           <span class="tog-label">הצג מי הצביע פסול</span>
         </div>
+        <div style="margin-bottom:14px;">
+          <h3 style="margin-bottom:10px;">🗳️ סף פסילה</h3>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button class="time-btn${(room.vetoThresholdType||'percent')==='percent'?' active':''}" id="smc-veto-pct-btn" data-type="percent">% אחוז</button>
+            <button class="time-btn${room.vetoThresholdType==='count'?' active':''}" id="smc-veto-cnt-btn" data-type="count"># מספר שחקנים</button>
+          </div>
+          <div id="smc-veto-pct-row" style="display:${(room.vetoThresholdType||'percent')==='percent'?'flex':'none'};align-items:center;gap:10px;">
+            <input type="number" id="smc-veto-pct-inp" min="1" max="100" value="${room.vetoThresholdValue!=null&&(room.vetoThresholdType||'percent')==='percent'?room.vetoThresholdValue:50}" style="width:90px;text-align:center;font-size:1rem;">
+            <span style="color:var(--muted);font-size:.85rem;">% מהשחקנים (ברירת מחדל: 50%)</span>
+          </div>
+          <div id="smc-veto-cnt-row" style="display:${room.vetoThresholdType==='count'?'flex':'none'};align-items:center;gap:10px;">
+            <input type="number" id="smc-veto-cnt-inp" min="1" value="${room.vetoThresholdValue!=null&&room.vetoThresholdType==='count'?room.vetoThresholdValue:2}" style="width:90px;text-align:center;font-size:1rem;">
+            <span style="color:var(--muted);font-size:.85rem;">שחקנים לפחות</span>
+          </div>
+        </div>
         <div class="tog-wrap" style="margin-bottom:14px;">
           <div class="tog${curSB?' on':''}" id="smc-tog-sb"></div>
           <span class="tog-label">לוח ניקוד מצטבר</span>
@@ -1993,6 +2030,18 @@
     backdrop.querySelector('#smc-tog-voters').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelector('#smc-tog-sb').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelector('#smc-tog-ul').addEventListener('click',function(){this.classList.toggle('on');});
+    backdrop.querySelector('#smc-veto-pct-btn').addEventListener('click',function(){
+      this.classList.add('active');
+      backdrop.querySelector('#smc-veto-cnt-btn').classList.remove('active');
+      backdrop.querySelector('#smc-veto-pct-row').style.display='flex';
+      backdrop.querySelector('#smc-veto-cnt-row').style.display='none';
+    });
+    backdrop.querySelector('#smc-veto-cnt-btn').addEventListener('click',function(){
+      this.classList.add('active');
+      backdrop.querySelector('#smc-veto-pct-btn').classList.remove('active');
+      backdrop.querySelector('#smc-veto-cnt-row').style.display='flex';
+      backdrop.querySelector('#smc-veto-pct-row').style.display='none';
+    });
     backdrop.querySelectorAll('#smc-vis-opts .vis-opt').forEach(opt=>opt.addEventListener('click',()=>{
       backdrop.querySelectorAll('#smc-vis-opts .vis-opt').forEach(o=>o.classList.remove('sel'));
       opt.classList.add('sel');
@@ -2013,8 +2062,12 @@
       const newShowVoters=backdrop.querySelector('#smc-tog-voters').classList.contains('on');
       const newSB=backdrop.querySelector('#smc-tog-sb').classList.contains('on');
       const newUL=backdrop.querySelector('#smc-tog-ul').classList.contains('on');
-      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.uniqueLetters=newUL;S.visibility=newVis;
-      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,uniqueLetters:newUL,visibility:newVis,roomName:newName});
+      const newVetoType=backdrop.querySelector('#smc-veto-pct-btn').classList.contains('active')?'percent':'count';
+      const newVetoValue=newVetoType==='percent'
+        ?Math.min(100,Math.max(1,parseInt(backdrop.querySelector('#smc-veto-pct-inp').value)||50))
+        :Math.max(1,parseInt(backdrop.querySelector('#smc-veto-cnt-inp').value)||2);
+      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.uniqueLetters=newUL;S.visibility=newVis;S.vetoThresholdType=newVetoType;S.vetoThresholdValue=newVetoValue;
+      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,uniqueLetters:newUL,visibility:newVis,roomName:newName,vetoThresholdType:newVetoType,vetoThresholdValue:newVetoValue});
       if(newVis!=='private'){
         await set(ref(db,'publicRooms/'+S.roomId),{hostName:S.pName,visibility:newVis,roomName:newName,cats:active.slice(0,5).map(c=>({emoji:c.emoji,name:c.name})),roundTime:smcTime,playerCount:Object.keys(room.players||{}).length,status:'lobby',createdAt:room.createdAt||Date.now()});
       }else{remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});}
@@ -2919,6 +2972,18 @@
     const catAnswers=room.catAnswers||{};
     const cats=room.categories||S.cats;
     S.showVoters=room.showVoters||false;
+    const vetoThresholdType=room.vetoThresholdType||'percent';
+    const vetoThresholdValue=room.vetoThresholdValue!=null?room.vetoThresholdValue:50;
+    // Update info label
+    const vetoLabel=document.getElementById('veto-threshold-label');
+    if(vetoLabel){
+      if(vetoThresholdType==='percent') vetoLabel.textContent=`מעל ${vetoThresholdValue}%`;
+      else vetoLabel.textContent=`${vetoThresholdValue} שחקנים לפחות`;
+    }
+    function isDisqualified(vetoCount,totalPlayers){
+      if(vetoThresholdType==='count') return vetoCount>=vetoThresholdValue;
+      return totalPlayers>1&&vetoCount>(totalPlayers-1)*vetoThresholdValue/100;
+    }
     const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=psSnap.val()||{};
     const totalPlayers=Object.keys(players).length;
@@ -2963,7 +3028,7 @@
           const vetoCount=vetoes[catId]?Object.values(vetoes[catId]).filter(v=>v===vetoKey).length:0;
           const myVote=vetoes[catId]&&vetoes[catId][S.pId]===vetoKey;
           const othersCount=totalPlayers-1;
-          const isDisq=othersCount>0&&vetoCount>othersCount/2;
+          const isDisq=isDisqualified(vetoCount,totalPlayers);
 
           const row=document.createElement('div');
           row.className='vote-row';
@@ -3058,6 +3123,12 @@
     const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=psSnap.val()||{};
     const totalPlayers=Object.keys(players).length;
+    const vThreshType=room.vetoThresholdType||'percent';
+    const vThreshVal=room.vetoThresholdValue!=null?room.vetoThresholdValue:50;
+    function commitIsDisq(vetoCount){
+      if(vThreshType==='count') return vetoCount>=vThreshVal;
+      return totalPlayers>1&&vetoCount>(totalPlayers-1)*vThreshVal/100;
+    }
 
     // Compute disqualified answers per cat
     // key: catId → Set of lowercase answers that are disqualified
@@ -3073,8 +3144,7 @@
           if(!answer)return;
           const vKey=`${pid}_${ai}`;
           const vetoCount=Object.values(catVetoes).filter(v=>v===vKey).length;
-          const othersCount=totalPlayers-1;
-          if(othersCount>0&&vetoCount>othersCount/2){
+          if(commitIsDisq(vetoCount)){
             disqAnswers[cat.id].add(answer.toLowerCase());
           }
         });
@@ -3872,6 +3942,27 @@
   document.getElementById('tog-unique-letters').addEventListener('click',()=>{
     S.uniqueLetters=!S.uniqueLetters;
     document.getElementById('tog-ul-el').classList.toggle('on',S.uniqueLetters);
+  });
+  // Veto threshold toggles on create screen
+  document.getElementById('cr-veto-pct-btn').addEventListener('click',()=>{
+    document.getElementById('cr-veto-pct-btn').classList.add('active');
+    document.getElementById('cr-veto-cnt-btn').classList.remove('active');
+    document.getElementById('cr-veto-pct-row').style.display='flex';
+    document.getElementById('cr-veto-cnt-row').style.display='none';
+    S.vetoThresholdType='percent';
+  });
+  document.getElementById('cr-veto-cnt-btn').addEventListener('click',()=>{
+    document.getElementById('cr-veto-cnt-btn').classList.add('active');
+    document.getElementById('cr-veto-pct-btn').classList.remove('active');
+    document.getElementById('cr-veto-cnt-row').style.display='flex';
+    document.getElementById('cr-veto-pct-row').style.display='none';
+    S.vetoThresholdType='count';
+  });
+  document.getElementById('cr-veto-pct-inp').addEventListener('input',e=>{
+    S.vetoThresholdValue=Math.min(100,Math.max(1,parseInt(e.target.value)||50));
+  });
+  document.getElementById('cr-veto-cnt-inp').addEventListener('input',e=>{
+    S.vetoThresholdValue=Math.max(1,parseInt(e.target.value)||2);
   });
 
   // ─── INIT: try restoring session on page load ─────────────────────
