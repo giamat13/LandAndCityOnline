@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-  <html lang="he" dir="rtl" data-theme="dark">
+  <html lang="he" dir="rtl">
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,14 +14,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
   <style>
   :root{--bg:#0f0f1a;--surface:#1a1a2e;--s2:#16213e;--red:#e94560;--orange:#f5a623;--green:#0fba81;--blue:#4cc9f0;--text:#eaeaea;--muted:#7a7a9a;--border:rgba(255,255,255,0.08);--r:16px;--sh:0 8px 32px rgba(0,0,0,0.4)}
-  [data-theme="light"]{--bg:#f0f2f5;--surface:#ffffff;--s2:#e8edf2;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.1);--sh:0 8px 32px rgba(0,0,0,0.1)}
-  @media(prefers-color-scheme:light){[data-theme="system"]{--bg:#f0f2f5;--surface:#ffffff;--s2:#e8edf2;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.1);--sh:0 8px 32px rgba(0,0,0,0.1)}}
-  .theme-toggle{display:flex;align-items:center;gap:6px;background:var(--s2);border:1.5px solid var(--border);border-radius:100px;padding:4px;cursor:pointer;}
-  .theme-btn{background:none;border:none;padding:5px 10px;border-radius:100px;cursor:pointer;font-size:.85rem;color:var(--muted);transition:all .2s;font-family:'Heebo',sans-serif;}
-  .theme-btn.active{background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);}
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-  input[type=number]{background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;color:var(--text);font-family:'Heebo',sans-serif;font-size:1.1rem;outline:none;direction:rtl;}
   body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(233,69,96,.07) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(76,201,240,.07) 0%,transparent 50%);pointer-events:none;z-index:0}
   #app{position:relative;z-index:1;min-height:100vh}
   .screen{display:none;min-height:100vh;padding:24px 16px;max-width:600px;margin:0 auto;flex-direction:column}
@@ -265,8 +259,6 @@
   .spec-b{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   .host-b{background:rgba(245,166,35,.12);color:var(--orange);border:1px solid rgba(245,166,35,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   .backup-b{background:rgba(15,186,129,.12);color:var(--green);border:1px solid rgba(15,186,129,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
-  .main-dev-b{background:linear-gradient(135deg,rgba(233,69,96,.2),rgba(245,166,35,.2));color:#f5a623;border:1px solid rgba(245,166,35,.5);padding:2px 10px;border-radius:100px;font-size:.7rem;font-weight:800;text-shadow:0 0 8px rgba(245,166,35,.4);}
-  .dev-b{background:rgba(76,201,240,.12);color:var(--blue);border:1px solid rgba(76,201,240,.3);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700;}
   .disq{color:var(--red);text-decoration:line-through;opacity:.6}
   /* rare answer badge */
   .rare-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(168,85,247,.18);border:1px solid rgba(168,85,247,.4);color:#a855f7;padding:2px 7px;border-radius:100px;font-size:.7rem;font-weight:800;margin-right:4px;vertical-align:middle;animation:rarePop .5s cubic-bezier(.34,1.56,.64,1)}
@@ -471,24 +463,6 @@
       <div style="font-size:.74rem;color:var(--muted);margin-top:6px;">ימולא אוטומטית בעת יצירת חדר</div>
     </div>
 
-    <div class="card" style="margin-top:8px;">
-      <h3>🌙 מצב תצוגה</h3>
-      <div class="theme-toggle" style="margin-top:8px;width:100%;justify-content:center;" id="theme-toggle">
-        <button class="theme-btn" data-theme="dark" id="theme-btn-dark">🌙 כהה</button>
-        <button class="theme-btn" data-theme="system" id="theme-btn-system">⚙️ מערכת</button>
-        <button class="theme-btn" data-theme="light" id="theme-btn-light">☀️ בהיר</button>
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:8px;" id="dev-code-card">
-      <h3>🔑 קוד מפתח</h3>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <input type="text" id="prof-dev-code" placeholder="הכנס קוד..." maxlength="30" style="flex:1;letter-spacing:.1em;">
-        <button class="btn btn-s btn-sm" id="btn-redeem-dev" style="width:auto;padding:10px 16px;">מימוש</button>
-      </div>
-      <div id="dev-code-status" style="font-size:.75rem;margin-top:6px;min-height:16px;"></div>
-    </div>
-
     <button class="btn btn-p" id="btn-profile-continue" style="margin-top:8px;">שמור והמשך ←</button>
   </div>
 
@@ -531,24 +505,6 @@
         <button id="btn-refresh-pub" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 8px;border-radius:8px;transition:color .2s;" title="רענן">🔄</button>
       </div>
       <div class="pub-rooms-wrap" id="pub-rooms-list"><div class="pub-empty">טוען...</div></div>
-    </div>
-    <!-- Feedback footer -->
-    <div style="margin-top:20px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;text-align:center;">
-      <div style="font-size:.75rem;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">🐛 דיווח על באגים / הצעת פיצ'רים</div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-        <a href="https://forms.gle/TSGkf7tARbM923dE9" target="_blank" rel="noopener"
-          style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:700;transition:all .2s;"
-          onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'"
-          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-          📋 טופס Google
-        </a>
-        <a href="https://github.com/giamat13/LandAndCityOnline/issues" target="_blank" rel="noopener"
-          style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:700;transition:all .2s;"
-          onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'"
-          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-          🐙 GitHub Issues
-        </a>
-      </div>
     </div>
   </div>
 
@@ -930,7 +886,6 @@
   let S_pTag=null;     // null or tag string
   let S_pEntry='none'; // 'none'/'bounce'/'spin'/'flash'/'shake'
   let S_pRoomName='';  // default room name
-  let S_pDevRole=null; // null / 'dev' / 'main-dev'
 
   const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
   const PROF_FRAMES=[
@@ -1125,7 +1080,7 @@
   function saveProfile(){
     try{localStorage.setItem('lac_profile',JSON.stringify({
       name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
-      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole
+      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName
     }));}catch(e){}
   }
   function loadProfile(){
@@ -1141,7 +1096,6 @@
       S_pTag=p.tag||null;
       S_pEntry=p.entry||'none';
       S_pRoomName=p.roomName||'';
-      S_pDevRole=p.devRole||null;
       document.getElementById('player-name').value=p.name;
       return true;
     }catch(e){return false;}
@@ -1235,17 +1189,6 @@
     const autoRoomName=nameVal?`החדר של ${nameVal}`:'';
     document.getElementById('prof-room-name').value=S_pRoomName||autoRoomName;
     profRoomNameManuallyChanged=!!S_pRoomName;
-    // Show current dev status
-    // Reflect current theme in buttons
-    document.querySelectorAll('.theme-btn').forEach(b=>{
-      b.classList.toggle('active',b.dataset.theme===currentTheme);
-    });
-    const devStatus=document.getElementById('dev-code-status');
-    if(devStatus){
-      if(S_pDevRole==='main-dev') devStatus.innerHTML='<span style="color:#f5a623;">👑 מפתח ראשי פעיל</span>';
-      else if(S_pDevRole==='dev') devStatus.innerHTML='<span style="color:var(--blue);">🔧 מפתח פעיל</span>';
-      else devStatus.textContent='';
-    }
     initAvPicker();
     initEmojiPicker();
     initFramePicker();
@@ -1255,42 +1198,6 @@
   }
 
   // Wire input listener once
-  // ─── THEME ────────────────────────────────────────────────────────
-  let currentTheme='dark';
-  function applyTheme(theme){
-    currentTheme=theme;
-    document.documentElement.setAttribute('data-theme',theme);
-    try{localStorage.setItem('lac_theme',theme);}catch(e){}
-    document.querySelectorAll('.theme-btn').forEach(b=>{
-      b.classList.toggle('active',b.dataset.theme===theme);
-    });
-  }
-  function loadTheme(){
-    try{const t=localStorage.getItem('lac_theme');if(t)applyTheme(t);else applyTheme('dark');}
-    catch(e){applyTheme('dark');}
-  }
-  document.querySelectorAll('.theme-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>applyTheme(btn.dataset.theme));
-  });
-  loadTheme();
-
-  document.getElementById('btn-redeem-dev').addEventListener('click',()=>{
-    const code=document.getElementById('prof-dev-code').value.trim();
-    const status=document.getElementById('dev-code-status');
-    // Hardcoded codes — main-dev is unique, dev is for contributors
-    if(code==='main-dev=giamat13'){
-      S_pDevRole='main-dev';
-      status.innerHTML='<span style="color:#f5a623;">👑 קוד מומש! ברוך הבא, מפתח ראשי</span>';
-      document.getElementById('prof-dev-code').value='';
-    } else if(code==='dev=giamat13'){
-      S_pDevRole='dev';
-      status.innerHTML='<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>';
-      document.getElementById('prof-dev-code').value='';
-    } else {
-      status.innerHTML='<span style="color:var(--red);">❌ קוד לא תקין</span>';
-    }
-  });
-
   document.getElementById('prof-name').addEventListener('input',()=>{
     updateProfilePreview();
     if(!profRoomNameManuallyChanged){
@@ -1736,7 +1643,7 @@
       cumulativeSB:S.cumulativeSB,visibility:S.visibility,
       totalRounds:S.totalRounds,roomName,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
-      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:S_pDevRole||null,
+      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,
         emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'}}
     });
     // Register in public index if not private
@@ -1790,7 +1697,7 @@
     S.cumulativeSB=room.cumulativeSB!==false;
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
-      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:S_pDevRole||null,
+      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,
       emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'
     });
     touchActivity();saveSession();
@@ -2240,8 +2147,7 @@
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
         const backupIdx=(backups||[]).indexOf(pid);
-        if(p.devRole==='main-dev')badges.push('<span class="main-dev-b">👑 מפתח ראשי</span>');
-        else if(p.devRole==='dev')badges.push('<span class="dev-b">🔧 מפתח</span>');
+        if(backupIdx>=0)badges.push(`<span class="backup-b">🛡️ גיבוי #${backupIdx+1}</span>`);
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
             <div class="pl-name">${p.name}</div>
@@ -2250,7 +2156,7 @@
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
             ${badges.join('')}
             ${S.isHost&&pid!==S.pId?`<button class="kick-btn" data-pid="${pid}" data-name="${p.name}" title="הוצא מהחדר" style="background:none;border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;margin-right:2px;">✕</button>`:''}
-            ${S.isHost&&pid!==S.pId?(backupIdx>=0?`<button class="remove-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הסר מגיבויים" style="background:rgba(15,186,129,.15);border:1px solid rgba(15,186,129,.4);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️ ✓</button>`:`<button class="add-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הוסף לגיבויים" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️+</button>`):''}
+            ${S.isHost&&pid!==S.pId?(backupIdx>=0?`<button class="remove-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הסר גיבוי" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️✕</button>`:`<button class="add-backup-btn" data-pid="${pid}" data-name="${p.name}" title="מנה גיבוי" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️+</button>`):''}
           </div>`;
         list.appendChild(el);
       });
@@ -2274,7 +2180,7 @@
           if(bList.includes(pid))return;
           bList.push(pid);
           await set(ref(db,'rooms/'+S.roomId+'/backups'),bList);
-          toast('🛡️ '+name+' נוסף לרשימת הגיבויים');
+          toast('🛡️ '+name+' מונה כגיבוי #'+bList.length);
         });
       });
       // Remove backup button handler
@@ -2350,7 +2256,39 @@
       }
     });
 
-    // Backup transfer is automatic via transferHost()
+    // Listen for backups list — show "claim host" button if I'm a backup and host is gone
+    addL(ref(db,`rooms/${S.roomId}/backups`),async snap=>{
+      const backups=snap.val()||[];
+      const myIdx=backups.indexOf(S.pId);
+      let claimBtn=document.getElementById('backup-claim-btn');
+      if(myIdx>=0&&!S.isHost){
+        // Check if host is still present
+        const hSnap=await get(ref(db,`rooms/${S.roomId}/host`));
+        const hostId=hSnap.val();
+        const hPlayerSnap=await get(ref(db,`rooms/${S.roomId}/players/${hostId}`));
+        const hostMissing=!hPlayerSnap.exists();
+        if(!claimBtn){
+          claimBtn=document.createElement('button');
+          claimBtn.id='backup-claim-btn';
+          claimBtn.className='btn btn-s btn-sm';
+          claimBtn.style.cssText='border-color:var(--green);color:var(--green);margin-top:8px;';
+          claimBtn.innerHTML=`🛡️ אתה גיבוי #${myIdx+1} — קח תפקיד מארח`;
+          claimBtn.addEventListener('click',async()=>{
+            const bSnap2=await get(ref(db,`rooms/${S.roomId}/backups`));
+            const bList=bSnap2.val()||[];
+            const newBackups=bList.filter(id=>id!==S.pId);
+            await update(ref(db,`rooms/${S.roomId}`),{host:S.pId,backups:newBackups});
+            await set(ref(db,`rooms/${S.roomId}/players/${S.pId}/isHost`),true);
+          });
+          document.getElementById('guest-wait')?.appendChild(claimBtn);
+        } else {
+          claimBtn.innerHTML=`🛡️ אתה גיבוי #${myIdx+1} — קח תפקיד מארח`;
+        }
+        claimBtn.style.display=hostMissing?'block':'block';
+      } else {
+        claimBtn?.remove();
+      }
+    });
 
     addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
       const st=snap.val();
@@ -2847,7 +2785,7 @@
           // Show empty row
           const row=document.createElement('div');
           row.className='vote-row';
-          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${p.devRole?devBadge(p.devRole):''}`;
+          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>`;
           row.innerHTML=nameEl+`<span class="vote-answer" style="opacity:.4;font-style:italic">—</span>`;
           rows.appendChild(row);
           return;
@@ -2864,7 +2802,7 @@
           row.className='vote-row';
 
           // Only show player name on first answer row
-          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${p.devRole?' '+devBadge(p.devRole):''}</span>`
+          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>`
             :`<span class="vote-name" style="opacity:.3">↳</span>`;
           const answerEl=`<span class="vote-answer${isDisq?' disq':''}">${answer}</span>`;
           const countEl=vetoCount>0?`<span class="vote-count hot">${vetoCount}👎</span>`:'<span class="vote-count"></span>';
@@ -3258,11 +3196,7 @@
       div.className=`pod ${rankClass[ri]}`;
       div.style.animationDelay=(ri*0.15)+'s';
       div.innerHTML=`
-        <div class="pod-name" style="color:${isMe?'var(--blue)':'var(--text)'}">
-          ${p.name}${isMe?' (אתה)':''}
-          ${p.devRole?devBadge(p.devRole):''}
-          ${p.tag?`<span class="player-tag" style="font-size:.58rem;">${p.tag}</span>`:''}
-        </div>
+        <div class="pod-name" style="color:${isMe?'var(--blue)':'var(--text)'}">${p.name}${isMe?' (אתה)':''}</div>
         <div class="pod-av" style="width:${ri===1?52:ri===0?42:36}px;height:${ri===1?52:ri===0?42:36}px;background:${c}22;color:${c};font-size:${ri===1?'1.4rem':ri===0?'1.1rem':'.9rem'}">${p.name.charAt(0)}</div>
         <div class="pod-block" style="height:${heights[ri]}px;background:linear-gradient(180deg,${c}33,${c}11);border:1px solid ${c}44;">${medals[ri]}</div>
         <div class="pod-pts">${p.score||0} נק'</div>`;
@@ -3436,23 +3370,21 @@
     const ps=snap.val()||{};
     const bSnap=await get(ref(db,`rooms/${S.roomId}/backups`));
     const backups=bSnap.val()||[];
-    // Pick randomly from available backups, then fall back to random active player
+    // Try backups first (in order), then fall back to next active player
     let nextId=null, nextName=null;
-    const availableBackups=backups.filter(bid=>bid!==S.pId&&ps[bid]&&!ps[bid].spectator);
-    if(availableBackups.length>0){
-      // Random backup from pool
-      const pick=availableBackups[Math.floor(Math.random()*availableBackups.length)];
-      nextId=pick; nextName=ps[pick].name;
-    }
-    if(!nextId){
-      const others=Object.entries(ps).filter(([pid,p])=>pid!==S.pId&&!p.spectator);
-      if(others.length>0){
-        const pick=others[Math.floor(Math.random()*others.length)];
-        nextId=pick[0]; nextName=pick[1].name;
+    for(const bid of backups){
+      if(bid!==S.pId && ps[bid] && !ps[bid].spectator){
+        nextId=bid; nextName=ps[bid].name; break;
       }
     }
+    if(!nextId){
+      const fallback=Object.entries(ps)
+        .filter(([pid,p])=>pid!==S.pId&&!p.spectator)
+        .sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0))[0];
+      if(fallback){nextId=fallback[0];nextName=fallback[1].name;}
+    }
     if(nextId){
-      // Keep the rest of the backup pool (minus the new host)
+      // Remove from backups list
       const newBackups=backups.filter(id=>id!==nextId);
       await update(ref(db,`rooms/${S.roomId}`),{host:nextId,backups:newBackups});
       await set(ref(db,`rooms/${S.roomId}/players/${nextId}/isHost`),true);
@@ -3475,10 +3407,11 @@
   }
 
   async function exitGame(){
+    if(!confirm('לצאת מהמשחק?'))return;
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
     if(S.roomId&&S.pId){
       if(S.isHost)await transferHost();
-      await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`)).catch(()=>{});
+      await remove(ref(db,`rooms/${S.roomId}/players/${S.pId}`));
     }
     detachChat();clearSession();S.roomId='';S.isHost=false;S.totScores={};S.isSpectator=false;
     showChatFab(false);
@@ -3534,7 +3467,7 @@
         const wrap=document.createElement('div');
         wrap.className='chat-msg'+(isMine?' mine':'');
         wrap.innerHTML=`<div class="chat-av" style="background:${c}22;color:${c}">${(m.name||'?').charAt(0)}</div>
-          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${m.devRole?(" "+devBadge(m.devRole)):""}</div>`}${escHtml(m.text)}</div>`;
+          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}</div>`}${escHtml(m.text)}</div>`;
         container.appendChild(wrap);
       });
       container.scrollTop=container.scrollHeight;
@@ -3573,7 +3506,7 @@
     inp.value='';
     const msgId=gid(12);
     await set(ref(db,`rooms/${S.roomId}/chat/${msgId}`),{
-      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null
+      pId:S.pId,name:S.pName,text,ts:Date.now()
     });
     touchActivity();
   }
