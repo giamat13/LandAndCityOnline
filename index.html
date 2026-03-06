@@ -333,16 +333,6 @@
     animation:devPulse 2.5s ease-in-out infinite, devFlicker 5s ease-in-out infinite;
     cursor:default;
   }
-
-  /* role selector in profile */
-  .role-sel-wrap{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
-  .role-sel-opt{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;transition:all .2s;user-select:none;}
-  .role-sel-opt:hover{border-color:rgba(255,255,255,.2);}
-  .role-sel-opt.active{border-color:var(--green);background:rgba(15,186,129,.08);}
-  .role-sel-opt .role-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
-  .role-sel-opt.active .role-radio{background:var(--green);border-color:var(--green);}
-  .role-sel-opt.active .role-radio::after{content:'✓';font-size:.6rem;color:#fff;font-weight:900;}
-  .role-sel-opt .role-none{color:var(--muted);font-size:.85rem;}
   .disq{color:var(--red);text-decoration:line-through;opacity:.6}
   /* rare answer badge */
   .rare-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(168,85,247,.18);border:1px solid rgba(168,85,247,.4);color:#a855f7;padding:2px 7px;border-radius:100px;font-size:.7rem;font-weight:800;margin-right:4px;vertical-align:middle;animation:rarePop .5s cubic-bezier(.34,1.56,.64,1)}
@@ -556,35 +546,6 @@
       </div>
     </div>
 
-    <!-- Referral card -->
-    <div class="card" style="margin-top:8px;">
-      <h3>🔗 הקישור הפרטי שלך</h3>
-      <div style="font-size:.75rem;color:var(--muted);margin-top:4px;">כל מי שנכנס דרכו מקבל גישה לתג תומך — והתג שלך משתדרג!</div>
-      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-top:10px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:.8rem;font-weight:700;color:var(--text);">התג שלך כרגע:</span>
-          <span id="prof-ref-badge"></span>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <div id="prof-ref-link" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;font-family:monospace;">טוען...</div>
-          <button id="btn-copy-ref" style="background:rgba(76,201,240,.15);color:var(--blue);border:1.5px solid rgba(76,201,240,.3);border-radius:8px;padding:8px 14px;font-family:'Heebo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0;">העתק</button>
-        </div>
-        <div style="display:flex;gap:10px;margin-top:10px;">
-          <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center;">
-            <div id="prof-ref-count" style="font-size:1.4rem;font-weight:900;color:var(--green);">0</div>
-            <div style="font-size:.7rem;color:var(--muted);margin-top:2px;">הצטרפו</div>
-          </div>
-          <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center;">
-            <div id="prof-ref-next" style="font-size:1.4rem;font-weight:900;color:var(--muted);">—</div>
-            <div style="font-size:.7rem;color:var(--muted);margin-top:2px;">לרמה הבאה</div>
-          </div>
-        </div>
-        <div style="background:var(--border);border-radius:100px;height:5px;margin-top:8px;overflow:hidden;">
-          <div id="prof-ref-progbar" style="width:0%;height:100%;border-radius:100px;transition:width .6s ease;background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div>
-        </div>
-      </div>
-    </div>
-
     <div class="card" style="margin-top:8px;" id="dev-code-card">
       <h3>🔑 קוד מפתח</h3>
       <div style="display:flex;gap:8px;margin-top:8px;">
@@ -592,11 +553,6 @@
         <button class="btn btn-s btn-sm" id="btn-redeem-dev" style="width:auto;padding:10px 16px;">מימוש</button>
       </div>
       <div id="dev-code-status" style="font-size:.75rem;margin-top:6px;min-height:16px;"></div>
-      <!-- role selector — shown after unlocking -->
-      <div id="role-selector-wrap" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
-        <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:6px;">תג מוצג בפרופיל:</div>
-        <div class="role-sel-wrap" id="role-sel-list"></div>
-      </div>
     </div>
 
     <button class="btn btn-p" id="btn-profile-continue" style="margin-top:8px;">שמור והמשך ←</button>
@@ -706,9 +662,13 @@
         <div class="tog" id="tog-voters-el"></div>
         <span class="tog-label">הצג מי הצביע פסול (ברירת מחדל: כבוי)</span>
       </div>
-      <div class="tog-wrap" id="tog-sb-mode" style="margin-bottom:16px;">
+      <div class="tog-wrap" id="tog-sb-mode" style="margin-bottom:14px;">
         <div class="tog on" id="tog-sb-el"></div>
         <span class="tog-label">לוח ניקוד מצטבר (כבוי = כל סיבוב בנפרד)</span>
+      </div>
+      <div class="tog-wrap" id="tog-unique-letters" style="margin-bottom:16px;">
+        <div class="tog" id="tog-ul-el"></div>
+        <span class="tog-label">אות שונה לכל קטגוריה</span>
       </div>
 
       <h3 style="margin-bottom:10px;">🌐 נראות חדר</h3>
@@ -1025,6 +985,7 @@
     currentAnswers:[],
     totalRounds:0,
     isSpectator:false,
+    uniqueLetters:false,
     chatOpen:false,
     chatUnread:0,
     chatListener:null,
@@ -1040,8 +1001,7 @@
   let S_pTag=null;     // null or tag string
   let S_pEntry='none'; // 'none'/'bounce'/'spin'/'flash'/'shake'
   let S_pRoomName='';  // default room name
-  let S_pDevRole=null;
-  let S_pUnlockedRoles=[];    // תגים שנפתחו e.g. ['supporter','dev']
+  let S_pDevRole=null; // null / 'dev' / 'main-dev' / 'supporter'
 
   const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
   const PROF_FRAMES=[
@@ -1236,7 +1196,7 @@
   function saveProfile(){
     try{localStorage.setItem('lac_profile',JSON.stringify({
       name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
-      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole,unlockedRoles:S_pUnlockedRoles
+      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole
     }));}catch(e){}
   }
   function loadProfile(){
@@ -1253,7 +1213,6 @@
       S_pEntry=p.entry||'none';
       S_pRoomName=p.roomName||'';
       S_pDevRole=p.devRole||null;
-      S_pUnlockedRoles=p.unlockedRoles||[];
       document.getElementById('player-name').value=p.name;
       return true;
     }catch(e){return false;}
@@ -1365,7 +1324,6 @@
     initTagInput();
     initEntryPicker();
     updateProfilePreview();
-    renderRoleSelector();
   }
 
   // Wire input listener once
@@ -1388,70 +1346,24 @@
   });
   loadTheme();
 
-  // ─── ROLE SELECTOR ───────────────────────────────────────────────
-  // Builds the "which badge to show" selector from unlocked roles
-  function renderRoleSelector(){
-    const wrap=document.getElementById('role-selector-wrap');
-    const list=document.getElementById('role-sel-list');
-    if(!wrap||!list)return;
-    if(!S_pUnlockedRoles.length){wrap.style.display='none';return;}
-    wrap.style.display='block';
-    // Options: none + each unlocked role
-    const opts=[
-      {value:null, label:'<span class="role-none">ללא תג</span>'},
-      ...S_pUnlockedRoles.map(r=>{
-        if(r==='main-dev') return {value:'main-dev', label:'<span class="main-dev-b">⚡ מפתח ראשי</span>'};
-        if(r==='dev')      return {value:'dev',      label:'<span class="dev-b">🔧 מפתח</span>'};
-        if(r==='supporter')return {value:'supporter',label:'<span class="supporter-b">💚 תומך</span>'};
-        return null;
-      }).filter(Boolean)
-    ];
-    list.innerHTML='';
-    opts.forEach(opt=>{
-      const div=document.createElement('div');
-      div.className='role-sel-opt'+(S_pDevRole===opt.value?' active':'');
-      div.innerHTML=`<span>${opt.label}</span><div class="role-radio"></div>`;
-      div.addEventListener('click',()=>{
-        S_pDevRole=opt.value;
-        saveProfile();
-        renderRoleSelector();
-        updateProfilePreview();
-        // update status text
-        const devStatus=document.getElementById('dev-code-status');
-        if(devStatus){
-          if(!S_pDevRole) devStatus.textContent='';
-          else if(S_pDevRole==='main-dev') devStatus.innerHTML='<span style="color:#f5a623;">👑 מפתח ראשי פעיל</span>';
-          else if(S_pDevRole==='dev') devStatus.innerHTML='<span style="color:var(--blue);">🔧 מפתח פעיל</span>';
-          else if(S_pDevRole==='supporter') devStatus.innerHTML='<span style="color:var(--green);">💚 תומך פעיל</span>';
-        }
-      });
-      list.appendChild(div);
-    });
-  }
-
   document.getElementById('btn-redeem-dev').addEventListener('click',()=>{
     const code=document.getElementById('prof-dev-code').value.trim();
     const status=document.getElementById('dev-code-status');
-    let unlocked=false;
+    // Hardcoded codes — main-dev is unique, dev is for contributors
     if(code==='main-dev=giamat13'){
-      if(!S_pUnlockedRoles.includes('main-dev')) S_pUnlockedRoles.push('main-dev');
-      status.innerHTML='<span style="color:#f5a623;">👑 קוד מומש! תפקיד מפתח ראשי נוסף לפרופיל</span>';
-      unlocked=true;
+      S_pDevRole='main-dev';
+      status.innerHTML='<span style="color:#f5a623;">👑 קוד מומש! ברוך הבא, מפתח ראשי</span>';
+      document.getElementById('prof-dev-code').value='';
     } else if(code==='dev=giamat13'){
-      if(!S_pUnlockedRoles.includes('dev')) S_pUnlockedRoles.push('dev');
-      status.innerHTML='<span style="color:var(--blue);">🔧 קוד מומש! תפקיד מפתח נוסף לפרופיל</span>';
-      unlocked=true;
+      S_pDevRole='dev';
+      status.innerHTML='<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>';
+      document.getElementById('prof-dev-code').value='';
     } else if(code==='supporter'){
-      if(!S_pUnlockedRoles.includes('supporter')) S_pUnlockedRoles.push('supporter');
-      status.innerHTML='<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️ בחר תג להצגה למטה</span>';
-      unlocked=true;
+      S_pDevRole='supporter';
+      status.innerHTML='<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️</span>';
+      document.getElementById('prof-dev-code').value='';
     } else {
       status.innerHTML='<span style="color:var(--red);">❌ קוד לא תקין</span>';
-    }
-    if(unlocked){
-      document.getElementById('prof-dev-code').value='';
-      saveProfile();
-      renderRoleSelector();
     }
   });
 
@@ -1897,10 +1809,10 @@
     S.roomId=roomId;
     await set(ref(db,'rooms/'+roomId),{
       host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,
-      cumulativeSB:S.cumulativeSB,visibility:S.visibility,
+      uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,
       totalRounds:S.totalRounds,roomName,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
-      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:S_pDevRole||null,supporterCount:S_pSupporterCount||0,
+      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:S_pDevRole||null,
         emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'}}
     });
     // Register in public index if not private
@@ -1952,9 +1864,10 @@
     S.currentCatIndex=room.currentCatIndex||0;
     S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
     S.cumulativeSB=room.cumulativeSB!==false;
+    S.uniqueLetters=room.uniqueLetters||false;
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
-      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:S_pDevRole||null,supporterCount:S_pSupporterCount||0,
+      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:S_pDevRole||null,
       emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'
     });
     touchActivity();saveSession();
@@ -1981,6 +1894,7 @@
     const curName=room.roomName||'';
     const curShowVoters=room.showVoters||false;
     const curSB=room.cumulativeSB!==false;
+    const curUL=room.uniqueLetters||false;
     const curVis=room.visibility||'private';
     const backdrop=document.createElement('div');
     backdrop.className='settings-modal-backdrop';
@@ -2029,6 +1943,10 @@
           <div class="tog${curSB?' on':''}" id="smc-tog-sb"></div>
           <span class="tog-label">לוח ניקוד מצטבר</span>
         </div>
+        <div class="tog-wrap" style="margin-bottom:14px;">
+          <div class="tog${curUL?' on':''}" id="smc-tog-ul"></div>
+          <span class="tog-label">אות שונה לכל קטגוריה</span>
+        </div>
         <h3 style="margin-bottom:10px;">🌐 נראות</h3>
         <div class="vis-opts" id="smc-vis-opts">
           <div class="vis-opt${curVis==='private'?' sel':''}" data-v="private"><div class="vo-radio"></div><div><div class="vo-label">🔒 פרטי</div></div></div>
@@ -2074,6 +1992,7 @@
     backdrop.querySelector('#smc-custom-inp').addEventListener('input',e=>{smcTime=Math.max(1,parseInt(e.target.value)||1);});
     backdrop.querySelector('#smc-tog-voters').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelector('#smc-tog-sb').addEventListener('click',function(){this.classList.toggle('on');});
+    backdrop.querySelector('#smc-tog-ul').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelectorAll('#smc-vis-opts .vis-opt').forEach(opt=>opt.addEventListener('click',()=>{
       backdrop.querySelectorAll('#smc-vis-opts .vis-opt').forEach(o=>o.classList.remove('sel'));
       opt.classList.add('sel');
@@ -2093,8 +2012,9 @@
       const newVis=(backdrop.querySelector('#smc-vis-opts .vis-opt.sel')||{dataset:{v:curVis}}).dataset.v;
       const newShowVoters=backdrop.querySelector('#smc-tog-voters').classList.contains('on');
       const newSB=backdrop.querySelector('#smc-tog-sb').classList.contains('on');
-      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.visibility=newVis;
-      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,visibility:newVis,roomName:newName});
+      const newUL=backdrop.querySelector('#smc-tog-ul').classList.contains('on');
+      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.uniqueLetters=newUL;S.visibility=newVis;
+      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,uniqueLetters:newUL,visibility:newVis,roomName:newName});
       if(newVis!=='private'){
         await set(ref(db,'publicRooms/'+S.roomId),{hostName:S.pName,visibility:newVis,roomName:newName,cats:active.slice(0,5).map(c=>({emoji:c.emoji,name:c.name})),roundTime:smcTime,playerCount:Object.keys(room.players||{}).length,status:'lobby',createdAt:room.createdAt||Date.now()});
       }else{remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});}
@@ -2329,7 +2249,7 @@
 
     overlay.appendChild(avatarEl);
     overlay.appendChild(nameEl);
-    if(player.devRole) overlay.appendChild(Object.assign(document.createElement('div'),{innerHTML:devBadge(player.devRole,player.supporterCount||0)}));
+    if(player.devRole) overlay.appendChild(Object.assign(document.createElement('div'),{innerHTML:devBadge(player.devRole)}));
     if(player.tag){
       const tagEl=document.createElement('div');
       tagEl.className='player-tag';tagEl.style.fontSize='.9rem';tagEl.textContent=player.tag;
@@ -2417,7 +2337,7 @@
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
         const backupIdx=(backups||[]).indexOf(pid);
-        if(p.devRole)badges.push(devBadge(p.devRole,p.supporterCount||0));
+        if(p.devRole)badges.push(devBadge(p.devRole));
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
             <div class="pl-name ${p.devRole==='main-dev'?'main-dev-name':''}">${p.name}</div>
@@ -2621,7 +2541,7 @@
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
     await update(ref(db,`rooms/${S.roomId}`),{
-      status:'playing',round:1,letter,
+      status:'playing',round:1,letter,uniqueLetters:S.uniqueLetters,
       catStartedAt:Date.now(),currentCatIndex:0,
       catAnswers:null,lastActivity:Date.now()
     });
@@ -2638,6 +2558,7 @@
     S.rTime=r.roundTime||S.rTime;
     S.currentCatIndex=r.currentCatIndex||0;
     S.totalRounds=r.totalRounds||0;
+    S.uniqueLetters=r.uniqueLetters||false;
     S.catSubmitted=false;
     enterRoom();
     // Check if we already submitted this category
@@ -2650,9 +2571,9 @@
   }
 
   // ─── LETTER REVEAL ANIMATION ─────────────────────────────────────
-  function animateLetter(finalLetter, isFirstCat){
+  function animateLetter(finalLetter, showAnim){
     return new Promise(resolve=>{
-      if(!isFirstCat){resolve();return;}
+      if(!showAnim){resolve();return;}
       const overlay=document.getElementById('ltr-overlay');
       const olLetter=document.getElementById('ol-letter');
       overlay.style.display='flex';
@@ -2726,10 +2647,12 @@
     const elapsed=Math.floor((Date.now()-(roomData?.catStartedAt||Date.now()))/1000);
     S.timeLeft=Math.max(0,S.rTime-elapsed);
 
-    // Play letter animation only on first cat of each round
+    // Play letter animation on first cat OR when letter changes (uniqueLetters mode)
     const isFirstCat=(S.currentCatIndex===0);
-    await animateLetter(S.letter, isFirstCat);
+    const showLetterAnim=isFirstCat||(S.uniqueLetters&&S.currentCatIndex>0);
+    await animateLetter(S.letter, showLetterAnim);
     if(isFirstCat)SFX.play('start');
+    else if(S.uniqueLetters&&S.currentCatIndex>0)SFX.play('start');
     if(!S.catSubmitted){
       setTimeout(()=>inp.focus(),80);
       if(S.rTime===0){
@@ -2975,9 +2898,15 @@
       await update(ref(db,`rooms/${S.roomId}`),{status:'voting',lastActivity:Date.now()});
       await showVoting();
     }else{
-      await update(ref(db,`rooms/${S.roomId}`),{
-        currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now()
-      });
+      let catUpdate={currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now()};
+      if(S.uniqueLetters){
+        // Pick a new letter different from the current one
+        let newLetter;
+        do{newLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];}while(newLetter===S.letter);
+        S.letter=newLetter;
+        catUpdate.letter=newLetter;
+      }
+      await update(ref(db,`rooms/${S.roomId}`),catUpdate);
     }
   }
 
@@ -3023,7 +2952,7 @@
           // Show empty row
           const row=document.createElement('div');
           row.className='vote-row';
-          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${p.devRole?devBadge(p.devRole,p.supporterCount||0):''}`;
+          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${p.devRole?devBadge(p.devRole):''}`;
           row.innerHTML=nameEl+`<span class="vote-answer" style="opacity:.4;font-style:italic">—</span>`;
           rows.appendChild(row);
           return;
@@ -3040,7 +2969,7 @@
           row.className='vote-row';
 
           // Only show player name on first answer row
-          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${p.devRole?' '+devBadge(p.devRole,p.supporterCount||0):''}</span>`
+          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${p.devRole?' '+devBadge(p.devRole):''}</span>`
             :`<span class="vote-name" style="opacity:.3">↳</span>`;
           const answerEl=`<span class="vote-answer${isDisq?' disq':''}">${answer}</span>`;
           const countEl=vetoCount>0?`<span class="vote-count hot">${vetoCount}👎</span>`:'<span class="vote-count"></span>';
@@ -3175,6 +3104,7 @@
     const cats=room.categories||S.cats;
     S.totalRounds=room.totalRounds||0;
     S.cumulativeSB=room.cumulativeSB!==false;
+    S.uniqueLetters=room.uniqueLetters||false;
     S.visibility=room.visibility||'private';
     const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=psSnap.val()||{};
@@ -3436,7 +3366,7 @@
       div.innerHTML=`
         <div class="pod-name" style="color:${isMe?'var(--blue)':'var(--text)'}">
           ${p.name}${isMe?' (אתה)':''}
-          ${p.devRole?devBadge(p.devRole,p.supporterCount||0):''}
+          ${p.devRole?devBadge(p.devRole):''}
           ${p.tag?`<span class="player-tag" style="font-size:.58rem;">${p.tag}</span>`:''}
         </div>
         <div class="pod-av" style="width:${ri===1?52:ri===0?42:36}px;height:${ri===1?52:ri===0?42:36}px;background:${c}22;color:${c};font-size:${ri===1?'1.4rem':ri===0?'1.1rem':'.9rem'}">${p.name.charAt(0)}</div>
@@ -3606,6 +3536,13 @@
     await showFinal();
   }
 
+  function devBadge(role){
+    if(role==='main-dev')return '<span class="main-dev-b">⚡ מפתח ראשי</span>';
+    if(role==='dev')return '<span class="dev-b">🔧 מפתח</span>';
+    if(role==='supporter')return '<span class="supporter-b">💚 תומך</span>';
+    return '';
+  }
+
   async function transferHost(){
     if(!S.isHost||!S.roomId)return;
     const snap=await get(ref(db,`rooms/${S.roomId}/players`));
@@ -3710,7 +3647,7 @@
         const wrap=document.createElement('div');
         wrap.className='chat-msg'+(isMine?' mine':'')+(m.devRole==='main-dev'?' main-dev-msg':'');
         wrap.innerHTML=`<div class="chat-av" style="background:${c}22;color:${c}">${(m.name||'?').charAt(0)}</div>
-          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${m.devRole?(" "+devBadge(m.devRole,m.supporterCount||0)):""}</div>`}${escHtml(m.text)}</div>`;
+          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${m.devRole?(" "+devBadge(m.devRole)):""}</div>`}${escHtml(m.text)}</div>`;
         container.appendChild(wrap);
       });
       container.scrollTop=container.scrollHeight;
@@ -3749,7 +3686,7 @@
     inp.value='';
     const msgId=gid(12);
     await set(ref(db,`rooms/${S.roomId}/chat/${msgId}`),{
-      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null,supporterCount:S_pSupporterCount||0
+      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null
     });
     touchActivity();
   }
@@ -3932,115 +3869,9 @@
     S.showVoters=!S.showVoters;
     document.getElementById('tog-voters-el').classList.toggle('on',S.showVoters);
   });
-
-  // ─── REFERRAL SYSTEM ─────────────────────────────────────────────
-  let S_pRefId=null;
-  let S_pSupporterCount=0;
-  let S_refCountListener=null;
-
-  function getOrCreateRefId(){
-    try{let id=localStorage.getItem('lac_refId');if(!id){id='ref_'+gid(12);localStorage.setItem('lac_refId',id);}return id;}catch(e){return 'ref_'+gid(12);}
-  }
-
-  function supporterTierBadge(count){
-    if(!count) return '<span class="supporter-b">💚 תומך</span>';
-    const c=Math.min(count,99);
-    const cn=`<span style="background:rgba(255,255,255,.12);border-radius:100px;padding:0 5px;font-size:.65rem;font-weight:800;">×${c>=50?'50+':c}</span>`;
-    if(c>=50) return `<span class="supporter-b" style="background:rgba(249,115,22,.18);color:#fb923c;border-color:rgba(249,115,22,.6);animation:supporterGlow 1.8s ease-in-out infinite;">🔥 תומך ${cn}</span>`;
-    if(c>=35) return `<span class="supporter-b" style="background:rgba(244,114,182,.15);color:#f472b6;border-color:rgba(244,114,182,.5);">⭐⭐⭐⭐⭐ תומך ${cn}</span>`;
-    if(c>=20) return `<span class="supporter-b" style="background:rgba(251,191,36,.15);color:#fbbf24;border-color:rgba(251,191,36,.5);">⭐⭐⭐⭐ תומך ${cn}</span>`;
-    if(c>=10) return `<span class="supporter-b" style="background:rgba(52,211,153,.15);color:#34d399;border-color:rgba(52,211,153,.4);">⭐⭐⭐ תומך ${cn}</span>`;
-    if(c>=5)  return `<span class="supporter-b" style="background:rgba(96,165,250,.15);color:#60a5fa;border-color:rgba(96,165,250,.4);">⭐⭐ תומך ${cn}</span>`;
-    return `<span class="supporter-b" style="background:rgba(167,139,250,.15);color:#a78bfa;border-color:rgba(167,139,250,.4);">⭐ תומך ${cn}</span>`;
-  }
-
-  function devBadge(role,supporterCount){
-    if(role==='main-dev') return '<span class="main-dev-b">⚡ מפתח ראשי</span>';
-    if(role==='dev')      return '<span class="dev-b">🔧 מפתח</span>';
-    if(role==='supporter')return supporterTierBadge(supporterCount||0);
-    return '';
-  }
-
-  function refTierInfo(count){
-    const tiers=[
-      {min:0,nextAt:1,color:'#0fba81',prog:'linear-gradient(90deg,#0fba81,#34d399)'},
-      {min:1,nextAt:5,color:'#a78bfa',prog:'linear-gradient(90deg,#7c3aed,#a78bfa)'},
-      {min:5,nextAt:10,color:'#60a5fa',prog:'linear-gradient(90deg,#2563eb,#60a5fa)'},
-      {min:10,nextAt:20,color:'#34d399',prog:'linear-gradient(90deg,#059669,#34d399)'},
-      {min:20,nextAt:35,color:'#fbbf24',prog:'linear-gradient(90deg,#d97706,#fbbf24)'},
-      {min:35,nextAt:50,color:'#f472b6',prog:'linear-gradient(90deg,#be185d,#f472b6)'},
-      {min:50,nextAt:null,color:'#fb923c',prog:'linear-gradient(90deg,#ea580c,#fb923c)'},
-    ];
-    const tier=tiers.slice().reverse().find(t=>count>=t.min)||tiers[0];
-    const toNext=tier.nextAt!=null?tier.nextAt-count:0;
-    const pct=tier.nextAt!=null?Math.min(((count-tier.min)/(tier.nextAt-tier.min))*100,100):100;
-    return{...tier,toNext,pct};
-  }
-
-  function updateRefUI(){
-    const link=location.origin+location.pathname+'?ref='+S_pRefId;
-    const el=document.getElementById('prof-ref-link');if(el)el.textContent=link;
-    const badgeEl=document.getElementById('prof-ref-badge');
-    if(badgeEl)badgeEl.innerHTML=S_pUnlockedRoles.includes('supporter')?supporterTierBadge(S_pSupporterCount):'<span style="color:var(--muted);font-size:.75rem;">—</span>';
-    const countEl=document.getElementById('prof-ref-count');
-    const ti=refTierInfo(S_pSupporterCount);
-    if(countEl){countEl.textContent=S_pSupporterCount;countEl.style.color=ti.color;}
-    const nextEl=document.getElementById('prof-ref-next');
-    if(nextEl)nextEl.textContent=ti.nextAt!=null?ti.toNext:'MAX';
-    const pb=document.getElementById('prof-ref-progbar');
-    if(pb){pb.style.width=ti.pct+'%';pb.style.background=ti.prog;}
-  }
-
-  function listenRefCount(){
-    if(!S_pRefId)return;
-    if(S_refCountListener){off(S_refCountListener.r,'value',S_refCountListener.fn);S_refCountListener=null;}
-    const r=ref(db,'referrals/'+S_pRefId+'/count');
-    const fn=snap=>{
-      const v=snap.val()||0;
-      if(v!==S_pSupporterCount){
-        S_pSupporterCount=v;
-        if(v>0&&!S_pUnlockedRoles.includes('supporter')) S_pUnlockedRoles.push('supporter');
-        saveProfile();updateRefUI();renderRoleSelector();
-      }
-    };
-    onValue(r,fn);
-    S_refCountListener={r,fn};
-  }
-
-  async function handleRefParam(){
-    const params=new URLSearchParams(location.search);
-    const refId=params.get('ref');
-    if(!refId||refId===S_pRefId)return;
-    // Give visitor supporter unlock (they choose to show it)
-    if(!S_pUnlockedRoles.includes('supporter')){
-      S_pUnlockedRoles.push('supporter');
-      saveProfile();renderRoleSelector();
-      toast('💚 קיבלת גישה לתג תומך! בחר אם להציג בפרופיל');
-    }
-    try{
-      const doneKey='lac_ref_done_'+refId;
-      if(localStorage.getItem(doneKey))return;
-      localStorage.setItem(doneKey,'1');
-      const countRef=ref(db,'referrals/'+refId+'/count');
-      const snap=await get(countRef);
-      await set(countRef,(snap.val()||0)+1);
-      try{history.replaceState({},'',location.pathname);}catch(e){}
-    }catch(e){}
-  }
-
-  // Init referral
-  S_pRefId=getOrCreateRefId();
-  updateRefUI();
-  listenRefCount();
-  handleRefParam();
-
-  document.getElementById('btn-copy-ref').addEventListener('click',()=>{
-    const link=location.origin+location.pathname+'?ref='+S_pRefId;
-    navigator.clipboard?.writeText(link).catch(()=>{});
-    const btn=document.getElementById('btn-copy-ref');
-    const orig=btn.textContent;btn.textContent='✓ הועתק!';
-    setTimeout(()=>{btn.textContent=orig;},2000);
-    toast('🔗 הקישור הועתק!');
+  document.getElementById('tog-unique-letters').addEventListener('click',()=>{
+    S.uniqueLetters=!S.uniqueLetters;
+    document.getElementById('tog-ul-el').classList.toggle('on',S.uniqueLetters);
   });
 
   // ─── INIT: try restoring session on page load ─────────────────────
