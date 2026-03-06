@@ -2977,9 +2977,21 @@
       }
 
       // Host: auto-advance when all eligible players submitted
-      if(S.isHost&&cnt>=total){
+      if(S.isHost&&cnt>=total&&total>0){
         clearInterval(S.timerInt);
         await advanceCat();
+        // Show manual override button 2.5s later in case auto-advance failed
+        setTimeout(()=>{
+          if(!document.getElementById('force-advance-btn')){
+            const forceBtn=document.createElement('button');
+            forceBtn.id='force-advance-btn';
+            forceBtn.style.cssText='margin-top:12px;width:100%;background:linear-gradient(135deg,var(--orange),#d4881a);color:#fff;border:none;border-radius:12px;padding:12px;font-family:"Heebo",sans-serif;font-size:1rem;font-weight:700;cursor:pointer;';
+            forceBtn.textContent='⏭ המשך (כולם הגישו)';
+            forceBtn.addEventListener('click',async()=>{forceBtn.disabled=true;S.advancing=false;await advanceCat();});
+            const ansArea=document.getElementById('answer-area');
+            if(ansArea)ansArea.appendChild(forceBtn);
+          }
+        },2500);
       }
     });
 
@@ -3160,24 +3172,31 @@
     // Guard against double-advance (local + remote)
     if(S.advancing)return;
     S.advancing=true;
-    setTimeout(()=>{S.advancing=false;},3000);
-    const snap=await get(ref(db,`rooms/${S.roomId}/currentCatIndex`));
-    if((snap.val()||0)!==S.currentCatIndex){S.advancing=false;return;}
-    const nextIdx=S.currentCatIndex+1;
-    if(nextIdx>=S.cats.length){
-      // All cats done → go to voting phase
-      await update(ref(db,`rooms/${S.roomId}`),{status:'voting',lastActivity:Date.now()});
-      await showVoting();
-    }else{
-      let catUpdate={currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now()};
-      if(S.uniqueLetters){
-        // Pick a new letter different from the current one
-        let newLetter;
-        do{newLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];}while(newLetter===S.letter);
-        S.letter=newLetter;
-        catUpdate.letter=newLetter;
+    try{
+      const snap=await get(ref(db,`rooms/${S.roomId}/currentCatIndex`));
+      if((snap.val()||0)!==S.currentCatIndex){return;}
+      const nextIdx=S.currentCatIndex+1;
+      if(nextIdx>=S.cats.length){
+        // All cats done → go to voting phase
+        await update(ref(db,`rooms/${S.roomId}`),{status:'voting',lastActivity:Date.now()});
+        await showVoting();
+      }else{
+        let catUpdate={currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now()};
+        if(S.uniqueLetters){
+          // Pick a new letter different from the current one
+          let newLetter;
+          do{newLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];}while(newLetter===S.letter);
+          S.letter=newLetter;
+          catUpdate.letter=newLetter;
+        }
+        await update(ref(db,`rooms/${S.roomId}`),catUpdate);
       }
-      await update(ref(db,`rooms/${S.roomId}`),catUpdate);
+    }catch(e){
+      console.error('advanceCat error:',e);
+      toast('⚠️ שגיאה בהעברת קטגוריה, מנסה שוב...');
+    }finally{
+      // Always reset guard so future calls can proceed
+      S.advancing=false;
     }
   }
 
