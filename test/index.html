@@ -675,6 +675,7 @@
         <button class="btn btn-s" style="width:auto;padding:14px 22px;" id="btn-join">הצטרף</button>
       </div>
       <button class="btn btn-s" id="btn-join-spec" style="margin-top:4px;opacity:.7;font-size:.88rem;padding:10px 28px;">👁 הצטרף כצופה</button>
+      <button class="btn btn-s" id="btn-show-tutorial" style="margin-top:8px;opacity:.55;font-size:.82rem;padding:9px 28px;border-style:dashed;">❓ הצג מדריך למשחק</button>
     </div>
     <!-- My Rooms -->
     <div id="my-rooms-section" style="margin-top:16px;display:none;">
@@ -2913,6 +2914,8 @@
       document.getElementById('submit-btn').disabled=false;
     }
     showScreen('game');
+    // Trigger game tutorial on first cat of first game
+    if(S.currentCatIndex===0 && S.rNum===1) setTimeout(()=>tryStartTut('game'),600);
 
     // Timer from catStartedAt
     const elapsed=Math.floor((Date.now()-(roomData?.catStartedAt||Date.now()))/1000);
@@ -3238,6 +3241,7 @@
     document.getElementById('host-vote-ctrl').style.display=S.isHost?'block':'none';
     document.getElementById('guest-vote-wait').style.display=S.isHost?'none':'block';
     showScreen('vote');
+    setTimeout(()=>tryStartTut('vote'),400);
 
     // Render rows reactively — each answer is its own row
     function renderVoteRows(catId,catData,vetoes){
@@ -3542,6 +3546,7 @@
     document.getElementById('continue-vote-panel').style.display='block';
 
     showScreen('results');
+    setTimeout(()=>tryStartTut('results'),500);
 
     // Clear my previous vote
     await remove(ref(db,`rooms/${S.roomId}/continueVotes/${S.pId}`));
@@ -4289,6 +4294,318 @@
   document.getElementById('cr-veto-cnt-inp').addEventListener('input',e=>{
     S.vetoThresholdValue=Math.max(1,parseInt(e.target.value)||2);
   });
+
+
+  // ════════════════════════════════════════════════════════════════════
+  // ─── TUTORIAL SYSTEM ────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════
+  const TUT_KEY = 'etz_tut_v1';
+
+  // Steps per screen. target = element ID to spotlight.
+  // pos: 'below' = tooltip below target, 'above' = tooltip above target
+  const TUT_SCREENS = {
+    game: [
+      {
+        target: 'cur-letter',
+        emoji: '🅰️',
+        title: 'האות!',
+        text: 'כל תשובה חייבת להתחיל באות הזו.\nלמשל אות מ → "מכונית", "מדינה", "מוזיקה"...',
+        pos: 'below'
+      },
+      {
+        target: 'timer-txt',
+        emoji: '⏱️',
+        title: 'מהירות = נקודות בונוס!',
+        text: 'ככל שתמהר יותר — תרוויח יותר!\nענייה מהירה מעניקה עד +5 נקודות בונוס ⚡\nאל תחכה לרגע האחרון.',
+        pos: 'below'
+      },
+      {
+        target: 'cat-prog-bar',
+        emoji: '📊',
+        title: 'קטגוריות',
+        text: 'כל תיבה = קטגוריה אחרת. המשחק עובר קטגוריה אחת בכל פעם — כאן רואים כמה נשארו.',
+        pos: 'below'
+      },
+      {
+        target: 'cat-emoji-name',
+        emoji: '🎯',
+        title: 'הקטגוריה הנוכחית',
+        text: 'זו הקטגוריה שצריך לענות עליה עכשיו!\nכתוב מה שמתאים לה ומתחיל באות.',
+        pos: 'below'
+      },
+      {
+        target: 'cat-answer',
+        emoji: '✍️',
+        title: 'כמה שיותר — יותר טוב!',
+        text: 'אפשר להוסיף כמה תשובות שרוצים!\nכל תשובה ייחודית תקינה שווה נקודות ✨\nתשובה שאף אחד אחר לא כתב = בונוס ייחודיות!',
+        pos: 'above'
+      },
+      {
+        target: 'btn-add-ans',
+        emoji: '➕',
+        title: 'הוסף תשובה נוספת',
+        text: 'לחץ כאן (או Enter) אחרי כל תשובה להוסיף אותה.\nלא צריך להסתפק בתשובה אחת!',
+        pos: 'above'
+      },
+      {
+        target: 'submit-btn',
+        emoji: '✅',
+        title: 'שלח!',
+        text: 'לחץ כשסיימת לכתוב. אפשר לערוך תשובות גם אחרי השליחה — עד שהמשחק עובר לקטגוריה הבאה.',
+        pos: 'above'
+      },
+    ],
+    vote: [
+      {
+        target: 'vote-cats',
+        emoji: '🗳️',
+        title: 'הצבעת פסילה',
+        text: 'עיין בתשובות של כולם. לחץ 👎 על כל תשובה שנראית לא תקינה — לא מתחילה באות הנכונה, לא קשורה לקטגוריה...',
+        pos: 'below'
+      },
+      {
+        target: 'veto-threshold-info',
+        emoji: '⚠️',
+        title: 'מתי תשובה נפסלת?',
+        text: 'תשובה נפסלת רק אם מספיק שחקנים הצביעו נגדה.\nתשובות זהות נפסלות ביחד!\nתשובה שנפסלה לא מקבלת נקודות.',
+        pos: 'above'
+      },
+    ],
+    results: [
+      {
+        target: 'res-cats',
+        emoji: '🏆',
+        title: 'פירוט הניקוד',
+        text: 'כאן רואים את התשובות של כולם ואת הניקוד לכל תשובה.\nתשובה ייחודית (שאיש אחר לא כתב) = 10+2 נק\'!\nתשובה משותפת = 5 נק\'.',
+        pos: 'below'
+      },
+      {
+        target: 'scoreboard',
+        emoji: '🏅',
+        title: 'לוח ניקוד מצטבר',
+        text: 'הניקוד הכולל עד עכשיו. מצטבר לאורך כל הסיבובים — המטרה להיות בראש! 🥇',
+        pos: 'above'
+      },
+    ],
+  };
+
+  // Track which screens were tutored this session
+  const tutShown = {};
+  let tutActive = false;
+  let tutStep = 0;
+  let tutScreenName = '';
+  let tutOverlayEl = null;
+  let tutTooltipEl = null;
+
+  function isTutDone() { return !!localStorage.getItem(TUT_KEY); }
+  function markTutDone() { localStorage.setItem(TUT_KEY, '1'); }
+
+  function tryStartTut(screen) {
+    if (isTutDone()) return;
+    if (tutShown[screen]) return;
+    if (!TUT_SCREENS[screen] || !TUT_SCREENS[screen].length) return;
+    tutShown[screen] = true;
+    tutScreenName = screen;
+    tutStep = 0;
+    tutActive = true;
+    _buildTutUI();
+    _showTutStep();
+  }
+
+  function _buildTutUI() {
+    _cleanTut();
+
+    // Dark SVG overlay with a spotlight hole
+    tutOverlayEl = document.createElement('div');
+    tutOverlayEl.id = 'tut-overlay';
+    tutOverlayEl.style.cssText =
+      'position:fixed;inset:0;z-index:3000;pointer-events:none;';
+    tutOverlayEl.innerHTML =
+      '<svg id="tut-svg" style="position:absolute;inset:0;width:100%;height:100%;" xmlns="http://www.w3.org/2000/svg">' +
+        '<defs><mask id="tut-mask">' +
+          '<rect width="100%" height="100%" fill="white"/>' +
+          '<rect id="tut-hole" x="0" y="0" width="0" height="0" rx="14" ry="14" fill="black"/>' +
+        '</mask></defs>' +
+        '<rect width="100%" height="100%" fill="rgba(7,7,18,0.87)" mask="url(#tut-mask)"/>' +
+      '</svg>';
+
+    // Tooltip card
+    tutTooltipEl = document.createElement('div');
+    tutTooltipEl.id = 'tut-tooltip';
+    tutTooltipEl.style.cssText =
+      'position:fixed;z-index:3001;pointer-events:all;' +
+      'background:var(--surface);border:2px solid var(--orange);' +
+      'border-radius:18px;padding:18px 18px 14px;' +
+      'max-width:310px;width:min(310px,88vw);' +
+      'box-shadow:0 16px 48px rgba(0,0,0,.65),0 0 0 1px rgba(245,166,35,.15);' +
+      "font-family:'Heebo',sans-serif;";
+    tutTooltipEl.innerHTML =
+      '<div id="tut-dots" style="display:flex;gap:5px;margin-bottom:12px;justify-content:center;"></div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+        '<div id="tut-emoji" style="font-size:2rem;line-height:1;flex-shrink:0;margin-top:2px;"></div>' +
+        '<div style="flex:1;">' +
+          '<div id="tut-title" style="font-size:1.05rem;font-weight:900;color:var(--text);margin-bottom:5px;"></div>' +
+          '<div id="tut-text" style="font-size:.86rem;color:var(--muted);line-height:1.55;white-space:pre-line;"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div id="tut-arrow" style="position:absolute;width:14px;height:14px;background:var(--surface);pointer-events:none;"></div>' +
+      '<div style="display:flex;gap:8px;margin-top:12px;">' +
+        '<button id="tut-skip" style="flex:1;padding:9px 6px;background:none;border:1.5px solid var(--border);border-radius:10px;color:var(--muted);font-family:Heebo,sans-serif;font-size:.83rem;cursor:pointer;">דלג על המדריך</button>' +
+        '<button id="tut-next" style="flex:2;padding:10px;background:linear-gradient(135deg,var(--orange),#c97d10);color:#fff;border:none;border-radius:10px;font-family:Heebo,sans-serif;font-size:.95rem;font-weight:800;cursor:pointer;"></button>' +
+      '</div>';
+
+    document.body.appendChild(tutOverlayEl);
+    document.body.appendChild(tutTooltipEl);
+
+    document.getElementById('tut-skip').addEventListener('click', () => {
+      markTutDone(); _cleanTut();
+    });
+    document.getElementById('tut-next').addEventListener('click', () => {
+      const steps = TUT_SCREENS[tutScreenName] || [];
+      tutStep++;
+      if (tutStep >= steps.length) {
+        _cleanTut();
+        // If this was the results screen, we're fully done
+        if (tutScreenName === 'results') markTutDone();
+      } else {
+        _showTutStep();
+      }
+    });
+  }
+
+  function _showTutStep() {
+    const steps = TUT_SCREENS[tutScreenName] || [];
+    const step = steps[tutStep];
+    if (!step) return;
+
+    // Dots progress
+    const dotsEl = document.getElementById('tut-dots');
+    dotsEl.innerHTML = steps.map((_, i) =>
+      '<div class="tut-dot' + (i === tutStep ? ' tut-dot-active' : '') + '" style="width:' +
+        (i === tutStep ? '18' : '7') + 'px;height:7px;border-radius:100px;"></div>'
+    ).join('');
+
+    document.getElementById('tut-emoji').textContent = step.emoji;
+    document.getElementById('tut-title').textContent = step.title;
+    document.getElementById('tut-text').textContent = step.text;
+    document.getElementById('tut-next').textContent =
+      tutStep === steps.length - 1 ? 'סיום ✓' : 'הבא ←';
+
+    const target = document.getElementById(step.target);
+    if (!target) { _posCenter(); return; }
+
+    // Smooth scroll then position
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => _posOnTarget(target, step.pos), 320);
+  }
+
+  function _posOnTarget(el, pos) {
+    const rect = el.getBoundingClientRect();
+    const pad = 10;
+
+    // Update SVG hole
+    const hole = document.getElementById('tut-hole');
+    if (hole) {
+      hole.setAttribute('x', rect.left - pad);
+      hole.setAttribute('y', rect.top - pad);
+      hole.setAttribute('width', rect.width + pad * 2);
+      hole.setAttribute('height', rect.height + pad * 2);
+    }
+
+    const tip = tutTooltipEl;
+    const tipW = Math.min(310, window.innerWidth * 0.88);
+    // Force reflow to get real height
+    tip.style.visibility = 'hidden';
+    tip.style.top = '0px';
+    tip.style.left = '0px';
+    tip.style.transform = '';
+    const tipH = tip.offsetHeight || 170;
+    tip.style.visibility = '';
+
+    const arrowEl = document.getElementById('tut-arrow');
+    const centerX = rect.left + rect.width / 2;
+    let left = Math.min(Math.max(8, centerX - tipW / 2), window.innerWidth - tipW - 8);
+    const arrowLeft = Math.max(14, Math.min(centerX - left - 7, tipW - 28));
+
+    let top;
+    if (pos === 'below') {
+      top = rect.bottom + pad + 10;
+      // Flip if goes off screen
+      if (top + tipH > window.innerHeight - 10) top = rect.top - tipH - pad - 10;
+      tip.style.top = top + 'px';
+      tip.style.left = left + 'px';
+      // Arrow points UP (toward element above)
+      arrowEl.style.cssText =
+        'position:absolute;width:14px;height:14px;background:var(--surface);pointer-events:none;' +
+        'border-left:2px solid var(--orange);border-top:2px solid var(--orange);' +
+        'top:-9px;left:' + arrowLeft + 'px;transform:rotate(45deg);';
+    } else {
+      top = rect.top - tipH - pad - 10;
+      // Flip if goes off screen top
+      if (top < 8) top = rect.bottom + pad + 10;
+      tip.style.top = top + 'px';
+      tip.style.left = left + 'px';
+      // Arrow points DOWN (toward element below)
+      arrowEl.style.cssText =
+        'position:absolute;width:14px;height:14px;background:var(--surface);pointer-events:none;' +
+        'border-right:2px solid var(--orange);border-bottom:2px solid var(--orange);' +
+        'bottom:-9px;left:' + arrowLeft + 'px;transform:rotate(45deg);';
+    }
+  }
+
+  function _posCenter() {
+    const hole = document.getElementById('tut-hole');
+    if (hole) { hole.setAttribute('width','0'); hole.setAttribute('height','0'); }
+    const tip = tutTooltipEl;
+    tip.style.top = '50%';
+    tip.style.left = '50%';
+    tip.style.transform = 'translate(-50%,-50%)';
+  }
+
+  function _cleanTut() {
+    tutActive = false;
+    if (tutOverlayEl) { tutOverlayEl.remove(); tutOverlayEl = null; }
+    if (tutTooltipEl) { tutTooltipEl.remove(); tutTooltipEl = null; }
+  }
+  // ════════════════════════════════════════════════════════════════════
+
+  // Tutorial button on home — show interactive tutorial
+  document.getElementById('btn-show-tutorial').addEventListener('click',()=>{
+    localStorage.removeItem(TUT_KEY);
+    Object.keys(tutShown).forEach(k=>delete tutShown[k]);
+    // Show a standalone tutorial card with all tips
+    _showTutorialBrochure();
+  });
+
+  function _showTutorialBrochure(){
+    const tips=[
+      {e:'🅰️',t:'האות',d:'כל תשובה חייבת להתחיל באות שנבחרה בסיבוב'},
+      {e:'⏱️',t:'מהירות = נקודות',d:'ככל שתמהר יותר, תרוויח עד +5 נקודות בונוס לכל קטגוריה'},
+      {e:'✍️',t:'כמה שיותר — יותר טוב!',d:'ניתן להוסיף כמה תשובות שרוצים לכל קטגוריה'},
+      {e:'⭐',t:'בונוס ייחודיות',d:'תשובה שאף אחד אחר לא כתב = 12 נק\' במקום 5'},
+      {e:'👎',t:'הצבעת פסילה',d:'אחרי הסיבוב בודקים תשובות — לחץ 👎 על מה שנראה לא תקין'},
+      {e:'⚠️',t:'תשובה נפסלת',d:'רק אם מספיק שחקנים הצביעו נגדה. תשובות זהות נפסלות ביחד'},
+      {e:'✏️',t:'עריכה אחרי שליחה',d:'ניתן לערוך תשובות גם אחרי לחיצת "שלח" — עד שעוברים קטגוריה'},
+      {e:'🏅',t:'ניקוד מצטבר',d:'הניקוד מצטבר לאורך כל הסיבובים. יש לנצח בסוף המשחק!'},
+    ];
+    const ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;z-index:3500;background:rgba(7,7,18,.9);backdrop-filter:blur(8px);overflow-y:auto;padding:24px 16px;';
+    ov.innerHTML='<div style="max-width:500px;margin:0 auto;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+      +'<h2 style="font-size:1.4rem;font-weight:900;">📖 איך משחקים?</h2>'
+      +'<button id="tut-bro-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;">× סגור</button>'
+      +'</div>'
+      +tips.map(tip=>'<div style="display:flex;align-items:flex-start;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;">'
+        +'<div style="font-size:1.8rem;flex-shrink:0;line-height:1;margin-top:2px;">'+tip.e+'</div>'
+        +'<div><div style="font-weight:800;font-size:.95rem;margin-bottom:3px;">'+tip.t+'</div>'
+        +'<div style="font-size:.84rem;color:var(--muted);line-height:1.5;">'+tip.d+'</div></div>'
+        +'</div>').join('')
+      +'<button id="tut-bro-play" style="width:100%;margin-top:10px;padding:14px;background:linear-gradient(135deg,var(--red),#c23152);color:#fff;border:none;border-radius:12px;font-family:Heebo,sans-serif;font-size:1rem;font-weight:800;cursor:pointer;">🎮 הבנתי — בואו נשחק!</button>'
+      +'</div>';
+    document.body.appendChild(ov);
+    document.getElementById('tut-bro-close').addEventListener('click',()=>ov.remove());
+    document.getElementById('tut-bro-play').addEventListener('click',()=>ov.remove());
+  }
 
   // ─── INIT: try restoring session on page load ─────────────────────
   restoreSession();
