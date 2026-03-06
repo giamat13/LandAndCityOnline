@@ -1110,7 +1110,8 @@
   let S_pTag=null;     // null or tag string
   let S_pEntry='none'; // 'none'/'bounce'/'spin'/'flash'/'shake'
   let S_pRoomName='';  // default room name
-  let S_pDevRole=null; // null / 'dev' / 'main-dev' / 'supporter'
+  let S_pDevRoles=[]; // array: ['main-dev', 'dev', 'supporter']
+  function getPrimaryDevRole(){ return S_pDevRoles.includes('main-dev')?'main-dev':S_pDevRoles.includes('dev')?'dev':S_pDevRoles.includes('supporter')?'supporter':null; }
   let S_pRefId=null;   // unique referral ID (persistent)
   let S_pSupporterLevel=0; // 0=none, 1-6
   let S_pActiveBadge='auto'; // 'auto'=show all / 'none' / 'main-dev' / 'dev' / 'supporter' / 'sup-1'..'sup-6'
@@ -1308,7 +1309,8 @@
   function saveProfile(){
     try{localStorage.setItem('lac_profile',JSON.stringify({
       name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
-      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole,
+      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,
+      devRoles:S_pDevRoles,
       refId:S_pRefId,supporterLevel:S_pSupporterLevel,activeBadge:S_pActiveBadge
     }));}catch(e){}
   }
@@ -1325,7 +1327,9 @@
       S_pTag=p.tag||null;
       S_pEntry=p.entry||'none';
       S_pRoomName=p.roomName||'';
-      S_pDevRole=p.devRole||null;
+      if(Array.isArray(p.devRoles))S_pDevRoles=p.devRoles;
+      else if(p.devRole)S_pDevRoles=[p.devRole];
+      else S_pDevRoles=[];
       S_pRefId=p.refId||null;
       S_pSupporterLevel=p.supporterLevel||0;
       S_pActiveBadge=p.activeBadge||'auto';
@@ -1518,13 +1522,7 @@
     document.querySelectorAll('.theme-btn').forEach(b=>{
       b.classList.toggle('active',b.dataset.theme===currentTheme);
     });
-    const devStatus=document.getElementById('dev-code-status');
-    if(devStatus){
-      if(S_pDevRole==='main-dev') devStatus.innerHTML='<span style="color:#f5a623;">👑 מפתח ראשי פעיל</span>';
-      else if(S_pDevRole==='dev') devStatus.innerHTML='<span style="color:var(--blue);">🔧 מפתח פעיל</span>';
-      else if(S_pDevRole==='supporter') devStatus.innerHTML='<span style="color:var(--green);">💚 תומך פעיל</span>';
-      else devStatus.textContent='';
-    }
+    updateDevCodeStatus();
     initAvPicker();
     initEmojiPicker();
     initFramePicker();
@@ -1555,22 +1553,31 @@
   });
   loadTheme();
 
+  function updateDevCodeStatus(){
+    const devStatus=document.getElementById('dev-code-status');
+    if(!devStatus)return;
+    const parts=[];
+    if(S_pDevRoles.includes('main-dev')) parts.push('<span style="color:#f5a623;">👑 מפתח ראשי</span>');
+    if(S_pDevRoles.includes('dev'))      parts.push('<span style="color:var(--blue);">🔧 מפתח</span>');
+    if(S_pDevRoles.includes('supporter'))parts.push('<span style="color:var(--green);">💚 תומך</span>');
+    devStatus.innerHTML=parts.length?parts.join(' · '):'';
+  }
+
   document.getElementById('btn-redeem-dev').addEventListener('click',()=>{
     const code=document.getElementById('prof-dev-code').value.trim();
     const status=document.getElementById('dev-code-status');
-    // Hardcoded codes — main-dev is unique, dev is for contributors
-    if(code==='main-dev=giamat13'){
-      S_pDevRole='main-dev';
-      status.innerHTML='<span style="color:#f5a623;">👑 קוד מומש! ברוך הבא, מפתח ראשי</span>';
+    let redeemed=null;
+    if(code==='main-dev=giamat13') redeemed='main-dev';
+    else if(code==='dev=giamat13')  redeemed='dev';
+    else if(code==='supporter')     redeemed='supporter';
+    if(redeemed){
+      if(!S_pDevRoles.includes(redeemed)) S_pDevRoles.push(redeemed);
+      const labels={'main-dev':'<span style="color:#f5a623;">👑 קוד מומש! ברוך הבא, מפתח ראשי</span>','dev':'<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>','supporter':'<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️</span>'};
+      status.innerHTML=labels[redeemed];
       document.getElementById('prof-dev-code').value='';
-    } else if(code==='dev=giamat13'){
-      S_pDevRole='dev';
-      status.innerHTML='<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>';
-      document.getElementById('prof-dev-code').value='';
-    } else if(code==='supporter'){
-      S_pDevRole='supporter';
-      status.innerHTML='<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️</span>';
-      document.getElementById('prof-dev-code').value='';
+      saveProfile();
+      renderBadgePicker();
+      updateDevCodeStatus();
     } else {
       status.innerHTML='<span style="color:var(--red);">❌ קוד לא תקין</span>';
     }
@@ -2029,7 +2036,7 @@
       uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
-      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:S_pDevRole||null,
+      players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:getPrimaryDevRole(),
         emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'}}
     });
     // Register in public index if not private
@@ -2084,7 +2091,7 @@
     S.uniqueLetters=room.uniqueLetters||false;
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
-      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:S_pDevRole||null,
+      name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:getPrimaryDevRole(),
       emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'
     });
     touchActivity();saveSession();
@@ -3866,9 +3873,9 @@
     options.push({key:'none', html:'<span style="font-size:.85rem;">🚫 ללא תג</span>'});
 
     // Dev role badges
-    if(S_pDevRole==='main-dev') options.push({key:'main-dev', html:'<span class="main-dev-b" style="font-size:.7rem;padding:1px 7px;">⚡ מפתח ראשי</span>'});
-    if(S_pDevRole==='dev')      options.push({key:'dev',      html:'<span class="dev-b" style="font-size:.7rem;padding:1px 7px;">🔧 מפתח</span>'});
-    if(S_pDevRole==='supporter')options.push({key:'supporter',html:'<span class="supporter-b" style="font-size:.7rem;padding:1px 7px;">💚 תומך</span>'});
+    if(S_pDevRoles.includes('main-dev')) options.push({key:'main-dev', html:'<span class="main-dev-b" style="font-size:.7rem;padding:1px 7px;">⚡ מפתח ראשי</span>'});
+    if(S_pDevRoles.includes('dev'))       options.push({key:'dev',       html:'<span class="dev-b" style="font-size:.7rem;padding:1px 7px;">🔧 מפתח</span>'});
+    if(S_pDevRoles.includes('supporter')) options.push({key:'supporter', html:'<span class="supporter-b" style="font-size:.7rem;padding:1px 7px;">💚 תומך</span>'});
 
     // Supporter level badges (all unlocked ones)
     for(let i=1;i<=S_pSupporterLevel;i++){
@@ -4039,7 +4046,7 @@
     inp.value='';
     const msgId=gid(12);
     await set(ref(db,`rooms/${S.roomId}/chat/${msgId}`),{
-      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null,supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'
+      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:getPrimaryDevRole(),supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'
     });
     touchActivity();
   }
