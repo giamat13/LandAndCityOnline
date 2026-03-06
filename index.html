@@ -297,25 +297,43 @@
     padding:2px 10px;border-radius:100px;font-size:.7rem;font-weight:800;
     cursor:default;
   }
-  @keyframes supporterSpin{
-    0%{transform:rotate(0deg) scale(1)}
-    25%{transform:rotate(3deg) scale(1.05)}
-    75%{transform:rotate(-3deg) scale(1.05)}
-    100%{transform:rotate(0deg) scale(1)}
-  }
   @keyframes supporterGlow{
     0%,100%{box-shadow:0 0 4px rgba(15,186,129,.3);border-color:rgba(15,186,129,.4)}
     50%{box-shadow:0 0 12px 2px rgba(15,186,129,.6);border-color:rgba(15,186,129,.9)}
   }
+  /* Classic supporter badge (code redemption) */
   .supporter-b{
     display:inline-block;
     background:rgba(15,186,129,.13);
     color:var(--green);
     border:1.5px solid rgba(15,186,129,.45);
     padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;
-    animation:supporterSpin 4s ease-in-out infinite, supporterGlow 3s ease-in-out infinite;
+    animation:supporterGlow 3s ease-in-out infinite;
     cursor:default;
   }
+  /* Tiered referral supporter badges */
+  .sup-t1{display:inline-flex;align-items:center;gap:3px;background:rgba(167,139,250,.15);color:#a78bfa;border:1.5px solid rgba(167,139,250,.4);padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;cursor:default;}
+  .sup-t2{display:inline-flex;align-items:center;gap:3px;background:rgba(96,165,250,.15);color:#60a5fa;border:1.5px solid rgba(96,165,250,.4);padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;cursor:default;}
+  .sup-t3{display:inline-flex;align-items:center;gap:3px;background:rgba(52,211,153,.15);color:#34d399;border:1.5px solid rgba(52,211,153,.4);padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;cursor:default;animation:supporterGlow 3s ease-in-out infinite;}
+  @keyframes supGoldGlow{0%,100%{box-shadow:0 0 4px rgba(251,191,36,.3),0 0 0 1.5px rgba(251,191,36,.4)}50%{box-shadow:0 0 14px 2px rgba(251,191,36,.55),0 0 0 2px rgba(251,191,36,.8)}}
+  .sup-t4{display:inline-flex;align-items:center;gap:3px;background:rgba(251,191,36,.15);color:#fbbf24;border:1.5px solid rgba(251,191,36,.5);padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;cursor:default;animation:supGoldGlow 2.5s ease-in-out infinite;}
+  @keyframes supPinkGlow{0%,100%{box-shadow:0 0 5px rgba(244,114,182,.35),0 0 0 1.5px rgba(244,114,182,.4)}50%{box-shadow:0 0 16px 3px rgba(244,114,182,.6),0 0 0 2px rgba(244,114,182,.9)}}
+  .sup-t5{display:inline-flex;align-items:center;gap:3px;background:rgba(244,114,182,.15);color:#f472b6;border:1.5px solid rgba(244,114,182,.5);padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;cursor:default;animation:supPinkGlow 2.2s ease-in-out infinite;}
+  @keyframes supFireGlow{0%{box-shadow:0 0 6px rgba(249,115,22,.4),0 0 0 1.5px rgba(249,115,22,.45)}50%{box-shadow:0 0 20px 4px rgba(249,115,22,.7),0 0 0 2.5px rgba(249,115,22,1)}100%{box-shadow:0 0 6px rgba(249,115,22,.4),0 0 0 1.5px rgba(249,115,22,.45)}}
+  .sup-t6{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,rgba(249,115,22,.2),rgba(251,191,36,.15));color:#fb923c;border:1.5px solid rgba(249,115,22,.6);padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;cursor:default;animation:supFireGlow 1.8s ease-in-out infinite;}
+  .sup-cnt{background:rgba(255,255,255,.12);border-radius:100px;padding:0 5px;font-size:.65rem;font-weight:800;margin-right:1px;}
+  /* Referral profile card */
+  .ref-card{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-top:10px;}
+  .ref-link-row{display:flex;gap:6px;margin-top:8px;}
+  .ref-link-box{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;font-family:monospace;}
+  .ref-copy-btn{background:rgba(76,201,240,.15);color:var(--blue);border:1.5px solid rgba(76,201,240,.3);border-radius:8px;padding:8px 14px;font-family:'Heebo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0;}
+  .ref-copy-btn:hover{background:rgba(76,201,240,.28);}
+  .ref-stats{display:flex;gap:10px;margin-top:10px;}
+  .ref-stat{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center;}
+  .ref-stat-num{font-size:1.4rem;font-weight:900;}
+  .ref-stat-lbl{font-size:.7rem;color:var(--muted);margin-top:2px;}
+  .ref-prog{background:var(--border);border-radius:100px;height:5px;margin-top:8px;overflow:hidden;}
+  .ref-prog-bar{height:100%;border-radius:100px;transition:width .6s ease;}
   @keyframes devPulse{
     0%{box-shadow:0 0 4px 0px rgba(76,201,240,.4);border-color:rgba(76,201,240,.4)}
     50%{box-shadow:0 0 10px 2px rgba(76,201,240,.7);border-color:rgba(76,201,240,.9)}
@@ -546,6 +564,33 @@
       </div>
     </div>
 
+    <!-- Referral card -->
+    <div class="card" style="margin-top:8px;" id="referral-card">
+      <h3>🔗 הקישור הפרטי שלך</h3>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:4px;">שתף — כל מי שנכנס דרכו מקבל תג תומך, והתג שלך משתדרג!</div>
+      <div class="ref-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:.8rem;font-weight:700;color:var(--text);">התג שלך כרגע:</span>
+          <span id="prof-ref-badge"></span>
+        </div>
+        <div class="ref-link-row">
+          <div class="ref-link-box" id="prof-ref-link">טוען...</div>
+          <button class="ref-copy-btn" id="btn-copy-ref">העתק</button>
+        </div>
+        <div class="ref-stats">
+          <div class="ref-stat">
+            <div class="ref-stat-num" id="prof-ref-count" style="color:var(--green);">0</div>
+            <div class="ref-stat-lbl">הצטרפו</div>
+          </div>
+          <div class="ref-stat">
+            <div class="ref-stat-num" id="prof-ref-next" style="color:var(--muted);">—</div>
+            <div class="ref-stat-lbl">לרמה הבאה</div>
+          </div>
+        </div>
+        <div class="ref-prog"><div class="ref-prog-bar" id="prof-ref-progbar" style="width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div></div>
+      </div>
+    </div>
+
     <div class="card" style="margin-top:8px;" id="dev-code-card">
       <h3>🔑 קוד מפתח</h3>
       <div style="display:flex;gap:8px;margin-top:8px;">
@@ -606,7 +651,7 @@
           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:700;transition:all .2s;"
           onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'"
           onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-          📋 טופס Google — גם לבקשת תג Supporter
+          📋 טופס Google
         </a>
         <a href="https://github.com/giamat13/LandAndCityOnline/issues" target="_blank" rel="noopener"
           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:700;transition:all .2s;"
@@ -997,6 +1042,9 @@
   let S_pEntry='none'; // 'none'/'bounce'/'spin'/'flash'/'shake'
   let S_pRoomName='';  // default room name
   let S_pDevRole=null; // null / 'dev' / 'main-dev' / 'supporter'
+  let S_pRefId=null;   // unique referral id for this user
+  let S_pSupporterCount=0; // how many people joined via this user's ref link
+  let S_refCountListener=null;
 
   const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
   const PROF_FRAMES=[
@@ -1191,7 +1239,8 @@
   function saveProfile(){
     try{localStorage.setItem('lac_profile',JSON.stringify({
       name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
-      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole
+      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,devRole:S_pDevRole,
+      refId:S_pRefId,supporterCount:S_pSupporterCount
     }));}catch(e){}
   }
   function loadProfile(){
@@ -1208,6 +1257,8 @@
       S_pEntry=p.entry||'none';
       S_pRoomName=p.roomName||'';
       S_pDevRole=p.devRole||null;
+      S_pRefId=p.refId||null;
+      S_pSupporterCount=p.supporterCount||0;
       document.getElementById('player-name').value=p.name;
       return true;
     }catch(e){return false;}
@@ -1313,6 +1364,7 @@
       else if(S_pDevRole==='supporter') devStatus.innerHTML='<span style="color:var(--green);">💚 תומך פעיל</span>';
       else devStatus.textContent='';
     }
+    updateRefUI();
     initAvPicker();
     initEmojiPicker();
     initFramePicker();
@@ -1355,8 +1407,11 @@
       document.getElementById('prof-dev-code').value='';
     } else if(code==='supporter3+'){
       S_pDevRole='supporter';
+      // Keep S_pSupporterCount at 0 so classic badge shows (no count)
       status.innerHTML='<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️</span>';
       document.getElementById('prof-dev-code').value='';
+      saveProfile();
+      updateRefUI();
     } else {
       status.innerHTML='<span style="color:var(--red);">❌ קוד לא תקין</span>';
     }
@@ -1398,6 +1453,21 @@
   } else {
     setupProfileScreen();
   }
+
+  // ─── REFERRAL SYSTEM INIT ─────────────────────────────────────────
+  if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
+  updateRefUI();
+  listenRefCount();
+  handleRefParam();
+
+  document.getElementById('btn-copy-ref').addEventListener('click',()=>{
+    const link=`${location.origin}${location.pathname}?ref=${S_pRefId}`;
+    navigator.clipboard?.writeText(link).catch(()=>{});
+    const btn=document.getElementById('btn-copy-ref');
+    const orig=btn.textContent;btn.textContent='✓ הועתק!';
+    setTimeout(()=>{btn.textContent=orig;},2000);
+    toast('🔗 הקישור הועתק!');
+  });
 
   // ─── VISIBILITY SELECTOR ──────────────────────────────────────────
   document.querySelectorAll('.vis-opt').forEach(opt=>{
@@ -1808,6 +1878,7 @@
       totalRounds:S.totalRounds,roomName,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
       players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:S_pDevRole||null,
+        supporterCount:S_pSupporterCount||0,
         emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'}}
     });
     // Register in public index if not private
@@ -1862,6 +1933,7 @@
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
       name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:S_pDevRole||null,
+      supporterCount:S_pSupporterCount||0,
       emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none'
     });
     touchActivity();saveSession();
@@ -2236,7 +2308,7 @@
 
     overlay.appendChild(avatarEl);
     overlay.appendChild(nameEl);
-    if(player.devRole) overlay.appendChild(Object.assign(document.createElement('div'),{innerHTML:devBadge(player.devRole)}));
+    if(player.devRole) overlay.appendChild(Object.assign(document.createElement('div'),{innerHTML:devBadge(player.devRole,player.supporterCount||0)}));
     if(player.tag){
       const tagEl=document.createElement('div');
       tagEl.className='player-tag';tagEl.style.fontSize='.9rem';tagEl.textContent=player.tag;
@@ -2324,7 +2396,7 @@
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
         const backupIdx=(backups||[]).indexOf(pid);
-        if(p.devRole)badges.push(devBadge(p.devRole));
+        if(p.devRole)badges.push(devBadge(p.devRole,p.supporterCount||0));
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
             <div class="pl-name ${p.devRole==='main-dev'?'main-dev-name':''}">${p.name}</div>
@@ -2930,7 +3002,7 @@
           // Show empty row
           const row=document.createElement('div');
           row.className='vote-row';
-          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${p.devRole?devBadge(p.devRole):''}`;
+          const nameEl=`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}</span>${p.devRole?devBadge(p.devRole,p.supporterCount||0):''}`;
           row.innerHTML=nameEl+`<span class="vote-answer" style="opacity:.4;font-style:italic">—</span>`;
           rows.appendChild(row);
           return;
@@ -2947,7 +3019,7 @@
           row.className='vote-row';
 
           // Only show player name on first answer row
-          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${p.devRole?' '+devBadge(p.devRole):''}</span>`
+          const nameEl=ai===0?`<span class="vote-name">${p.name}${pid===S.pId?' (אתה)':''}${p.devRole?' '+devBadge(p.devRole,p.supporterCount||0):''}</span>`
             :`<span class="vote-name" style="opacity:.3">↳</span>`;
           const answerEl=`<span class="vote-answer${isDisq?' disq':''}">${answer}</span>`;
           const countEl=vetoCount>0?`<span class="vote-count hot">${vetoCount}👎</span>`:'<span class="vote-count"></span>';
@@ -3343,7 +3415,7 @@
       div.innerHTML=`
         <div class="pod-name" style="color:${isMe?'var(--blue)':'var(--text)'}">
           ${p.name}${isMe?' (אתה)':''}
-          ${p.devRole?devBadge(p.devRole):''}
+          ${p.devRole?devBadge(p.devRole,p.supporterCount||0):''}
           ${p.tag?`<span class="player-tag" style="font-size:.58rem;">${p.tag}</span>`:''}
         </div>
         <div class="pod-av" style="width:${ri===1?52:ri===0?42:36}px;height:${ri===1?52:ri===0?42:36}px;background:${c}22;color:${c};font-size:${ri===1?'1.4rem':ri===0?'1.1rem':'.9rem'}">${p.name.charAt(0)}</div>
@@ -3513,11 +3585,106 @@
     await showFinal();
   }
 
-  function devBadge(role){
+  // ─── SUPPORTER TIER BADGE ─────────────────────────────────────────
+  function supporterTierBadge(count){
+    if(count===0||count==null) return '<span class="supporter-b">💚 תומך</span>';
+    const c=Math.min(count,99);
+    const countHtml=`<span class="sup-cnt">×${c>=50?'50+':c}</span>`;
+    if(c>=50) return `<span class="sup-t6">🔥 תומך ${countHtml}</span>`;
+    if(c>=35) return `<span class="sup-t5">⭐⭐⭐⭐⭐ תומך ${countHtml}</span>`;
+    if(c>=20) return `<span class="sup-t4">⭐⭐⭐⭐ תומך ${countHtml}</span>`;
+    if(c>=10) return `<span class="sup-t3">⭐⭐⭐ תומך ${countHtml}</span>`;
+    if(c>=5)  return `<span class="sup-t2">⭐⭐ תומך ${countHtml}</span>`;
+    return `<span class="sup-t1">⭐ תומך ${countHtml}</span>`;
+  }
+  function devBadge(role,supporterCount){
     if(role==='main-dev')return '<span class="main-dev-b">⚡ מפתח ראשי</span>';
     if(role==='dev')return '<span class="dev-b">🔧 מפתח</span>';
-    if(role==='supporter')return '<span class="supporter-b">💚 תומך</span>';
+    if(role==='supporter')return supporterTierBadge(supporterCount||0);
     return '';
+  }
+
+  // ─── REFERRAL ID ─────────────────────────────────────────────────
+  function getOrCreateRefId(){
+    try{
+      let id=localStorage.getItem('lac_refId');
+      if(!id){id='ref_'+gid(12);localStorage.setItem('lac_refId',id);}
+      return id;
+    }catch(e){return 'ref_'+gid(12);}
+  }
+
+  // Get tier info for referral UI
+  function refTierInfo(count){
+    const tiers=[
+      {min:0, max:0,   color:'#0fba81', prog:'linear-gradient(90deg,#0fba81,#34d399)', label:'ללא', nextAt:1},
+      {min:1, max:4,   color:'#a78bfa', prog:'linear-gradient(90deg,#7c3aed,#a78bfa)', label:'⭐', nextAt:5},
+      {min:5, max:9,   color:'#60a5fa', prog:'linear-gradient(90deg,#2563eb,#60a5fa)', label:'⭐⭐', nextAt:10},
+      {min:10,max:19,  color:'#34d399', prog:'linear-gradient(90deg,#059669,#34d399)', label:'⭐⭐⭐', nextAt:20},
+      {min:20,max:34,  color:'#fbbf24', prog:'linear-gradient(90deg,#d97706,#fbbf24)', label:'⭐⭐⭐⭐', nextAt:35},
+      {min:35,max:49,  color:'#f472b6', prog:'linear-gradient(90deg,#be185d,#f472b6)', label:'⭐⭐⭐⭐⭐', nextAt:50},
+      {min:50,max:999, color:'#fb923c', prog:'linear-gradient(90deg,#ea580c,#fb923c)', label:'🔥', nextAt:null},
+    ];
+    const tier=tiers.slice().reverse().find(t=>count>=t.min)||tiers[0];
+    const toNext=tier.nextAt!=null?tier.nextAt-count:0;
+    const pct=tier.nextAt!=null?Math.min(((count-tier.min)/(tier.nextAt-tier.min))*100,100):100;
+    return{...tier,toNext,pct};
+  }
+
+  // Update the referral UI in the profile screen
+  function updateRefUI(){
+    const link=`${location.origin}${location.pathname}?ref=${S_pRefId}`;
+    const el=document.getElementById('prof-ref-link');
+    if(el)el.textContent=link;
+    const badgeEl=document.getElementById('prof-ref-badge');
+    if(badgeEl)badgeEl.innerHTML=S_pDevRole==='supporter'?supporterTierBadge(S_pSupporterCount):'<span style="color:var(--muted);font-size:.75rem;">—</span>';
+    const countEl=document.getElementById('prof-ref-count');
+    if(countEl){countEl.textContent=S_pSupporterCount;const ti=refTierInfo(S_pSupporterCount);countEl.style.color=ti.color;}
+    const nextEl=document.getElementById('prof-ref-next');
+    const ti=refTierInfo(S_pSupporterCount);
+    if(nextEl)nextEl.textContent=ti.nextAt!=null?ti.toNext:'MAX';
+    const pb=document.getElementById('prof-ref-progbar');
+    if(pb){pb.style.width=ti.pct+'%';pb.style.background=ti.prog;}
+  }
+
+  // Subscribe to this user's referral count in Firebase
+  function listenRefCount(){
+    if(!S_pRefId)return;
+    if(S_refCountListener){off(S_refCountListener.r,'value',S_refCountListener.fn);S_refCountListener=null;}
+    const r=ref(db,`referrals/${S_pRefId}/count`);
+    const fn=snap=>{
+      const v=snap.val()||0;
+      if(v!==S_pSupporterCount){
+        S_pSupporterCount=v;
+        if(v>0&&S_pDevRole!=='main-dev'&&S_pDevRole!=='dev') S_pDevRole='supporter';
+        saveProfile();
+        updateRefUI();
+      }
+    };
+    onValue(r,fn);
+    S_refCountListener={r,fn};
+  }
+
+  // Handle ?ref= param: give current user supporter badge and increment referrer's count
+  async function handleRefParam(){
+    const params=new URLSearchParams(location.search);
+    const refId=params.get('ref');
+    if(!refId||refId===S_pRefId)return;
+    // Give this visitor the classic supporter badge (no count)
+    if(!S_pDevRole||S_pDevRole==='supporter'){
+      if(!S_pDevRole){S_pDevRole='supporter';saveProfile();}
+    }
+    // Increment referrer's count in Firebase (one time per refId per browser via localStorage)
+    try{
+      const doneKey='lac_ref_done_'+refId;
+      if(localStorage.getItem(doneKey))return;
+      localStorage.setItem(doneKey,'1');
+      const countRef=ref(db,`referrals/${refId}/count`);
+      const snap=await get(countRef);
+      const cur=snap.val()||0;
+      await set(countRef,cur+1);
+      // Clean URL
+      try{history.replaceState({},'',location.pathname);}catch(e){}
+    }catch(e){}
   }
 
   async function transferHost(){
@@ -3624,7 +3791,7 @@
         const wrap=document.createElement('div');
         wrap.className='chat-msg'+(isMine?' mine':'')+(m.devRole==='main-dev'?' main-dev-msg':'');
         wrap.innerHTML=`<div class="chat-av" style="background:${c}22;color:${c}">${(m.name||'?').charAt(0)}</div>
-          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${m.devRole?(" "+devBadge(m.devRole)):""}</div>`}${escHtml(m.text)}</div>`;
+          <div class="chat-bubble">${isMine?'':`<div class="chat-name">${m.name}${m.devRole?(" "+devBadge(m.devRole,m.supporterCount||0)):""}</div>`}${escHtml(m.text)}</div>`;
         container.appendChild(wrap);
       });
       container.scrollTop=container.scrollHeight;
@@ -3663,7 +3830,7 @@
     inp.value='';
     const msgId=gid(12);
     await set(ref(db,`rooms/${S.roomId}/chat/${msgId}`),{
-      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null
+      pId:S.pId,name:S.pName,text,ts:Date.now(),devRole:S_pDevRole||null,supporterCount:S_pSupporterCount||0
     });
     touchActivity();
   }
@@ -3851,4 +4018,4 @@
   restoreSession();
   </script>
   </body>
-  </html>
+  </html> 
