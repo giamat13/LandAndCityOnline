@@ -1134,17 +1134,16 @@
     const profRoomEl = document.getElementById('prof-room-name');
     if (profRoomEl) profRoomEl.value = p.roomName || '';
 
-    // Safety 4: only re-render pickers if profile screen is currently visible
-    if (activeScreen === 'screen-profile') {
-      initAvPicker();
-      initEmojiPicker();
-      initFramePicker();
-      initTagInput();
-      initEntryPicker();
-      updateProfilePreview();
-      updateDevCodeStatus();
-      renderBadgePicker();
-    }
+    // 4. Always re-render pickers (safe – they only touch profile-screen elements
+    //    which exist in the DOM but are hidden when the screen is not active).
+    initAvPicker();
+    initEmojiPicker();
+    initFramePicker();
+    initTagInput();
+    initEntryPicker();
+    updateProfilePreview();
+    updateDevCodeStatus();
+    renderBadgePicker();
 
     // 5. Always update home identity bar (lightweight, no jumps)
     updateHomeIdentity();
