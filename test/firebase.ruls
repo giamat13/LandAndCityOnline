@@ -1,0 +1,36 @@
+{
+  "rules": {
+    "roomActivity": {
+      ".read": true,
+      "$roomId": {
+        ".write": true,
+        ".validate": "newData.isNumber()"
+      }
+    },
+    "publicRooms": {
+      ".read": true,
+      "$roomId": { ".write": true }
+    },
+    "rooms": {
+      "$roomId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "referrals": {
+      "$refId": {
+        "count": {
+          ".read": true,
+          ".write": true,
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999"
+        }
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null"
+      }
+    }
+  }
+}
