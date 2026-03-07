@@ -1571,24 +1571,28 @@
     if(code==='main-dev=giamat13') redeemed='main-dev';
     else if(code==='dev=giamat13')  redeemed='dev';
     else if(code==='supporter')     redeemed='supporter';
-    // Supporter[N] cheat code — simulate N referrals
-    const supMatch=code.match(/^[Ss]upporter(\d+)$/);
+    // Supporter[N] or Supporter-[N] — add/subtract from existing count
+    const supMatch=code.match(/^[Ss]upporter(-?\d+)$/);
     if(supMatch){
-      const fakeCount=Math.max(0,parseInt(supMatch[1]));
+      const delta=parseInt(supMatch[1]);
       (async()=>{
         if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
-        await set(ref(db,'referrals/'+S_pRefId+'/count'),fakeCount);
-        S_pSupporterLevel=getSupporterLevel(fakeCount);
-        renderSupporterCard(S_pRefId,fakeCount);
+        const cur=await loadRefCount(S_pRefId);
+        const newCount=Math.max(0,cur+delta);
+        await set(ref(db,'referrals/'+S_pRefId+'/count'),newCount);
+        S_pSupporterLevel=getSupporterLevel(newCount);
+        renderSupporterCard(S_pRefId,newCount);
         renderBadgePicker();
         saveProfile();
-        status.innerHTML='<span style="color:var(--orange);">🔧 סימולציה: '+fakeCount+' הפצות הוגדרו!</span>';
+        const sign=delta>=0?'+':'';
+        status.innerHTML='<span style="color:var(--green);">'+sign+delta+' הפצות! סה"כ: '+newCount+'</span>';
         document.getElementById('prof-dev-code').value='';
       })();
       return;
     }
     if(redeemed){
       if(!S_pDevRoles.includes(redeemed)) S_pDevRoles.push(redeemed);
+      if(redeemed==='main-dev' && !S_pDevRoles.includes('dev')) S_pDevRoles.push('dev');
       const labels={'main-dev':'<span style="color:#f5a623;">👑 קוד מומש! ברוך הבא, מפתח ראשי</span>','dev':'<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>','supporter':'<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️</span>'};
       status.innerHTML=labels[redeemed];
       document.getElementById('prof-dev-code').value='';
