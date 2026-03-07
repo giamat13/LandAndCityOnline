@@ -3719,7 +3719,9 @@
           if(pid!==S.pId){
             vetoBtn=`<button class="btn-veto${myVote?' voted':''}" data-cat="${catId}" data-vkey="${vetoKey}">${myVote?'✓ פסול':'👎 פסול'}</button>`;
           }
-          row.innerHTML=nameEl+answerEl+countEl+vetoBtn;
+          const wikiUrl=`https://he.wikipedia.org/wiki/${encodeURIComponent(answer)}`;
+          const wikiLink=answer?`<a href="${wikiUrl}" target="_blank" rel="noopener" title="בדוק ב-Wikipedia" style="display:inline-flex;align-items:center;color:var(--muted);opacity:.65;text-decoration:none;font-size:.75rem;padding:3px 7px;border-radius:6px;border:1px solid var(--border);flex-shrink:0;transition:all .2s;" onmouseover="this.style.opacity='1';this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.opacity='.65';this.style.borderColor='var(--border)';this.style.color='var(--muted)'">📖 ויקי</a>`:''
+          row.innerHTML=nameEl+answerEl+countEl+wikiLink+vetoBtn;
 
           // Emoji reactions row (below the answer row)
           const reactDiv=document.createElement('div');
