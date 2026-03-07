@@ -1081,6 +1081,7 @@
   // Called after login — pull all user data from Firebase and apply locally
   // Apply a cloud profile object to all local state variables + UI
   function _applyProfile(p) {
+    // 1. Update all state variables
     S.pName = p.name;
     S_pColor = p.color || AVATAR_COLORS[0];
     S_pEmoji = p.emoji || null;
@@ -1092,30 +1093,20 @@
     S_pRefId = p.refId || null;
     S_pSupporterLevel = p.supporterLevel || 0;
     S_pActiveBadge = p.activeBadge || 'auto';
+
+    // 2. Persist to localStorage
     localStorage.setItem('lac_profile', JSON.stringify(p));
-    // sync lac_refid too
     if (p.refId) { try { localStorage.setItem('lac_refid', p.refId); } catch(e){} }
-    // update all UI elements
+
+    // 3. Update hidden name input (used elsewhere in app)
     const playerNameEl = document.getElementById('player-name');
     if (playerNameEl) playerNameEl.value = p.name;
-    const profNameEl = document.getElementById('prof-name');
-    if (profNameEl) profNameEl.value = p.name;
-    const profRoomEl = document.getElementById('prof-room-name');
-    if (profRoomEl) profRoomEl.value = p.roomName || '';
-    const profTagEl = document.getElementById('prof-tag-inp');
-    if (profTagEl) profTagEl.value = p.tag || '';
-    initAvPicker(); initEmojiPicker(); initFramePicker(); initTagInput(); initEntryPicker();
-    updateProfilePreview();
-    // update home screen identity bar
-    if (typeof updateHomeIdentity === 'function') updateHomeIdentity();
-    // update dev roles UI
-    if (typeof updateDevCodeStatus === 'function') updateDevCodeStatus();
-    // update badge picker
-    if (typeof renderBadgePicker === 'function') renderBadgePicker();
-    // update supporter card if visible
-    if (p.refId && typeof initSupporterCard === 'function') {
-      initSupporterCard();
-    }
+
+    // 4. Re-render the full profile screen (pickers, inputs, preview)
+    setupProfileScreen();
+
+    // 5. Update home screen identity bar (name + color + emoji + frame + tag)
+    updateHomeIdentity();
   }
 
   async function syncFromFirebase() {
