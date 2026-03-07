@@ -544,6 +544,46 @@
   /* waiting for approval */
   .approval-wait{text-align:center;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:14px;padding:24px;margin-bottom:16px;}
   .approval-wait .spin{border-top-color:var(--orange);}
+
+  /* ── Race Mode ─────────────────────────────────────────────── */
+  .race-banner{position:fixed;top:0;left:0;right:0;z-index:1200;background:linear-gradient(135deg,var(--orange),#c97d10);color:#fff;text-align:center;font-weight:900;font-size:1rem;padding:10px 16px;box-shadow:0 4px 20px rgba(245,166,35,.5);animation:slideDown .4s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+  /* ── Bonus Answer ───────────────────────────────────────────── */
+  .bonus-star-btn{background:rgba(245,166,35,.12);color:var(--orange);border:1.5px solid rgba(245,166,35,.3);border-radius:8px;padding:5px 10px;font-size:.85rem;cursor:pointer;transition:all .2s;flex-shrink:0;}
+  .bonus-star-btn:hover{background:rgba(245,166,35,.25);}
+  .bonus-star-btn.active{background:rgba(245,166,35,.35);border-color:var(--orange);color:#fff;}
+  .ans-tag.bonus{background:rgba(245,166,35,.2);border-color:rgba(245,166,35,.5);color:var(--orange);}
+  /* ── Creative Vote Screen ───────────────────────────────────── */
+  .creative-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px;box-shadow:var(--sh);cursor:pointer;transition:all .2s;}
+  .creative-card:hover{border-color:var(--orange);transform:translateY(-1px);}
+  .creative-card.voted{border-color:var(--orange);background:rgba(245,166,35,.07);}
+  .creative-answer{font-size:1.1rem;font-weight:900;margin-bottom:4px;}
+  .creative-by{font-size:.75rem;color:var(--muted);}
+  .creative-votes{font-size:.78rem;font-weight:700;color:var(--orange);margin-top:6px;}
+  /* ── Room Templates ─────────────────────────────────────────── */
+  .tpl-card{background:var(--surface);border:1px solid rgba(168,85,247,.3);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;}
+  .tpl-card:hover{border-color:#a855f7;transform:translateY(-1px);}
+  .tpl-name{font-size:.95rem;font-weight:800;flex:1;}
+  .tpl-meta{font-size:.72rem;color:var(--muted);}
+  .tpl-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:4px 6px;border-radius:8px;}
+  .tpl-del:hover{color:var(--red);}
+  /* ── Tournament bracket ─────────────────────────────────────── */
+  .bracket-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .bracket-round{background:var(--s2);border-radius:10px;padding:10px 14px;font-size:.85rem;}
+  .bracket-round-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px;}
+  .bracket-match{display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap;}
+  .bracket-player{padding:3px 10px;border-radius:100px;font-size:.8rem;font-weight:700;background:var(--surface);border:1px solid var(--border);}
+  .bracket-player.winner{background:rgba(15,186,129,.15);border-color:var(--green);color:var(--green);}
+  .bracket-player.loser{opacity:.4;text-decoration:line-through;}
+  /* ── Share Card ─────────────────────────────────────────────── */
+  .share-card-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(76,201,240,.15),rgba(168,85,247,.15));border:1.5px solid rgba(76,201,240,.3);color:var(--blue);border-radius:12px;padding:10px 18px;font-family:'Heebo',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;width:100%;justify-content:center;margin-bottom:8px;}
+  .share-card-btn:hover{background:linear-gradient(135deg,rgba(76,201,240,.25),rgba(168,85,247,.25));}
+  /* ── History ─────────────────────────────────────────────────── */
+  .hist-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .2s;}
+  .hist-item:hover{border-color:var(--blue);}
+  .hist-date{font-size:.7rem;color:var(--muted);}
+  .hist-cats{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+  .hist-letter{font-size:1.3rem;font-weight:900;color:var(--red);}
   </style>
   </head>
   <body>
@@ -697,6 +737,7 @@
     <div class="divider" style="margin:16px 0;">מה תרצה לעשות?</div>
     <div class="home-actions">
       <button class="btn btn-p" id="btn-show-create">✨ צור חדר חדש</button>
+      <button class="btn btn-s" id="btn-show-templates" style="opacity:.8;font-size:.88rem;">📋 תבניות שמורות</button>
       <div class="divider">הצטרף לחדר קיים</div>
       <div style="display:flex;gap:10px;">
         <input type="text" id="join-code" placeholder="קוד חדר..." maxlength="6"
@@ -713,6 +754,10 @@
         <span style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">📌 החדרים שלי</span>
       </div>
       <div id="my-rooms-list"></div>
+    </div>
+    <!-- Game History button (modal) -->
+    <div id="game-history-section" style="margin-top:4px;display:none;">
+      <button class="btn btn-s" id="btn-show-history" style="opacity:.8;font-size:.88rem;">📜 היסטוריית משחקים</button>
     </div>
     <!-- Public rooms -->
     <div class="card" style="margin-top:16px;">
@@ -809,6 +854,18 @@
         <span style="color:var(--muted);font-size:.85rem;">שחקנים לפחות</span>
       </div>
 
+      <div class="tog-wrap" id="tog-race-mode" style="margin-bottom:14px;">
+        <div class="tog" id="tog-race-el"></div>
+        <span class="tog-label">🏎️ מצב מרוץ – מי שמגיש ראשון עוצר את הטיימר לכולם</span>
+      </div>
+      <div class="tog-wrap" id="tog-bonus-ans" style="margin-bottom:14px;">
+        <div class="tog on" id="tog-bonus-el"></div>
+        <span class="tog-label">⭐ תשובת בונוס – כל שחקן יכול לסמן תשובה אחת ב×2 נקודות</span>
+      </div>
+      <div class="tog-wrap" id="tog-creative-vote" style="margin-bottom:16px;">
+        <div class="tog on" id="tog-creative-el"></div>
+        <span class="tog-label">🌟 הצבעת יצירתיות אחרי פסילות (+10 נק' לזוכה)</span>
+      </div>
       <h3 style="margin-bottom:10px;">🌐 נראות חדר</h3>
       <div class="vis-opts" id="vis-opts">
         <div class="vis-opt sel" data-v="private">
@@ -825,7 +882,10 @@
         </div>
       </div>
     </div>
-    <button class="btn btn-p" id="btn-create-room">🚀 צור חדר</button>
+    <div style="display:flex;gap:8px;margin-bottom:0;">
+      <button class="btn btn-s" id="btn-save-template-pre" style="flex:1;opacity:.85;font-size:.85rem;">💾 שמור תבנית</button>
+    </div>
+    <button class="btn btn-p" id="btn-create-room" style="margin-top:8px;">🚀 צור חדר</button>
   </div>
 
   <!-- LOBBY -->
@@ -947,6 +1007,27 @@
     </div>
   </div>
 
+
+  <!-- CREATIVE VOTE -->
+  <div id="screen-creative" class="screen">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:6px;">
+      <div style="width:60px;"></div>
+      <div style="text-align:center;">
+        <div style="font-size:2rem;margin-bottom:4px;">🌟</div>
+        <h2 style="font-size:1.4rem;font-weight:900;">התשובה הכי יצירתית</h2>
+        <p style="color:var(--muted);font-size:.82rem;">הצבע על התשובה שהכי הפתיעה אותך</p>
+      </div>
+      <div style="width:60px;"></div>
+    </div>
+    <div id="creative-answers-list"></div>
+    <div id="creative-host-ctrl" style="display:none;margin-top:8px;">
+      <button class="btn btn-p" id="btn-creative-done">▶️ לתוצאות</button>
+    </div>
+    <div id="creative-guest-wait" style="display:none;">
+      <div class="wait"><div class="spin"></div><p>ממתין למארח...</p></div>
+    </div>
+  </div>
+
   <!-- RESULTS -->
   <div id="screen-results" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:6px;">
@@ -997,6 +1078,7 @@
     <div id="podium-wrap" class="podium-wrap"></div>
     <div class="card"><h3>🏆 תוצאות סופיות</h3><div class="sb" id="final-sb"></div></div>
     <div id="final-perm-lb-wrap"></div>
+    <button class="share-card-btn" id="btn-share-results">📤 שתף תוצאות</button>
     <button class="btn btn-p" id="btn-go-home" style="margin-top:8px;">🏠 חזור לתפריט</button>
   </div>
 
@@ -1068,7 +1150,7 @@
   // ─── FIREBASE SYNC HELPERS ────────────────────────────────────────
   // Keys that are synced to Firebase when user is logged in
   // lac_s (session) is intentionally NOT synced — it's device-specific
-  const FB_SYNC_KEYS = ['profile','myrooms','theme','tut'];
+  const FB_SYNC_KEYS = ['profile','myrooms','theme','tut','templates','gameHistory'];
 
   async function fbSave(key, data) {
     if (!currentUser) return;
@@ -1235,6 +1317,39 @@
         if (!cloud.tut) await set(ref(db,'users/'+currentUser.uid+'/tut'),'1');
       }
 
+      // ── TEMPLATES: merge by name+ts, keep newest 10 ──
+      const localTemplates = (() => { try { return JSON.parse(localStorage.getItem('aretz_templates')||'[]'); } catch(e){ return []; } })();
+      const cloudTemplates = cloud.templates ? (Array.isArray(cloud.templates) ? cloud.templates : Object.values(cloud.templates)) : [];
+      if (cloudTemplates.length || localTemplates.length) {
+        const merged = [...cloudTemplates, ...localTemplates];
+        const seenT = new Set();
+        const dedupedT = merged
+          .filter(t => { const key = (t.name||'')+'_'+(t.ts||0); if(seenT.has(key)) return false; seenT.add(key); return true; })
+          .sort((a,b) => (b.ts||0)-(a.ts||0))
+          .slice(0,10);
+        try { localStorage.setItem('aretz_templates', JSON.stringify(dedupedT)); } catch(e){}
+        if (dedupedT.length > cloudTemplates.length || cloudTemplates.some((ct,i) => !dedupedT[i] || ct.ts !== dedupedT[i].ts)) {
+          await set(ref(db,'users/'+currentUser.uid+'/templates'), dedupedT).catch(()=>{});
+        }
+      }
+
+      // ── GAME HISTORY: merge by roomId+ts, keep newest 20 ──
+      const localHistory = (() => { try { return JSON.parse(localStorage.getItem('aretz_history')||'[]'); } catch(e){ return []; } })();
+      const cloudHistory = cloud.gameHistory ? (Array.isArray(cloud.gameHistory) ? cloud.gameHistory : Object.values(cloud.gameHistory)) : [];
+      if (cloudHistory.length || localHistory.length) {
+        const mergedH = [...cloudHistory, ...localHistory];
+        const seenH = new Set();
+        const dedupedH = mergedH
+          .filter(h => { const key = (h.roomId||'')+'_'+(h.ts||0); if(seenH.has(key)) return false; seenH.add(key); return true; })
+          .sort((a,b) => (b.ts||0)-(a.ts||0))
+          .slice(0,20);
+        try { localStorage.setItem('aretz_history', JSON.stringify(dedupedH)); } catch(e){}
+        if (dedupedH.length > cloudHistory.length) {
+          await set(ref(db,'users/'+currentUser.uid+'/gameHistory'), dedupedH).catch(()=>{});
+        }
+        loadGameHistory();
+      }
+
     } catch(e) { console.warn('Firebase sync error:', e); throw e; }
   }
 
@@ -1322,7 +1437,14 @@
     warnedExpiry:false,
     isPermanent:false,
     vetoThresholdType:'percent',
-    vetoThresholdValue:50
+    vetoThresholdValue:50,
+    raceMode:false,
+    bonusAnswer:true,
+    creativeVoteEnabled:true,
+    bonusAnswerIndex:-1,
+    bonusUsedThisRound:false,
+    tournamentMode:false,
+    tournamentBracket:null
   };
   let S_pColor=AVATAR_COLORS[0];
   let S_pEmoji=null;   // null = use first letter
@@ -2290,12 +2412,16 @@
       ?Math.min(100,Math.max(1,parseInt(document.getElementById('cr-veto-pct-inp').value)||50))
       :Math.max(1,parseInt(document.getElementById('cr-veto-cnt-inp').value)||2);
     S.vetoThresholdType=crVetoType;S.vetoThresholdValue=crVetoValue;
+    S.raceMode=document.getElementById('tog-race-el').classList.contains('on');
+
+    S.bonusAnswer=document.getElementById('tog-bonus-el').classList.contains('on');
+    S.creativeVoteEnabled=document.getElementById('tog-creative-el').classList.contains('on');
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
     let roomId,t=0;
     do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
     S.roomId=roomId;
     await set(ref(db,'rooms/'+roomId),{
-      host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,
+      host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,bonusAnswer:S.bonusAnswer,creativeVoteEnabled:S.creativeVoteEnabled,
       uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
@@ -3229,6 +3355,10 @@
     S.currentCatIndex=r.currentCatIndex||0;
     S.totalRounds=r.totalRounds||0;
     S.uniqueLetters=r.uniqueLetters||false;
+    S.raceMode=r.raceMode||false;
+    S.bonusAnswer=r.bonusAnswer||false;
+    S.bonusUsedThisRound=false;
+    S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
     S.catSubmitted=false;
     enterRoom();
     // Check if we already submitted this category
@@ -3331,6 +3461,40 @@
     await animateLetter(S.letter, showLetterAnim);
     if(isFirstCat)SFX.play('start');
     else if(S.uniqueLetters&&S.currentCatIndex>0)SFX.play('start');
+    // Race mode: show banner + listen for first submission
+    if(S.raceMode){
+      const oldBanner=document.getElementById('race-banner');
+      if(oldBanner)oldBanner.remove();
+      const rb=document.createElement('div');
+      rb.id='race-banner';rb.className='race-banner';
+      rb.textContent='🏎️ מצב מרוץ — מי שמגיש ראשון עובר לשלב הבא!';
+      document.body.appendChild(rb);
+      setTimeout(()=>{if(rb.parentNode)rb.remove();},4000);
+      // Listen for race winner
+      const raceCat=S.cats[S.currentCatIndex];
+      addL(ref(db,`rooms/${S.roomId}/raceFirst/${raceCat.id}`),async snap=>{
+        if(!snap.exists())return;
+        const first=snap.val();
+        // Non-submitters: auto-submit whatever they have typed
+        if(!S.catSubmitted){
+          clearInterval(S.timerInt);
+          S.timeLeft=0;updateTimer();
+          const inp=document.getElementById('cat-answer');
+          if(inp&&inp.value.trim())addAnswerTag(inp.value.trim());
+          if(first.pId!==S.pId){
+            toast(`🏎️ ${first.name} הגיש ראשון/ה!`);
+          }
+          await doSubmit(S.currentAnswers);
+        }
+        // Host: advance immediately after a short delay (let submit propagate)
+        if(S.isHost){
+          clearInterval(S.timerInt);
+          setTimeout(async()=>{ await advanceCat(); },600);
+        }
+      });
+    }
+    // Bonus answer: reset index (only if not yet used this round)
+    if(!S.bonusUsedThisRound) S.bonusAnswerIndex=-1;
     if(!S.catSubmitted){
       setTimeout(()=>inp.focus(),80);
       if(S.rTime===0){
@@ -3400,6 +3564,7 @@
     // Listen: status → voting / results / ended
     addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
       if(snap.val()==='voting')await showVoting();
+      if(snap.val()==='creative-vote')await showCreativeVote();
       if(snap.val()==='results')await showResults();
       if(snap.val()==='ended')await showFinal();
     });
@@ -3478,14 +3643,44 @@
     container.innerHTML='';
     S.currentAnswers.forEach((ans,i)=>{
       const tag=document.createElement('span');
-      tag.className='ans-tag';
-      tag.innerHTML=`${ans}<button class="rm" title="הסר">×</button>`;
+      const isBonus=S.bonusAnswer&&S.bonusAnswerIndex===i;
+      tag.className='ans-tag'+(isBonus?' bonus':'');
+      tag.innerHTML=`${isBonus?'⭐ ':''}${ans}<button class="rm" title="הסר">×</button>`;
       tag.querySelector('.rm').addEventListener('click',()=>{
+        if(S.bonusAnswerIndex===i)S.bonusAnswerIndex=-1;
+        else if(S.bonusAnswerIndex>i)S.bonusAnswerIndex--;
         S.currentAnswers.splice(i,1);
         renderAnsTags();
       });
+      if(S.bonusAnswer){
+        const alreadyUsed=S.bonusUsedThisRound&&S.bonusAnswerIndex===-1;
+        const starBtn=document.createElement('button');
+        starBtn.className='bonus-star-btn'+(isBonus?' active':'')+(alreadyUsed?' disabled':'');
+        starBtn.title=alreadyUsed?"כבר השתמשת בבונוס הסיבוב":"סמן כתשובת בונוס (×2 נק'ות)";
+        starBtn.textContent=isBonus?'⭐ בונוס':'☆ בונוס';
+        starBtn.disabled=alreadyUsed;
+        if(!alreadyUsed) starBtn.addEventListener('click',()=>{
+          S.bonusAnswerIndex=isBonus?-1:i;
+          renderAnsTags();
+        });
+        container.insertBefore(starBtn, container.firstChild);
+        tag.style.display='block';
+      }
       container.appendChild(tag);
     });
+    // Show hint if bonus mode and no bonus selected
+    if(S.bonusAnswer&&S.currentAnswers.length>0&&S.bonusAnswerIndex===-1){
+      const hint=document.createElement('div');
+      hint.style='font-size:.72rem;margin-top:6px;';
+      if(S.bonusUsedThisRound){
+        hint.style.color='var(--muted)';
+        hint.textContent='🔒 השתמשת כבר בבונוס הסיבוב הזה';
+      } else {
+        hint.style.color='var(--orange)';
+        hint.textContent='⭐ לחץ "☆ בונוס" על תשובה אחת לקבל ×2 נקודות עליה';
+      }
+      container.appendChild(hint);
+    }
   }
 
   function addAnswerTag(val){
@@ -3509,12 +3704,21 @@
     if(S.catSubmitted)return;
     S.catSubmitted=true;
     SFX.play('submit');
-    // לא עוצרים את הטיימר — ממשיך לרוץ חזותית
     const cat=S.cats[S.currentCatIndex];
     const ansArr=Array.isArray(answers)?answers:(answers?[answers]:[]);
+    const bonusIdx=S.bonusAnswerIndex>=0&&S.bonusAnswerIndex<ansArr.length?S.bonusAnswerIndex:-1;
+    if(bonusIdx>=0) S.bonusUsedThisRound=true;
     await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
-      name:S.pName,answers:ansArr,answer:ansArr[0]||'',submittedAt:Date.now(),timeLeft:S.timeLeft
+      name:S.pName,answers:ansArr,answer:ansArr[0]||'',submittedAt:Date.now(),timeLeft:S.timeLeft,
+      bonusIndex:bonusIdx
     });
+    // Race mode: first submission triggers advance for everyone
+    if(S.raceMode){
+      const firstSnap=await get(ref(db,`rooms/${S.roomId}/raceFirst/${cat.id}`));
+      if(!firstSnap.exists()){
+        await set(ref(db,`rooms/${S.roomId}/raceFirst/${cat.id}`),{pId:S.pId,name:S.pName,ts:Date.now()});
+      }
+    }
     showEditMode(ansArr);
     touchActivity();saveSession();
   }
@@ -3785,6 +3989,7 @@
     // Guest: listen for status→results
     if(!S.isHost){
       addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
+        if(snap.val()==='creative-vote')await showCreativeVote();
         if(snap.val()==='results')await showResults();
         if(snap.val()==='ended')await showFinal();
       });
@@ -3836,10 +4041,110 @@
         disqSave[cat.id]=[...disqAnswers[cat.id]];
       }
     });
+    if(S.creativeVoteEnabled){
+      // Collect all non-disqualified answers for creative vote
+      const creativePool=[];
+      cats.forEach(cat=>{
+        const catData=catAnswers[cat.id]||{};
+        const disqSet=disqAnswers[cat.id]||new Set();
+        Object.entries(catData).forEach(([pid,d])=>{
+          const ansArr=Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[]);
+          const playerName=(d.name||players[pid]?.name||'שחקן');
+          ansArr.forEach(a=>{
+            if(a&&!disqSet.has(a.toLowerCase()))creativePool.push({pid,name:playerName,answer:String(a),cat:cat.name});
+          });
+        });
+      });
+      // Remove player's own answers from voting
+      const forVote=creativePool.filter(x=>x.pid!==S.pId);
+      if(forVote.length>0){
+        await update(ref(db,`rooms/${S.roomId}`),{
+          status:'creative-vote',disqualified:disqSave,creativePool:creativePool,lastActivity:Date.now()
+        });
+        await showCreativeVote();
+        return;
+      }
+    }
     await update(ref(db,`rooms/${S.roomId}`),{
       status:'results',disqualified:disqSave,lastActivity:Date.now()
     });
     await showResults();
+  }
+
+
+  // ─── CREATIVE VOTE ────────────────────────────────────────────────
+  async function showCreativeVote(){
+    clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
+    enterRoom();
+    const snap=await get(ref(db,`rooms/${S.roomId}`));
+    const room=snap.val();
+    const pool=(room.creativePool||[]).filter(x=>x.pid!==S.pId);
+    let myVote=null;
+
+    function renderCreativeList(){
+      const list=document.getElementById('creative-answers-list');
+      list.innerHTML='';
+      if(!pool.length){
+        list.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px">אין תשובות להצביע עליהן 🤷</p>';
+        return;
+      }
+      pool.forEach((item,i)=>{
+        const card=document.createElement('div');
+        card.className='creative-card'+(myVote===i?' voted':'');
+        card.innerHTML=`<div class="creative-answer">${item.answer}</div>
+          <div class="creative-by">📂 ${item.cat} · 👤 ${item.name}</div>
+          ${myVote===i?'<div class="creative-votes">⭐ בחרת בתשובה הזו!</div>':''}`;
+        card.addEventListener('click',async()=>{
+          myVote=i;
+          await set(ref(db,`rooms/${S.roomId}/creativeVotes/${S.pId}`),{
+            pid:item.pid,answer:item.answer,voter:S.pName,ts:Date.now()
+          });
+          toast('⭐ הצבעת על "'+item.answer+'"!');
+          renderCreativeList();
+        });
+        list.appendChild(card);
+      });
+    }
+
+    renderCreativeList();
+    document.getElementById('creative-host-ctrl').style.display=S.isHost?'block':'none';
+    document.getElementById('creative-guest-wait').style.display=S.isHost?'none':'block';
+    showScreen('creative');
+
+    // Host btn: tally votes and proceed to results
+    document.getElementById('btn-creative-done').onclick=async()=>{
+      const votesSnap=await get(ref(db,`rooms/${S.roomId}/creativeVotes`));
+      const votes=votesSnap.val()||{};
+      // Count votes per player
+      const tally={};
+      Object.values(votes).forEach(v=>{
+        tally[v.pid]=(tally[v.pid]||0)+1;
+      });
+      // Find winner
+      let bestPid=null,bestCount=0;
+      Object.entries(tally).forEach(([pid,cnt])=>{if(cnt>bestCount){bestCount=cnt;bestPid=pid;}});
+      // Give +10 to winner
+      if(bestPid){
+        const pSnap=await get(ref(db,`rooms/${S.roomId}/players/${bestPid}/score`));
+        const curScore=pSnap.val()||0;
+        await update(ref(db,`rooms/${S.roomId}/players/${bestPid}`),{score:curScore+10});
+        const winVote=Object.values(votes).find(v=>v.pid===bestPid);
+        toast(`🌟 "${winVote?.answer||'?'}" זכתה ב-+10 נק' יצירתיות!`);
+        await update(ref(db,`rooms/${S.roomId}`),{
+          status:'results',lastActivity:Date.now(),
+          creativeWinner:{pid:bestPid,answer:winVote?.answer||''}
+        });
+      } else {
+        await update(ref(db,`rooms/${S.roomId}`),{status:'results',lastActivity:Date.now()});
+      }
+      await showResults();
+    };
+
+    // Guests: listen for status change to results
+    addL(ref(db,`rooms/${S.roomId}/status`),snap=>{
+      if(snap.val()==='results')showResults();
+      if(snap.val()==='ended')showFinal();
+    });
   }
 
   // ─── RESULTS ──────────────────────────────────────────────────────
@@ -3864,8 +4169,12 @@
       disqSets[cat.id]=new Set((disqMap[cat.id]||[]).map(a=>a.toLowerCase()));
     });
 
+    // Creative winner
+    const creativeWinner=room.creativeWinner||null;
+
     document.getElementById('res-rnd').textContent=room.round;
     document.getElementById('res-letter').textContent=room.letter;
+
 
     const rScores={};
     Object.entries(players).forEach(([pid,p])=>{if(!p.spectator)rScores[pid]=0;});
@@ -3886,7 +4195,7 @@
       });
       Object.entries(catData).forEach(([pid,d])=>{
         const ansArr=Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[]);
-        const timeBonus=d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||30))*5):0;
+        const timeBonus=(!room.raceMode&&d.timeLeft>0)?Math.ceil((d.timeLeft/(room.roundTime||30))*5):0;
         ansArr.forEach(a=>{
           const al=(a||'').trim();
           if(!al)return;
@@ -3894,7 +4203,9 @@
           const isUniq=counts[al.toLowerCase()]===1;
           const base=isUniq?10:5;
           const rareBonus=isUniq?2:0;
-          rScores[pid]=(rScores[pid]||0)+base+rareBonus;
+          const isThisBonus=room.bonusAnswer&&d.bonusIndex===ansArr.indexOf(a)&&d.bonusIndex>=0;
+          const mult=isThisBonus?2:1;
+          rScores[pid]=(rScores[pid]||0)+(base+rareBonus)*mult;
         });
         // Time bonus only once per player (on first valid answer)
         const firstValid=ansArr.find(a=>{const al=(a||'').trim();return al&&!disqSet.has(al.toLowerCase());});
@@ -3905,7 +4216,7 @@
       Object.entries(players).filter(([,p])=>!p.spectator).forEach(([pid,p])=>{
         const d=catData[pid];
         const ansArr=d?(Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[])):[]; 
-        const timeBonus=d&&d.timeLeft>0?Math.ceil((d.timeLeft/(room.roundTime||30))*5):0;
+        const timeBonus=(!room.raceMode&&d&&d.timeLeft>0)?Math.ceil((d.timeLeft/(room.roundTime||30))*5):0;
         if(!ansArr.length){
           rowsArr.push(`<tr>
             <td>${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</td>
@@ -3924,12 +4235,16 @@
           if(!isDisq&&al)firstValidDone=true;
           const disqLabel=isDisq?'<span style="color:var(--red);font-size:.72rem;margin-right:4px;">❌ נפסל</span>':'';
           const rareLbl=u?'<span class="rare-badge">💎 נדיר +2</span>':'';
+          const isBonusAns=room.bonusAnswer&&d&&d.bonusIndex===ai&&d.bonusIndex>=0&&!isDisq&&al;
+          const bonusLbl=isBonusAns?'<span style="background:rgba(245,166,35,.18);color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;font-size:.68rem;font-weight:800;padding:1px 7px;margin-right:4px;white-space:nowrap;">⭐ ×2 בונוס</span>':'';
+          const isCreativeWin=creativeWinner&&creativeWinner.pid===pid&&creativeWinner.answer===a;
+          const creativeLbl=isCreativeWin?'<span style="background:rgba(245,166,35,.18);color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;font-size:.68rem;font-weight:800;padding:1px 7px;margin-right:4px;white-space:nowrap;">🌟 הכי יצירתי</span>':'';
           const nameCell=ai===0?`${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}`
             :`<span style="opacity:.3">↳</span>`;
           const totalPts=base+rareBonus;
           rowsArr.push(`<tr>
             <td>${nameCell}</td>
-            <td class="${cls}">${disqLabel}${rareLbl}${al||'—'}</td>
+            <td class="${cls}">${disqLabel}${rareLbl}${bonusLbl}${creativeLbl}${al||'—'}</td>
             <td style="text-align:center;font-weight:700;color:${isDisq?'var(--red)':totalPts>=12?'#a855f7':totalPts>=10?'var(--green)':totalPts>=5?'var(--orange)':'var(--muted)'}">
               ${isDisq?'<span style="text-decoration:line-through;opacity:.5">0</span>':'+'+totalPts+(tb>0?`<span style="color:var(--blue);font-size:.75rem;"> +${tb}⚡</span>`:'')}</td>
           </tr>`);
@@ -4256,6 +4571,16 @@
       renderPermLeaderboard('final-perm-lb-wrap', lbSnap2.val()||{});
     }
     enterRoom();
+    // Save to local game history
+    try{
+      const hist=JSON.parse(localStorage.getItem('aretz_history')||'[]');
+      const sorted2=Object.entries(players).filter(([,p])=>!p.spectator).sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+      hist.unshift({ts:Date.now(),roomId:S.roomId,rNum:S.rNum,cats:S.cats.map(c=>c.name),
+        scores:sorted2.map(([pid,p])=>({name:p.name,score:p.score||0,isMe:pid===S.pId}))});
+      const histToSave=hist.slice(0,20);
+      localStorage.setItem('aretz_history',JSON.stringify(histToSave));
+      fbSave('gameHistory',histToSave);
+    }catch(e){}
     showScreen('final');
     // Find our placement
     const sorted=Object.entries(players)
@@ -4271,7 +4596,7 @@
       await endGame();return;
     }
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
-    S.rNum++;S.letter=letter;S.currentCatIndex=0;
+    S.rNum++;S.letter=letter;S.currentCatIndex=0;S.bonusUsedThisRound=false;
     await update(ref(db,`rooms/${S.roomId}`),{
       status:'playing',round:S.rNum,letter,
       catStartedAt:Date.now(),currentCatIndex:0,
@@ -4641,6 +4966,187 @@
   });
   document.getElementById('btn-room-settings').addEventListener('click',openRoomSettings);
   document.getElementById('btn-invite-tmp').addEventListener('click',openInvitePanel);
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── GAME HISTORY ──────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  function loadGameHistory(){
+    try{
+      const hist=JSON.parse(localStorage.getItem('aretz_history')||'[]');
+      const section=document.getElementById('game-history-section');
+      section.style.display=hist.length?'block':'none';
+    }catch(e){}
+  }
+
+  function showHistoryModal(){
+    let hist=[];
+    try{hist=JSON.parse(localStorage.getItem('aretz_history')||'[]');}catch(e){}
+    let modal=document.getElementById('history-modal');
+    if(modal)modal.remove();
+    modal=document.createElement('div');
+    modal.id='history-modal';
+    modal.style='position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;';
+    const inner=document.createElement('div');
+    inner.style='background:var(--surface);border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:75vh;overflow-y:auto;';
+    const medals=['🥇','🥈','🥉'];
+    const items=hist.map(h=>{
+      const me=h.scores.find(s=>s.isMe);
+      const place=h.scores.findIndex(s=>s.isMe)+1;
+      const medal=medals[place-1]||`#${place}`;
+      const d=new Date(h.ts);
+      const dateStr=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+      return `<div class="hist-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="hist-letter">${medal}</span>
+          <span style="font-size:.9rem;font-weight:800;">${me?me.score:0} נק'</span>
+          <span class="hist-date">${dateStr}</span>
+        </div>
+        <div class="hist-cats">${h.cats.slice(0,4).map(c=>`<span style="background:var(--s2);padding:2px 8px;border-radius:100px;font-size:.7rem;">${c}</span>`).join('')}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">סיבוב ${h.rNum} · ${h.scores.length} שחקנים</div>
+      </div>`;
+    }).join('');
+    inner.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="font-size:1.1rem;font-weight:900;">📜 היסטוריית משחקים</h3>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="hist-modal-clear" style="background:none;border:none;color:var(--muted);font-size:.78rem;cursor:pointer;font-family:Heebo,sans-serif;">🗑️ נקה</button>
+        <button id="hist-modal-close" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;">✕</button>
+      </div>
+    </div>
+    ${items||'<p style="color:var(--muted);text-align:center;padding:20px;">אין היסטוריה עדיין</p>'}`;
+    modal.appendChild(inner);
+    document.body.appendChild(modal);
+    document.getElementById('hist-modal-close').onclick=()=>modal.remove();
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+    document.getElementById('hist-modal-clear').onclick=()=>{
+      if(!confirm('למחוק את כל ההיסטוריה?'))return;
+      localStorage.removeItem('aretz_history');
+      fbSave('gameHistory',[]);
+      document.getElementById('game-history-section').style.display='none';
+      toast('🗑️ היסטוריה נמחקה');
+      modal.remove();
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── ROOM TEMPLATES ────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  function getTemplates(){
+    try{return JSON.parse(localStorage.getItem('aretz_templates')||'[]');}catch(e){return [];}
+  }
+  function saveTemplate(){
+    const name=prompt('שם לתבנית:');
+    if(!name||!name.trim())return;
+    const cats=Array.from(document.querySelectorAll('#cats-grid .cat-chip.sel')).map(el=>el.dataset.id||el.textContent.trim());
+    const cCats=[...S.cCats];
+    const timeBtn=document.querySelector('.time-btn.active');
+    const rTime=timeBtn?parseInt(timeBtn.dataset.v)||30:30;
+    const tpls=getTemplates();
+    tpls.unshift({name:name.trim(),cats,cCats,rTime,ts:Date.now(),
+      raceMode:document.getElementById('tog-race-el').classList.contains('on'),
+      bonusAnswer:document.getElementById('tog-bonus-el').classList.contains('on'),
+      creativeVote:document.getElementById('tog-creative-el').classList.contains('on')});
+    const tplsToSave=tpls.slice(0,10);
+    localStorage.setItem('aretz_templates',JSON.stringify(tplsToSave));
+    fbSave('templates',tplsToSave);
+    toast('✅ תבנית נשמרה!');
+  }
+  function showTemplatesModal(){
+    const tpls=getTemplates();
+    let modal=document.getElementById('templates-modal');
+    if(modal)modal.remove();
+    modal=document.createElement('div');
+    modal.id='templates-modal';
+    modal.style='position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;';
+    const inner=document.createElement('div');
+    inner.style='background:var(--surface);border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:70vh;overflow-y:auto;';
+    inner.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="font-size:1.1rem;font-weight:900;">📋 תבניות שמורות</h3>
+      <button id="tpl-modal-close" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;">✕</button>
+    </div>
+    <div id="tpl-list-inner">${tpls.length===0?'<p style="color:var(--muted);text-align:center;padding:20px;">אין תבניות שמורות עדיין</p>':tpls.map((t,i)=>`
+      <div class="tpl-card" data-i="${i}">
+        <div style="flex:1;">
+          <div class="tpl-name">${t.name}</div>
+          <div class="tpl-meta">${t.cCats&&t.cCats.length?[...t.cats,...t.cCats].join(', '):t.cats.join(', ')} · ${t.rTime===0?'∞':t.rTime+"שנ'"}${t.raceMode?' · 🏎️':''}</div>
+        </div>
+        <button class="tpl-del" data-del="${i}">🗑️</button>
+      </div>`).join('')}
+    </div>
+    <button class="btn btn-s" id="btn-save-tpl" style="margin-top:12px;">💾 שמור הגדרות נוכחיות כתבנית</button>`;
+    modal.appendChild(inner);
+    document.body.appendChild(modal);
+    document.getElementById('tpl-modal-close').onclick=()=>modal.remove();
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+    document.getElementById('btn-save-tpl').onclick=()=>{modal.remove();setTimeout(saveTemplate,100);};
+    inner.querySelectorAll('.tpl-card[data-i]').forEach(card=>{
+      card.onclick=(e)=>{
+        if(e.target.dataset.del!=null)return;
+        const t=tpls[parseInt(card.dataset.i)];
+        applyTemplate(t);
+        modal.remove();
+      };
+    });
+    inner.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick=(e)=>{
+        e.stopPropagation();
+        const idx=parseInt(btn.dataset.del);
+        tpls.splice(idx,1);
+        localStorage.setItem('aretz_templates',JSON.stringify(tpls));
+        fbSave('templates',tpls);
+        showTemplatesModal();
+      };
+    });
+  }
+  function applyTemplate(t){
+    // Select categories
+    document.querySelectorAll('#cats-grid .cat-chip').forEach(el=>{
+      el.classList.toggle('sel',t.cats.includes(el.dataset.id||el.textContent.trim()));
+    });
+    // Custom cats
+    S.cCats=t.cCats||[];
+    renderCCTags();
+    // Time
+    document.querySelectorAll('.time-btn').forEach(b=>{
+      b.classList.toggle('active',parseInt(b.dataset.v)===t.rTime);
+    });
+    S.rTime=t.rTime;
+    // Toggles
+    document.getElementById('tog-race-el').classList.toggle('on',!!t.raceMode);
+    document.getElementById('tog-bonus-el').classList.toggle('on',!!t.bonusAnswer);
+    document.getElementById('tog-creative-el').classList.toggle('on',t.creativeVote!==false);
+    toast('✅ תבנית הוחלה!');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── SHARE RESULTS ─────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  async function shareResults(){
+    try{
+      const snap=await get(ref(db,`rooms/${S.roomId}/players`));
+      const players=snap.val()||{};
+      const sorted=Object.entries(players).filter(([,p])=>!p.spectator)
+        .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+      const medals=['🥇','🥈','🥉'];
+      const lines=['🎮 ארץ עיר — תוצאות המשחק',''];
+      lines.push(`📝 קטגוריות: ${S.cats.map(c=>c.name).join(', ')}`);
+      lines.push('');
+      sorted.forEach(([pid,p],i)=>{
+        const m=medals[i]||`${i+1}.`;
+        const isMe=pid===S.pId?' ← אתה':'';
+        lines.push(`${m} ${p.name} — ${p.score||0} נק'${isMe}`);
+      });
+      lines.push('');
+      lines.push('🕹️ שחקו גם אתם! אמרו לחברים 🚀');
+      const text=lines.join('\n');
+      if(navigator.share){
+        await navigator.share({title:'ארץ עיר תוצאות',text});
+      }else{
+        await navigator.clipboard.writeText(text);
+        toast('📋 הועתק! שתף עם חברים 🚀');
+      }
+    }catch(e){toast('שגיאה בשיתוף');}
+  }
+
   document.getElementById('btn-sim-players').addEventListener('click',openSimPanel);
   document.getElementById('btn-sim-ingame').addEventListener('click',openSimPanel);
 
@@ -4662,6 +5168,24 @@
   document.getElementById('btn-next-round').addEventListener('click',nextRound);
   document.getElementById('btn-end-game').addEventListener('click',endGame);
   document.getElementById('btn-go-home').addEventListener('click',goHome);
+  document.getElementById('btn-share-results').addEventListener('click',shareResults);
+  document.getElementById('btn-show-templates').addEventListener('click',showTemplatesModal);
+  document.getElementById('btn-show-history').addEventListener('click', showHistoryModal);
+  // Race mode toggle
+  document.getElementById('tog-race-mode').addEventListener('click',()=>{
+    document.getElementById('tog-race-el').classList.toggle('on');
+  });
+  // Bonus answer toggle
+  document.getElementById('tog-bonus-ans').addEventListener('click',()=>{
+    document.getElementById('tog-bonus-el').classList.toggle('on');
+  });
+  // Creative vote toggle
+  document.getElementById('tog-creative-vote').addEventListener('click',()=>{
+    document.getElementById('tog-creative-el').classList.toggle('on');
+  });
+  // Tournament toggle
+  document.getElementById('btn-save-template-pre').addEventListener('click',saveTemplate);
+
   // Chat emoji picker
   const CHAT_EMOJIS=['😂','🔥','😮','❤️','👏','💀','🤣','😭','👍','🤔','😅','🎉','💯','🤯','😤','🥳','😎','🙏','💪','🤦'];
   document.getElementById('chat-emoji-btn').addEventListener('click',(e)=>{
