@@ -730,7 +730,7 @@
           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:700;transition:all .2s;"
           onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'"
           onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-          📋 טופס Google
+          📋 טופס Google — גם לבקשת תג Supporter
         </a>
         <a href="https://github.com/giamat13/LandAndCityOnline/issues" target="_blank" rel="noopener"
           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:700;transition:all .2s;"
@@ -860,6 +860,7 @@
       <button class="btn btn-g" id="start-btn" disabled>🎯 התחל משחק</button>
       <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
       <button id="btn-invite-tmp" class="btn btn-s" style="display:none;margin-top:10px;">📨 הזמן משתמש זמני</button>
+      <button id="btn-sim-players" class="btn btn-s" style="display:none;margin-top:10px;border-color:rgba(168,85,247,.4);color:#a855f7;font-size:.85rem;">🤖 הוסף שחקנים מדומים</button>
     </div>
     <div id="guest-wait" style="display:none;">
       <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
@@ -873,12 +874,19 @@
     <div class="r-hdr">
       <span class="rbadge">סיבוב <span id="rnd-num">1</span></span>
       <span id="timer-txt" style="font-size:1.3rem;font-weight:900;color:var(--orange);">60</span>
-      <button class="btn btn-s btn-sm" id="btn-exit-game" style="width:auto;padding:7px 14px;font-size:.78rem;">🚪 יציאה</button>
+      <div style="display:flex;gap:6px;">
+        <button id="btn-sim-ingame" style="display:none;background:rgba(168,85,247,.15);color:#a855f7;border:1.5px solid rgba(168,85,247,.35);border-radius:8px;padding:7px 10px;font-family:Heebo,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;">🤖</button>
+        <button class="btn btn-s btn-sm" id="btn-exit-game" style="width:auto;padding:7px 14px;font-size:.78rem;">🚪 יציאה</button>
+      </div>
     </div>
     <!-- category progress bar -->
     <div class="cat-prog-wrap">
       <div class="cat-prog-bar" id="cat-prog-bar"></div>
       <span class="cat-prog-label" id="cat-prog-label"></span>
+      <div id="cat-nav-btns" style="display:flex;gap:6px;flex-shrink:0;">
+        <button id="btn-prev-cat" style="display:none;background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-family:Heebo,sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="חזור לקטגוריה הקודמת">← חזור</button>
+        <button id="btn-next-cat" style="display:none;background:linear-gradient(135deg,var(--orange),#d4881a);color:#fff;border:none;border-radius:8px;padding:4px 10px;font-family:Heebo,sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="המשך לקטגוריה הבאה">המשך ⏭</button>
+      </div>
     </div>
     <div class="ltr"><div class="big-l" id="cur-letter">א</div></div>
     <div class="tb-wrap"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
@@ -922,7 +930,7 @@
   <!-- VOTING -->
   <div id="screen-vote" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:6px;">
-      <button class="btn btn-s btn-sm" style="width:auto" onclick="exitGame()">🚪 יציאה</button>
+      <button class="btn btn-s btn-sm" style="width:auto" id="btn-exit-vote">🚪 יציאה</button>
       <h2 style="font-size:1.5rem;font-weight:900;">🗳️ הצבעת פסילה</h2>
       <div style="width:60px;"></div>
     </div>
@@ -942,7 +950,7 @@
   <!-- RESULTS -->
   <div id="screen-results" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:6px;">
-      <button class="btn btn-s btn-sm" style="width:auto" onclick="exitGame()">🚪 יציאה</button>
+      <button class="btn btn-s btn-sm" style="width:auto" id="btn-exit-results">🚪 יציאה</button>
       <div style="text-align:center;">
         <div style="font-size:2rem;margin-bottom:4px;">🏆</div>
         <h2 style="font-size:1.5rem;font-weight:900;">תוצאות סיבוב <span id="res-rnd">1</span></h2>
@@ -1081,6 +1089,18 @@
   // Called after login — pull all user data from Firebase and apply locally
   // Apply a cloud profile object to all local state variables + UI
   function _applyProfile(p) {
+    // Safety 1: don't apply if profile hasn't actually changed
+    const existing = (() => { try { return JSON.parse(localStorage.getItem('lac_profile')); } catch(e) { return null; } })();
+    if (existing && existing._updatedAt === p._updatedAt && existing.name === p.name) {
+      console.log('_applyProfile: no change, skipping UI update');
+      return;
+    }
+
+    // Safety 2: don't disrupt active game screens
+    const activeScreen = document.querySelector('.screen.active')?.id || '';
+    const gameScreens = ['screen-game','screen-vote','screen-results','screen-final','screen-lobby'];
+    const inGame = gameScreens.includes(activeScreen);
+
     // 1. Update all state variables
     S.pName = p.name;
     S_pColor = p.color || AVATAR_COLORS[0];
@@ -1098,14 +1118,35 @@
     localStorage.setItem('lac_profile', JSON.stringify(p));
     if (p.refId) { try { localStorage.setItem('lac_refid', p.refId); } catch(e){} }
 
-    // 3. Update hidden name input (used elsewhere in app)
+    // 3. Update hidden name input (always safe)
     const playerNameEl = document.getElementById('player-name');
     if (playerNameEl) playerNameEl.value = p.name;
 
-    // 4. Re-render the full profile screen (pickers, inputs, preview)
-    setupProfileScreen();
+    // Safety 3: skip all visual UI updates if in active game
+    if (inGame) {
+      console.log('_applyProfile: in game, skipping UI refresh');
+      return;
+    }
 
-    // 5. Update home screen identity bar (name + color + emoji + frame + tag)
+    // 4. Update profile screen inputs
+    const profNameEl = document.getElementById('prof-name');
+    if (profNameEl) profNameEl.value = p.name;
+    const profRoomEl = document.getElementById('prof-room-name');
+    if (profRoomEl) profRoomEl.value = p.roomName || '';
+
+    // Safety 4: only re-render pickers if profile screen is currently visible
+    if (activeScreen === 'screen-profile') {
+      initAvPicker();
+      initEmojiPicker();
+      initFramePicker();
+      initTagInput();
+      initEntryPicker();
+      updateProfilePreview();
+      updateDevCodeStatus();
+      renderBadgePicker();
+    }
+
+    // 5. Always update home identity bar (lightweight, no jumps)
     updateHomeIdentity();
   }
 
@@ -2072,6 +2113,12 @@
       bar.appendChild(d);
     }
     document.getElementById('cat-prog-label').textContent=`${idx+1}/${total}`;
+    // Show/hide nav buttons for host
+    const prevBtn=document.getElementById('btn-prev-cat');
+    const nextBtn=document.getElementById('btn-next-cat');
+    const showNav=(S.isHost&&idx>0);
+    if(prevBtn) prevBtn.style.display=showNav?'block':'none';
+    if(nextBtn) nextBtn.style.display=showNav?'block':'none';
   }
 
   // ─── SUBMISSION PIPS UI ───────────────────────────────────────────
@@ -2729,6 +2776,9 @@
     const _upBtn=document.getElementById('btn-spectator-upgrade');
     if(_settingsBtn) _settingsBtn.style.display=S.isHost?'inline-flex':'none';
     if(_inviteBtn) _inviteBtn.style.display=(S.isHost&&S.isPermanent)?'flex':'none';
+    const _simBtn=document.getElementById('btn-sim-players');
+    const _isDev=S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev');
+    if(_simBtn) _simBtn.style.display=(S.isHost&&_isDev)?'flex':'none';
     if(_upBtn) _upBtn.style.display=S.isSpectator?'block':'none';
     const _becomeSpecBtn=document.getElementById('btn-become-spectator');
     if(_becomeSpecBtn) _becomeSpecBtn.style.display=(!S.isSpectator&&!S.isHost)?'block':'none';
@@ -2989,7 +3039,156 @@
   };
 
   // ─── START GAME ───────────────────────────────────────────────────
-  async function startGame(){
+  // ─── BOT SIMULATION (dev only) ───────────────────────────────────
+  const BOT_NAMES = ['רובוט 🤖','בוט 👾','דאמי 🎭','שחקן AI 🧠','סימולציה 🔬','בוט-7 🦾','גולם 🏺','אנדרואיד 📱'];
+  const BOT_ANSWERS = {
+    'עיר':   ['תל אביב','ירושלים','חיפה','באר שבע','נתניה','רמת גן','פתח תקווה','ראשון לציון'],
+    'ארץ':   ['ישראל','איטליה','אירלנד','אינדונזיה','אינדיה','אוסטריה','אוסטרליה','אנגולה'],
+    'חי':    ['אריה','ארנב','איל','אפריקאי','אחדון','אנקור','אנקה','אגמון'],
+    'צמח':   ['אורן','אלה','אתרוג','אגס','אוכמנייה','אפרסק','אגוז','אלמוג'],
+    'מקצוע': ['אחות','אדריכל','עורך דין','עיתונאי','רופא','מורה','שחקן','מהנדס'],
+    'סרט':   ['אריאל','אנה','אלדין','אנטמן','אווטאר','איירון מן','אלפא','אפוקליפסה'],
+  };
+
+  async function addSimPlayers(count=3){
+    if(!S.isHost||!S.roomId)return;
+    const colors=['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#f97316','#06b6d4'];
+    const updates={};
+    for(let i=0;i<count;i++){
+      const bid='BOT_'+gid(6);
+      const name=BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)]+' '+(i+1);
+      const color=colors[(i+3)%colors.length];
+      updates[`rooms/${S.roomId}/players/${bid}`]={
+        name, score:0, joinedAt:Date.now()+i*10,
+        isHost:false, color, isBot:true,
+        devRole:null, emoji:null, frame:null, tag:'🤖 בוט', entryEffect:'none',
+        supporterLevel:0, activeBadge:'none'
+      };
+    }
+    await update(ref(db,'/'), updates);
+    toast(`נוספו ${count} שחקנים מדומים 🤖`);
+  }
+
+  function _getBotAnswer(){
+    const cat=S.cats[S.currentCatIndex];
+    const letter=S.letter||'א';
+    const pool=BOT_ANSWERS[cat?.name]||BOT_ANSWERS['עיר'];
+    const matching=pool.filter(a=>a.startsWith(letter));
+    return matching.length ? matching[Math.floor(Math.random()*matching.length)] : letter+'...';
+  }
+
+  async function submitSingleBot(bid){
+    if(!S.isHost||!S.roomId)return null;
+    const cat=S.cats[S.currentCatIndex];
+    if(!cat){toast('אין קטגוריה פעילה');return null;}
+    const ans=_getBotAnswer();
+    const bonus=Math.floor(Math.random()*4);
+    await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${bid}`),{
+      answers:[ans], submittedAt:Date.now(), score:5+bonus
+    });
+    return ans;
+  }
+
+  async function submitBotAnswers(){
+    if(!S.isHost||!S.roomId)return;
+    const snap=await get(ref(db,`rooms/${S.roomId}/players`));
+    const players=snap.val()||{};
+    const bots=Object.entries(players).filter(([,p])=>p.isBot);
+    if(!bots.length)return;
+    const cat=S.cats[S.currentCatIndex];
+    if(!cat)return;
+    const updates={};
+    bots.forEach(([bid])=>{
+      const ans=_getBotAnswer();
+      const bonus=Math.floor(Math.random()*4);
+      updates[`rooms/${S.roomId}/catAnswers/${cat.id}/${bid}`]={
+        answers:[ans], submittedAt:Date.now(), score:5+bonus
+      };
+    });
+    await update(ref(db,'/'),updates);
+  }
+
+  async function removeSimPlayers(){
+    if(!S.isHost||!S.roomId)return;
+    const snap=await get(ref(db,`rooms/${S.roomId}/players`));
+    const players=snap.val()||{};
+    const updates={};
+    Object.entries(players).filter(([,p])=>p.isBot).forEach(([bid])=>{
+      updates[`rooms/${S.roomId}/players/${bid}`]=null;
+    });
+    if(Object.keys(updates).length){
+      await update(ref(db,'/'),updates);
+      toast('שחקנים מדומים הוסרו 🗑️');
+    }
+  }
+
+  async function renderSimBotList(){
+    const listEl=document.getElementById('sim-bot-list');
+    if(!listEl||!S.roomId)return;
+    const snap=await get(ref(db,`rooms/${S.roomId}/players`));
+    const players=snap.val()||{};
+    const bots=Object.entries(players).filter(([,p])=>p.isBot);
+    if(!bots.length){
+      listEl.innerHTML='<div style="font-size:.78rem;color:var(--muted);padding:8px 0;">אין בוטים כרגע</div>';
+      return;
+    }
+    listEl.innerHTML=bots.map(([bid,p])=>`
+      <div style="display:flex;align-items:center;gap:8px;background:var(--s2);border-radius:10px;padding:9px 12px;margin-bottom:6px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:${p.color||'#a855f7'}33;color:${p.color||'#a855f7'};display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;">🤖</div>
+        <div style="flex:1;font-size:.82rem;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
+        <button data-bid="${bid}" class="sim-single-btn" style="background:rgba(15,186,129,.12);color:var(--green);border:1px solid rgba(15,186,129,.3);border-radius:7px;padding:5px 10px;font-family:Heebo,sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">✅ שלח</button>
+        <button data-bid="${bid}" class="sim-del-btn" style="background:none;border:1px solid rgba(233,69,96,.2);color:var(--red);border-radius:7px;padding:5px 8px;font-family:Heebo,sans-serif;font-size:.78rem;cursor:pointer;flex-shrink:0;">🗑️</button>
+      </div>`).join('');
+    listEl.querySelectorAll('.sim-single-btn').forEach(btn=>{
+      btn.onclick=async()=>{
+        btn.disabled=true;btn.textContent='⏳';
+        const ans=await submitSingleBot(btn.dataset.bid);
+        btn.textContent='✓ '+(ans||'נשלח');
+        btn.style.opacity='.5';
+      };
+    });
+    listEl.querySelectorAll('.sim-del-btn').forEach(btn=>{
+      btn.onclick=async()=>{
+        await update(ref(db,'/'),{[`rooms/${S.roomId}/players/${btn.dataset.bid}`]:null});
+        renderSimBotList();
+      };
+    });
+  }
+
+  function openSimPanel(){
+    document.getElementById('sim-panel')?.remove();
+    const panel=document.createElement('div');
+    panel.id='sim-panel';
+    panel.style.cssText='position:fixed;inset:0;z-index:3500;background:rgba(7,7,18,.9);backdrop-filter:blur(8px);padding:24px 16px;overflow-y:auto;';
+    panel.innerHTML=`
+      <div style="max-width:400px;margin:30px auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h2 style="font-size:1.2rem;font-weight:900;">🤖 שחקנים מדומים</h2>
+          <button id="sim-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;">&#215; סגור</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button class="btn btn-s" id="sim-add-2" style="flex:1;font-size:.85rem;">+ 2 בוטים</button>
+          <button class="btn btn-s" id="sim-add-5" style="flex:1;font-size:.85rem;">+ 5 בוטים</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button class="btn btn-s" id="sim-submit-all" style="flex:1;border-color:rgba(15,186,129,.4);color:var(--green);font-size:.82rem;">✅ שלח לכולם</button>
+          <button class="btn btn-s" id="sim-remove" style="flex:1;border-color:rgba(233,69,96,.3);color:var(--red);font-size:.82rem;">🗑️ הסר הכל</button>
+        </div>
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px;">בוטים פעילים</div>
+        <div id="sim-bot-list"></div>
+        <div id="sim-status" style="font-size:.75rem;color:var(--green);margin-top:8px;min-height:16px;"></div>
+      </div>`;
+    document.body.appendChild(panel);
+    const st=txt=>{ const el=document.getElementById('sim-status'); if(el) el.textContent=txt; };
+    document.getElementById('sim-close').onclick=()=>panel.remove();
+    document.getElementById('sim-add-2').onclick=async()=>{await addSimPlayers(2);st('נוספו 2 בוטים ✓');renderSimBotList();};
+    document.getElementById('sim-add-5').onclick=async()=>{await addSimPlayers(5);st('נוספו 5 בוטים ✓');renderSimBotList();};
+    document.getElementById('sim-submit-all').onclick=async()=>{await submitBotAnswers();st('תשובות נשלחו לכולם ✓');renderSimBotList();};
+    document.getElementById('sim-remove').onclick=async()=>{await removeSimPlayers();st('בוטים הוסרו ✓');renderSimBotList();};
+    renderSimBotList();
+  }
+
+    async function startGame(){
     const s=await get(ref(db,`rooms/${S.roomId}/players`));
     const allPs=s.val()||{};
     const activePlayers=Object.entries(getEligible(allPs));
@@ -3098,6 +3297,12 @@
       document.getElementById('submit-btn').disabled=false;
     }
     showScreen('game');
+    // Show bot button for dev hosts
+    const _simIngame=document.getElementById('btn-sim-ingame');
+    if(_simIngame){
+      const _isDev=S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev');
+      _simIngame.style.display=(S.isHost&&_isDev)?'flex':'none';
+    }
     // Trigger game tutorial on first cat of first game
     if(S.currentCatIndex===0 && S.rNum===1) setTimeout(()=>tryStartTut('game'),600);
 
@@ -3167,16 +3372,11 @@
       if(S.isHost&&cnt>=total&&total>0){
         clearInterval(S.timerInt);
         await advanceCat();
-        // Show manual override button 2.5s later in case auto-advance failed
+        // Show next button in progress bar 2.5s later in case auto-advance failed
         setTimeout(()=>{
-          if(!document.getElementById('force-advance-btn')){
-            const forceBtn=document.createElement('button');
-            forceBtn.id='force-advance-btn';
-            forceBtn.style.cssText='margin-top:12px;width:100%;background:linear-gradient(135deg,var(--orange),#d4881a);color:#fff;border:none;border-radius:12px;padding:12px;font-family:"Heebo",sans-serif;font-size:1rem;font-weight:700;cursor:pointer;';
-            forceBtn.textContent='⏭ המשך (כולם הגישו)';
-            forceBtn.addEventListener('click',async()=>{forceBtn.disabled=true;S.advancing=false;await advanceCat();});
-            const ansArea=document.getElementById('answer-area');
-            if(ansArea)ansArea.appendChild(forceBtn);
+          const nextBtn=document.getElementById('btn-next-cat');
+          if(nextBtn&&nextBtn.style.display==='none'){
+            nextBtn.style.display='block';
           }
         },2500);
       }
@@ -3383,6 +3583,42 @@
       toast('⚠️ שגיאה בהעברת קטגוריה, מנסה שוב...');
     }finally{
       // Always reset guard so future calls can proceed
+      S.advancing=false;
+    }
+  }
+
+  // ─── BACK CATEGORY (host only) ───────────────────────────────────
+  async function backCat(){
+    if(!S.isHost)return;
+    if(S.currentCatIndex<=0){toast('זו הקטגוריה הראשונה');return;}
+    if(S.advancing)return;
+    S.advancing=true;
+    try{
+      const prevIdx=S.currentCatIndex-1;
+      const prevCat=S.cats[prevIdx];
+      // Clear answers for the category we're leaving AND the one we're going back to
+      const curCat=S.cats[S.currentCatIndex];
+      const updates={};
+      if(curCat) updates[`rooms/${S.roomId}/catAnswers/${curCat.id}`]=null;
+      if(prevCat) updates[`rooms/${S.roomId}/catAnswers/${prevCat.id}`]=null;
+      updates[`rooms/${S.roomId}/currentCatIndex`]=prevIdx;
+      updates[`rooms/${S.roomId}/catStartedAt`]=Date.now();
+      updates[`rooms/${S.roomId}/lastActivity`]=Date.now();
+      if(S.uniqueLetters){
+        let newLetter;
+        do{newLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];}while(newLetter===S.letter);
+        S.letter=newLetter;
+        updates[`rooms/${S.roomId}/letter`]=newLetter;
+      }
+      // Reset timer
+      clearInterval(S.timerInt);
+      S.timeLeft=S.rTime;
+      await update(ref(db,'/'),updates);
+      toast('חזרת לקטגוריה הקודמת ⬅️');
+    }catch(e){
+      console.error('backCat error:',e);
+      toast('שגיאה בחזרה לקטגוריה');
+    }finally{
       S.advancing=false;
     }
   }
@@ -4388,12 +4624,23 @@
   });
   document.getElementById('btn-room-settings').addEventListener('click',openRoomSettings);
   document.getElementById('btn-invite-tmp').addEventListener('click',openInvitePanel);
+  document.getElementById('btn-sim-players').addEventListener('click',openSimPanel);
+  document.getElementById('btn-sim-ingame').addEventListener('click',openSimPanel);
 
   document.getElementById('code-box').addEventListener('click',copyCode);
   document.getElementById('btn-share-link').addEventListener('click',shareLink);
   document.getElementById('start-btn').addEventListener('click',startGame);
   document.getElementById('submit-btn').addEventListener('click',submitCatAnswer);
   document.getElementById('btn-exit-game').addEventListener('click',exitGame);
+  document.getElementById('btn-exit-vote').addEventListener('click',exitGame);
+  document.getElementById('btn-exit-results').addEventListener('click',exitGame);
+  document.getElementById('btn-prev-cat').addEventListener('click',()=>backCat());
+  document.getElementById('btn-next-cat').addEventListener('click',async()=>{
+    const nextBtn=document.getElementById('btn-next-cat');
+    if(nextBtn)nextBtn.style.display='none';
+    S.advancing=false;
+    await advanceCat();
+  });
   document.getElementById('btn-show-results').addEventListener('click',commitVotingAndShowResults);
   document.getElementById('btn-next-round').addEventListener('click',nextRound);
   document.getElementById('btn-end-game').addEventListener('click',endGame);
