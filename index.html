@@ -648,6 +648,36 @@
       </div>
     </div>
 
+    <!-- AUTH SECTION -->
+    <div class="card" id="auth-card" style="margin-top:8px;">
+      <h3>🔐 חשבון (אופציונלי)</h3>
+      <div id="auth-logged-out" style="margin-top:8px;">
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px;line-height:1.6;">
+          התחבר לחשבון כדי לשמור את הפרופיל שלך, הגדרות והחדרים שלך בענן — וגש אליהם מכל מכשיר.
+        </div>
+        <button class="btn btn-s" id="btn-auth-google" style="gap:10px;margin-bottom:8px;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;"> התחבר עם Google
+        </button>
+        <button class="btn btn-s" id="btn-auth-email" style="opacity:.85;font-size:.9rem;">✉️ כניסה / הרשמה עם אימייל</button>
+      </div>
+      <div id="auth-logged-in" style="display:none;">
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+          <div id="auth-user-avatar" style="width:38px;height:38px;border-radius:50%;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;overflow:hidden;"></div>
+          <div style="flex:1;min-width:0;">
+            <div id="auth-user-name" style="font-weight:700;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            <div id="auth-user-email" style="font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+          </div>
+          <span style="font-size:.72rem;background:rgba(15,186,129,.15);color:var(--green);border:1px solid rgba(15,186,129,.3);padding:3px 8px;border-radius:100px;font-weight:700;">✓ מחובר</span>
+        </div>
+        <div style="font-size:.74rem;color:var(--muted);margin-bottom:10px;">הנתונים שלך מסונכרנים לענן בזמן אמת</div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button class="btn btn-s btn-sm" id="btn-sync-cloud" style="width:auto;flex:1;">☁️ סנכרן עכשיו</button>
+          <button class="btn btn-s btn-sm" id="btn-auth-logout" style="width:auto;opacity:.7;">🚪 התנתק</button>
+        </div>
+        <div id="sync-status" style="font-size:.72rem;margin-top:6px;min-height:16px;"></div>
+      </div>
+    </div>
+
     <button class="btn btn-p" id="btn-profile-continue" style="margin-top:8px;">שמור והמשך ←</button>
   </div>
 
@@ -1005,6 +1035,11 @@
   import {
     getDatabase,ref,set,get,update,onValue,off,remove,onDisconnect
   } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+  import {
+    getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,
+    createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,
+    sendPasswordResetEmail
+  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 
   const fb = initializeApp({
     apiKey:"AIzaSyAnUco7dP5UlbIQLzDXaGO1rEeu1LiLvEc",
@@ -1018,6 +1053,153 @@
   });
   getAnalytics(fb);
   const db = getDatabase(fb);
+  const auth = getAuth(fb);
+  let currentUser = null;
+  window._dbg = { getAuth:()=>auth, getUser:()=>currentUser, getDb:()=>db };
+
+  // ─── FIREBASE SYNC HELPERS ────────────────────────────────────────
+  // Keys that are synced to Firebase when user is logged in
+  // lac_s (session) is intentionally NOT synced — it's device-specific
+  const FB_SYNC_KEYS = ['profile','myrooms','theme','tut'];
+
+  async function fbSave(key, data) {
+    if (!currentUser) return;
+    try {
+      await currentUser.getIdToken(true); // ensure DB has fresh auth token
+      await set(ref(db,'users/'+currentUser.uid+'/'+key), data);
+    } catch(e) { console.warn('fbSave error', e); }
+  }
+  async function fbLoad(key) {
+    if (!currentUser) return null;
+    try {
+      await currentUser.getIdToken(true);
+      const snap = await get(ref(db,'users/'+currentUser.uid+'/'+key));
+      return snap.exists() ? snap.val() : null;
+    } catch(e) { return null; }
+  }
+
+  // Called after login — pull all user data from Firebase and apply locally
+  // Apply a cloud profile object to all local state variables + UI
+  function _applyProfile(p) {
+    S.pName = p.name;
+    S_pColor = p.color || AVATAR_COLORS[0];
+    S_pEmoji = p.emoji || null;
+    S_pFrame = p.frame || null;
+    S_pTag = p.tag || null;
+    S_pEntry = p.entry || 'none';
+    S_pRoomName = p.roomName || '';
+    S_pDevRoles = Array.isArray(p.devRoles) ? p.devRoles : [];
+    S_pRefId = p.refId || null;
+    S_pSupporterLevel = p.supporterLevel || 0;
+    S_pActiveBadge = p.activeBadge || 'auto';
+    localStorage.setItem('lac_profile', JSON.stringify(p));
+    // sync lac_refid too
+    if (p.refId) { try { localStorage.setItem('lac_refid', p.refId); } catch(e){} }
+    // update all UI elements
+    const playerNameEl = document.getElementById('player-name');
+    if (playerNameEl) playerNameEl.value = p.name;
+    const profNameEl = document.getElementById('prof-name');
+    if (profNameEl) profNameEl.value = p.name;
+    const profRoomEl = document.getElementById('prof-room-name');
+    if (profRoomEl) profRoomEl.value = p.roomName || '';
+    const profTagEl = document.getElementById('prof-tag-inp');
+    if (profTagEl) profTagEl.value = p.tag || '';
+    initAvPicker(); initEmojiPicker(); initFramePicker(); initTagInput(); initEntryPicker();
+    updateProfilePreview();
+    // update home screen identity bar
+    if (typeof updateHomeIdentity === 'function') updateHomeIdentity();
+    // update dev roles UI
+    if (typeof updateDevCodeStatus === 'function') updateDevCodeStatus();
+    // update badge picker
+    if (typeof renderBadgePicker === 'function') renderBadgePicker();
+    // update supporter card if visible
+    if (p.refId && typeof initSupporterCard === 'function') {
+      initSupporterCard();
+    }
+  }
+
+  async function syncFromFirebase() {
+    if (!currentUser) return;
+    try {
+      await currentUser.getIdToken(true);
+      const snap = await get(ref(db,'users/'+currentUser.uid));
+
+      // ── local data (with timestamps) ──
+      const localProfile  = (() => { try { return JSON.parse(localStorage.getItem('lac_profile')); }  catch(e){ return null; } })();
+      const localRooms    = (() => { try { return JSON.parse(localStorage.getItem('lac_myrooms')||'[]'); } catch(e){ return []; } })();
+      const localTheme    = (() => { try { return localStorage.getItem('lac_theme')||'dark'; } catch(e){ return 'dark'; } })();
+      const localTut      = (() => { try { return localStorage.getItem('etz_tut_v1')||null; } catch(e){ return null; } })();
+
+      if (!snap.exists()) {
+        // First ever login — upload local data to cloud
+        const pushData = { _updatedAt: Date.now() };
+        if (localProfile) pushData.profile = { ...localProfile, _updatedAt: Date.now() };
+        if (localRooms.length) pushData.myrooms = localRooms;
+        if (localTheme) pushData.theme = localTheme;
+        if (localTut) pushData.tut = localTut;
+        await set(ref(db,'users/'+currentUser.uid), pushData);
+        console.log('First sync: uploaded local data to cloud');
+        return;
+      }
+
+      const cloud = snap.val();
+
+      // ── PROFILE: last-write-wins by _updatedAt ──
+      const cloudProfile = cloud.profile || null;
+      const localTs  = localProfile?._updatedAt || 0;
+      const cloudTs  = cloudProfile?._updatedAt || 0;
+      if (cloudProfile && cloudProfile.name) {
+        if (cloudTs > localTs) {
+          // Cloud is newer → apply cloud
+          _applyProfile(cloudProfile);
+          console.log('Sync: applied cloud profile (cloud ts:', cloudTs, '> local ts:', localTs, ')');
+        } else if (localTs > cloudTs) {
+          // Local is newer → push local to cloud
+          const updated = { ...localProfile, _updatedAt: localTs };
+          await set(ref(db,'users/'+currentUser.uid+'/profile'), updated);
+          console.log('Sync: pushed local profile to cloud (local ts:', localTs, '> cloud ts:', cloudTs, ')');
+        }
+      } else if (localProfile && localProfile.name) {
+        // No cloud profile yet → upload local
+        const updated = { ...localProfile, _updatedAt: Date.now() };
+        await set(ref(db,'users/'+currentUser.uid+'/profile'), updated);
+        console.log('Sync: no cloud profile, uploaded local');
+      }
+
+      // ── MY ROOMS: merge by savedAt, keep newest 10 ──
+      const cloudRooms = cloud.myrooms
+        ? (Array.isArray(cloud.myrooms) ? cloud.myrooms : Object.values(cloud.myrooms))
+        : [];
+      if (cloudRooms.length || localRooms.length) {
+        const merged = [...cloudRooms, ...localRooms];
+        const seen = new Set();
+        const deduped = merged
+          .filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; })
+          .sort((a,b) => (b.savedAt||0) - (a.savedAt||0))
+          .slice(0,10);
+        localStorage.setItem('lac_myrooms', JSON.stringify(deduped));
+        await set(ref(db,'users/'+currentUser.uid+'/myrooms'), deduped);
+        renderMyRooms();
+      }
+
+      // ── THEME: last-write-wins ──
+      const cloudThemeTs = cloud.themeTs || 0;
+      const localThemeTs = (() => { try { return parseInt(localStorage.getItem('lac_theme_ts')||'0'); } catch(e){ return 0; } })();
+      if (cloud.theme && cloudThemeTs >= localThemeTs) {
+        applyTheme(cloud.theme);
+      } else if (localTheme && localThemeTs > cloudThemeTs) {
+        await set(ref(db,'users/'+currentUser.uid+'/theme'), localTheme);
+        await set(ref(db,'users/'+currentUser.uid+'/themeTs'), localThemeTs);
+      }
+
+      // ── TUTORIAL FLAG: if either side has it, keep it ──
+      if (cloud.tut || localTut) {
+        try { localStorage.setItem('etz_tut_v1','1'); } catch(e){}
+        if (!cloud.tut) await set(ref(db,'users/'+currentUser.uid+'/tut'),'1');
+      }
+
+    } catch(e) { console.warn('Firebase sync error:', e); throw e; }
+  }
 
   const LETTERS='אבגדהוזחטיכלמנסעפצקרשת'.split('');
   const AVATAR_COLORS=['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#f97316','#06b6d4','#84cc16','#ef4444'];
@@ -1308,12 +1490,13 @@
 
   // ─── PROFILE PERSISTENCE ──────────────────────────────────────────
   function saveProfile(){
-    try{localStorage.setItem('lac_profile',JSON.stringify({
-      name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
+    const _pd={name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
       tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,
       devRoles:S_pDevRoles,
-      refId:S_pRefId,supporterLevel:S_pSupporterLevel,activeBadge:S_pActiveBadge
-    }));}catch(e){}
+      refId:S_pRefId,supporterLevel:S_pSupporterLevel,activeBadge:S_pActiveBadge,
+      _updatedAt:Date.now()};
+    try{localStorage.setItem('lac_profile',JSON.stringify(_pd));}catch(e){}
+    fbSave('profile',_pd);
   }
   function loadProfile(){
     try{
@@ -1423,7 +1606,7 @@
     if(refFrom&&refFrom.length>4){
       // Don't count your own link
       let myId=null;
-      try{myId=localStorage.getItem('lac_refid');}catch(e){}
+      try{myId=localStorage.getItem('lac_refid')||S_pRefId;}catch(e){}
       if(refFrom!==myId){
         incrementRef(refFrom);
       }
@@ -1438,13 +1621,16 @@
     try{
       const rooms=loadMyRooms().filter(r=>r.id!==roomId);
       rooms.unshift({id:roomId,name:roomName,cats,savedAt:Date.now()});
-      localStorage.setItem('lac_myrooms',JSON.stringify(rooms.slice(0,10)));
+      const updated=rooms.slice(0,10);
+      localStorage.setItem('lac_myrooms',JSON.stringify(updated));
+      fbSave('myrooms',updated);
     }catch(e){}
   }
   function deleteMyRoom(roomId){
     try{
       const rooms=loadMyRooms().filter(r=>r.id!==roomId);
       localStorage.setItem('lac_myrooms',JSON.stringify(rooms));
+      fbSave('myrooms',rooms);
     }catch(e){}
   }
   function renderMyRooms(){
@@ -1540,7 +1726,10 @@
   function applyTheme(theme){
     currentTheme=theme;
     document.documentElement.setAttribute('data-theme',theme);
-    try{localStorage.setItem('lac_theme',theme);}catch(e){}
+    try{localStorage.setItem('lac_theme',theme);localStorage.setItem('lac_theme_ts',Date.now().toString());}catch(e){}
+    const _ts=Date.now();
+    fbSave('theme',theme);
+    fbSave('themeTs',_ts);
     document.querySelectorAll('.theme-btn').forEach(b=>{
       b.classList.toggle('active',b.dataset.theme===theme);
     });
@@ -4402,7 +4591,7 @@
   let tutTooltipEl = null;
 
   function isTutDone() { return !!localStorage.getItem(TUT_KEY); }
-  function markTutDone() { localStorage.setItem(TUT_KEY, '1'); }
+  function markTutDone() { localStorage.setItem(TUT_KEY, '1'); fbSave('tut','1'); }
 
   function tryStartTut(screen) {
     if (isTutDone()) return;
@@ -4611,8 +4800,189 @@
     document.getElementById('tut-bro-play').addEventListener('click',()=>ov.remove());
   }
 
+  // ─── AUTH LOGIC ──────────────────────────────────────────────────
+  let _authModalMode = 'login';
+
+  function openAuthModal() {
+    document.getElementById('auth-modal').style.display = 'block';
+    document.getElementById('auth-error').textContent = '';
+    document.getElementById('auth-email-inp').value = '';
+    document.getElementById('auth-pass-inp').value = '';
+  }
+  function closeAuthModal() {
+    document.getElementById('auth-modal').style.display = 'none';
+  }
+  function setAuthMode(mode) {
+    _authModalMode = mode;
+    document.getElementById('auth-tab-login').classList.toggle('active', mode === 'login');
+    document.getElementById('auth-tab-signup').classList.toggle('active', mode === 'signup');
+    document.getElementById('auth-modal-submit').textContent = mode === 'login' ? 'כניסה →' : 'הרשמה →';
+    document.getElementById('auth-forgot').style.display = mode === 'login' ? 'block' : 'none';
+    document.getElementById('auth-error').textContent = '';
+  }
+  function authErrMsg(code) {
+    const map = {
+      'auth/user-not-found': 'משתמש לא קיים',
+      'auth/wrong-password': 'סיסמה שגויה',
+      'auth/email-already-in-use': 'אימייל כבר רשום',
+      'auth/weak-password': 'סיסמה חלשה מדי (מינימום 6 תווים)',
+      'auth/invalid-email': 'אימייל לא תקין',
+      'auth/popup-closed-by-user': '',
+      'auth/cancelled-popup-request': '',
+      'auth/too-many-requests': 'יותר מדי ניסיונות, נסה מאוחר יותר',
+      'auth/invalid-credential': 'פרטים שגויים',
+    };
+    return map[code] || 'שגיאה: ' + code;
+  }
+
+  function updateAuthUI() {
+    const loggedOut = document.getElementById('auth-logged-out');
+    const loggedIn  = document.getElementById('auth-logged-in');
+    if (!loggedOut || !loggedIn) return;
+    if (currentUser) {
+      loggedOut.style.display = 'none';
+      loggedIn.style.display  = 'block';
+      // Avatar
+      const av = document.getElementById('auth-user-avatar');
+      if (currentUser.photoURL) {
+        av.innerHTML = '<img src="' + currentUser.photoURL + '" style="width:100%;height:100%;object-fit:cover;">';
+      } else {
+        av.textContent = (currentUser.displayName || currentUser.email || '?').charAt(0).toUpperCase();
+        av.style.background = 'var(--s2)';
+      }
+      document.getElementById('auth-user-name').textContent = currentUser.displayName || 'משתמש';
+      document.getElementById('auth-user-email').textContent = currentUser.email || '';
+    } else {
+      loggedOut.style.display = 'block';
+      loggedIn.style.display  = 'none';
+    }
+  }
+
+  // Wire auth buttons (once DOM is ready)
+  document.getElementById('auth-modal-close').addEventListener('click', closeAuthModal);
+  document.getElementById('auth-tab-login').addEventListener('click', () => setAuthMode('login'));
+  document.getElementById('auth-tab-signup').addEventListener('click', () => setAuthMode('signup'));
+
+  document.getElementById('auth-modal-google').addEventListener('click', async () => {
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+      closeAuthModal();
+    } catch(e) {
+      const msg = authErrMsg(e.code);
+      if (msg) document.getElementById('auth-error').textContent = msg;
+    }
+  });
+
+  document.getElementById('auth-modal-submit').addEventListener('click', async () => {
+    const email = document.getElementById('auth-email-inp').value.trim();
+    const pass  = document.getElementById('auth-pass-inp').value;
+    const errEl = document.getElementById('auth-error');
+    if (!email || !pass) { errEl.textContent = 'נא למלא אימייל וסיסמה'; return; }
+    try {
+      if (_authModalMode === 'login') {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } else {
+        await createUserWithEmailAndPassword(auth, email, pass);
+      }
+      closeAuthModal();
+    } catch(e) {
+      errEl.textContent = authErrMsg(e.code) || e.message;
+    }
+  });
+
+  document.getElementById('auth-forgot').addEventListener('click', async () => {
+    const email = document.getElementById('auth-email-inp').value.trim();
+    if (!email) { document.getElementById('auth-error').textContent = 'הכנס אימייל קודם'; return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      document.getElementById('auth-error').style.color = 'var(--green)';
+      document.getElementById('auth-error').textContent = 'נשלח מייל לאיפוס סיסמה!';
+    } catch(e) {
+      document.getElementById('auth-error').style.color = 'var(--red)';
+      document.getElementById('auth-error').textContent = authErrMsg(e.code);
+    }
+  });
+
+  document.getElementById('btn-auth-google').addEventListener('click', async () => {
+    try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) {}
+  });
+  document.getElementById('btn-auth-email').addEventListener('click', openAuthModal);
+  document.getElementById('btn-sync-cloud').addEventListener('click', async () => {
+    const statusEl = document.getElementById('sync-status');
+    const btn = document.getElementById('btn-sync-cloud');
+    if (!currentUser) { statusEl.style.color='var(--red)'; statusEl.textContent='לא מחובר לחשבון'; return; }
+    btn.disabled = true;
+    btn.textContent = '⏳ מסנכרן...';
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = '';
+    try {
+      await syncFromFirebase();
+      statusEl.style.color = 'var(--green)';
+      statusEl.textContent = '✓ סונכרן בהצלחה — ' + new Date().toLocaleTimeString('he-IL');
+    } catch(e) {
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = 'שגיאת סנכרון: ' + (e.message||e);
+    }
+    btn.disabled = false;
+    btn.textContent = '☁️ סנכרן עכשיו';
+  });
+
+  document.getElementById('btn-auth-logout').addEventListener('click', async () => {
+    await signOut(auth);
+    toast('התנתקת בהצלחה');
+  });
+
+  // Listen to auth state
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    updateAuthUI();
+    if (user) {
+      toast('מחובר: ' + (user.displayName || user.email));
+      // Give RTDB time to receive the auth token, retry up to 5 times
+      let synced = false;
+      for (let attempt = 0; attempt < 5 && !synced; attempt++) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        try {
+          await currentUser.getIdToken(true);
+          await syncFromFirebase();
+          synced = true;
+          console.log('Sync succeeded on attempt', attempt + 1);
+        } catch(e) {
+          console.warn('sync attempt', attempt + 1, 'failed:', e.message);
+        }
+      }
+      if (!synced) toast('סנכרון נכשל — לחץ ☁️ לנסות שוב');
+    }
+  });
+
   // ─── INIT: try restoring session on page load ─────────────────────
   restoreSession();
   </script>
+  <!-- AUTH MODAL -->
+  <div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:4000;background:rgba(7,7,18,.9);backdrop-filter:blur(8px);overflow-y:auto;padding:24px 16px;">
+    <div style="max-width:400px;margin:40px auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <h2 style="font-size:1.3rem;font-weight:900;">🔐 כניסה / הרשמה</h2>
+        <button id="auth-modal-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;font-size:.9rem;">&#215; סגור</button>
+      </div>
+      <button id="auth-modal-google" class="btn btn-s" style="gap:10px;margin-bottom:16px;">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px;height:20px;"> המשך עם Google
+      </button>
+      <div class="divider" style="margin:16px 0;">או עם אימייל</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button id="auth-tab-login" class="time-btn active" style="flex:1;">כניסה</button>
+        <button id="auth-tab-signup" class="time-btn" style="flex:1;">הרשמה</button>
+      </div>
+      <input type="email" id="auth-email-inp" placeholder="אימייל..." autocomplete="email"
+        style="width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:Heebo,sans-serif;font-size:1rem;outline:none;direction:ltr;margin-bottom:10px;">
+      <input type="password" id="auth-pass-inp" placeholder="סיסמה (לפחות 6 תווים)..." autocomplete="current-password"
+        style="width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:Heebo,sans-serif;font-size:1rem;outline:none;direction:ltr;margin-bottom:6px;">
+      <div id="auth-error" style="min-height:20px;font-size:.78rem;color:var(--red);margin-bottom:10px;"></div>
+      <button id="auth-modal-submit" class="btn btn-p">כניסה &#8594;</button>
+      <button id="auth-forgot" style="background:none;border:none;color:var(--muted);font-family:Heebo,sans-serif;font-size:.78rem;cursor:pointer;margin-top:12px;width:100%;text-align:center;">שכחתי סיסמה</button>
+      <div style="margin-top:20px;font-size:.74rem;color:var(--muted);text-align:center;line-height:1.6;">ניתן לשחק ללא חשבון לחלוטין.<br>חשבון שומר את הפרופיל, הגדרות והחדרים שלך בענן.</div>
+    </div>
+  </div>
+
   </body>
   </html>
