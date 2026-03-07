@@ -1111,8 +1111,11 @@
     S_pRoomName = p.roomName || '';
     S_pDevRoles = Array.isArray(p.devRoles) ? p.devRoles : [];
     S_pRefId = p.refId || null;
-    S_pSupporterLevel = p.supporterLevel || 0;
+    // Take the highest known count — cloud may not have refCount yet (old profile)
+    S_pRefCount = Math.max(p.refCount || 0, S_pRefCount);
+    S_pSupporterLevel = Math.max(p.supporterLevel || 0, getSupporterLevel(S_pRefCount));
     S_pActiveBadge = p.activeBadge || 'auto';
+    console.log('[DEBUG] _applyProfile: cloud refCount=', p.refCount, '| final S_pRefCount=', S_pRefCount, '| level=', S_pSupporterLevel);
 
     // 2. Persist to localStorage
     localStorage.setItem('lac_profile', JSON.stringify(p));
@@ -1134,16 +1137,17 @@
     const profRoomEl = document.getElementById('prof-room-name');
     if (profRoomEl) profRoomEl.value = p.roomName || '';
 
-    // 4. Always re-render pickers (safe – they only touch profile-screen elements
-    //    which exist in the DOM but are hidden when the screen is not active).
-    initAvPicker();
-    initEmojiPicker();
-    initFramePicker();
-    initTagInput();
-    initEntryPicker();
-    updateProfilePreview();
-    updateDevCodeStatus();
-    renderBadgePicker();
+    // Safety 4: only re-render pickers if profile screen is currently visible
+    if (activeScreen === 'screen-profile') {
+      initAvPicker();
+      initEmojiPicker();
+      initFramePicker();
+      initTagInput();
+      initEntryPicker();
+      updateProfilePreview();
+      updateDevCodeStatus();
+      renderBadgePicker();
+    }
 
     // 5. Always update home identity bar (lightweight, no jumps)
     updateHomeIdentity();
@@ -1181,9 +1185,11 @@
       const cloudTs  = cloudProfile?._updatedAt || 0;
       if (cloudProfile && cloudProfile.name) {
         if (cloudTs > localTs) {
-          // Cloud is newer → apply cloud
+          // Cloud is newer → apply cloud, then push back refCount if it improved
           _applyProfile(cloudProfile);
           console.log('Sync: applied cloud profile (cloud ts:', cloudTs, '> local ts:', localTs, ')');
+          // Push back so cloud has the correct refCount (may have been missing)
+          saveProfile();
         } else if (localTs > cloudTs) {
           // Local is newer → push local to cloud
           const updated = { ...localProfile, _updatedAt: localTs };
@@ -1327,6 +1333,7 @@
   let S_pDevRoles=[]; // array: ['main-dev', 'dev', 'supporter']
   function getPrimaryDevRole(){ return S_pDevRoles.includes('main-dev')?'main-dev':S_pDevRoles.includes('dev')?'dev':S_pDevRoles.includes('supporter')?'supporter':null; }
   let S_pRefId=null;   // unique referral ID (persistent)
+  let S_pRefCount=0;   // actual referral count (saved so progress is preserved)
   let S_pSupporterLevel=0; // 0=none, 1-6
   let S_pActiveBadge='auto'; // 'auto'=show all / 'none' / 'main-dev' / 'dev' / 'supporter' / 'sup-1'..'sup-6'
 
@@ -1524,7 +1531,7 @@
     const _pd={name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
       tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,
       devRoles:S_pDevRoles,
-      refId:S_pRefId,supporterLevel:S_pSupporterLevel,activeBadge:S_pActiveBadge,
+      refId:S_pRefId,refCount:S_pRefCount,supporterLevel:S_pSupporterLevel,activeBadge:S_pActiveBadge,
       _updatedAt:Date.now()};
     try{localStorage.setItem('lac_profile',JSON.stringify(_pd));}catch(e){}
     fbSave('profile',_pd);
@@ -1546,6 +1553,7 @@
       else if(p.devRole)S_pDevRoles=[p.devRole];
       else S_pDevRoles=[];
       S_pRefId=p.refId||null;
+      S_pRefCount=p.refCount||0;
       S_pSupporterLevel=p.supporterLevel||0;
       S_pActiveBadge=p.activeBadge||'auto';
       document.getElementById('player-name').value=p.name;
@@ -1623,10 +1631,17 @@
       S_pRefId=getOrCreateRefId();
       saveProfile();
     }
-    const count=await loadRefCount(S_pRefId);
+    const firebaseCount=await loadRefCount(S_pRefId);
+    // Take the higher of Firebase count vs saved count (preserves progress)
+    const count=Math.max(firebaseCount, S_pRefCount);
+    // If Firebase is behind, sync it up
+    if(count > firebaseCount){
+      try{ await set(ref(db,'referrals/'+S_pRefId+'/count'), count); }catch(e){}
+    }
+    S_pRefCount=count;
     S_pSupporterLevel=getSupporterLevel(count);
     renderSupporterCard(S_pRefId, count);
-    renderBadgePicker(); // re-render now we know the level
+    renderBadgePicker();
     saveProfile();
   }
 
@@ -1800,6 +1815,7 @@
         const cur=await loadRefCount(S_pRefId);
         const newCount=Math.max(0,cur+delta);
         await set(ref(db,'referrals/'+S_pRefId+'/count'),newCount);
+        S_pRefCount=newCount;
         S_pSupporterLevel=getSupporterLevel(newCount);
         renderSupporterCard(S_pRefId,newCount);
         renderBadgePicker();
