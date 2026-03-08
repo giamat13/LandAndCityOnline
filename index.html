@@ -591,6 +591,109 @@
   .hist-date{font-size:.7rem;color:var(--muted);}
   .hist-cats{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
   .hist-letter{font-size:1.3rem;font-weight:900;color:var(--red);}
+
+  /* ── Streak Card ─────────────────────────────────────────────── */
+  .streak-card{background:var(--surface);border:1px solid rgba(233,69,96,.25);border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;cursor:default;box-shadow:0 4px 20px rgba(233,69,96,.1);}
+  .streak-fire{font-size:2.2rem;flex-shrink:0;animation:firePulse 1.5s ease-in-out infinite;}
+  @keyframes firePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+  .streak-info{flex:1;}
+  .streak-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;}
+  .streak-count{font-size:1.5rem;font-weight:900;color:var(--red);line-height:1;}
+  .streak-sub{font-size:.72rem;color:var(--muted);margin-top:3px;}
+  .streak-dots{display:flex;gap:5px;margin-top:8px;}
+  .streak-dot{width:28px;height:8px;border-radius:100px;background:var(--border);transition:background .4s;}
+  .streak-dot.done{background:var(--red);}
+  .streak-dot.today{background:var(--orange);animation:dotPulse 1s ease-in-out infinite;}
+  @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+  /* ── Legendary Overlay ───────────────────────────────────────── */
+  .legendary-overlay{
+    position:fixed;inset:0;z-index:500;
+    background:rgba(8,8,20,.92);backdrop-filter:blur(8px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;animation:fadeIn .3s ease;
+  }
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .legendary-star-ring{
+    font-size:4rem;
+    animation:starSpin 0.8s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes starSpin{0%{transform:scale(0) rotate(-180deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
+  .legendary-title{
+    font-size:2rem;font-weight:900;
+    background:linear-gradient(135deg,#f5a623,#ffd700,#f5a623);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    animation:fadeUp .4s .3s ease both;
+    text-align:center;
+  }
+  .legendary-cat-reveal{
+    background:rgba(245,166,35,.12);border:2px solid rgba(245,166,35,.4);
+    border-radius:16px;padding:16px 28px;text-align:center;
+    animation:fadeUp .4s .5s ease both;
+  }
+  .legendary-cat-emoji{font-size:2.5rem;margin-bottom:6px;}
+  .legendary-cat-name{font-size:1.2rem;font-weight:900;color:var(--orange);}
+  .legendary-badge{
+    background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.35);
+    color:var(--orange);border-radius:100px;padding:5px 16px;
+    font-size:.78rem;font-weight:700;
+    animation:fadeUp .4s .7s ease both;
+  }
+
+  /* ── Share Modal ─────────────────────────────────────────────── */
+  .share-modal-overlay{position:fixed;inset:0;z-index:3000;background:rgba(7,7,18,.88);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;padding:0 0 0 0;}
+  .share-modal-inner{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:24px;animation:slideUpModal .35s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes slideUpModal{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .share-result-card{background:linear-gradient(135deg,#0f0f1a,#1a1a2e);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;}
+  .share-result-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left,rgba(233,69,96,.12),transparent 60%),radial-gradient(ellipse at bottom right,rgba(76,201,240,.1),transparent 60%);pointer-events:none;}
+  .src-title{font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:4px;text-align:center;}
+  .src-cats{font-size:.72rem;color:rgba(255,255,255,.45);text-align:center;margin-bottom:14px;}
+  .src-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+  .src-row:last-child{border-bottom:none;}
+  .src-rank{font-size:1.1rem;width:26px;flex-shrink:0;}
+  .src-name{flex:1;font-weight:700;font-size:.9rem;color:#eee;}
+  .src-name.me{color:var(--blue);}
+  .src-pts{font-size:1rem;font-weight:900;color:var(--orange);}
+  .src-footer{font-size:.7rem;color:rgba(255,255,255,.3);text-align:center;margin-top:12px;}
+
+  /* ── Endowed Progress Popup ──────────────────────────────────── */
+  .ep-popup{
+    position:fixed;inset:0;z-index:3500;background:rgba(7,7,18,.9);backdrop-filter:blur(12px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    padding:24px;
+  }
+  .ep-achievement{
+    background:var(--surface);border:1.5px solid rgba(245,166,35,.4);border-radius:20px;
+    padding:20px 28px;text-align:center;width:100%;max-width:320px;
+    animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes popIn{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}
+  .ep-achievement+.ep-achievement{animation-delay:.2s;animation-fill-mode:both;}
+  .ep-icon{font-size:2.5rem;margin-bottom:8px;}
+  .ep-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;}
+  .ep-text{font-size:1rem;font-weight:900;color:var(--orange);}
+  /* ── Player Profile Modal ────────────────────────────────────── */
+  .ppm-overlay{position:fixed;inset:0;z-index:3200;background:rgba(7,7,18,.88);backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center;}
+  .ppm-inner{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:0 0 32px 0;animation:slideUpModal .35s cubic-bezier(.34,1.56,.64,1);overflow:hidden;}
+  .ppm-hero{position:relative;padding:28px 24px 20px;background:linear-gradient(160deg,var(--s2),var(--bg));text-align:center;border-bottom:1px solid var(--border);}
+  .ppm-close{position:absolute;top:14px;left:14px;background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:5px 12px;font-family:Heebo,sans-serif;font-size:.85rem;cursor:pointer;}
+  .ppm-avatar{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:2rem;margin:0 auto 10px;box-shadow:0 0 32px rgba(0,0,0,.4);}
+  .ppm-name{font-size:1.3rem;font-weight:900;margin-bottom:4px;}
+  .ppm-tag{font-size:.8rem;color:var(--muted);margin-bottom:10px;}
+  .ppm-badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px;}
+  .ppm-body{padding:20px 24px 0;}
+  .ppm-section{margin-bottom:18px;}
+  .ppm-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;}
+  .ppm-achievement{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px 14px;margin-bottom:7px;}
+  .ppm-ach-icon{font-size:1.4rem;flex-shrink:0;}
+  .ppm-ach-name{font-weight:700;font-size:.9rem;}
+  .ppm-ach-desc{font-size:.72rem;color:var(--muted);margin-top:1px;}
+  .ppm-stat-row{display:flex;gap:10px;}
+  .ppm-stat{flex:1;background:var(--s2);border-radius:10px;padding:10px;text-align:center;}
+  .ppm-stat-num{font-size:1.4rem;font-weight:900;color:var(--orange);}
+  .ppm-stat-label{font-size:.68rem;color:var(--muted);margin-top:2px;}
+  .pl-item{cursor:pointer;transition:background .15s;}
+  .pl-item:hover{background:rgba(76,201,240,.06);}
   </style>
   </head>
   <body>
@@ -740,6 +843,16 @@
         <div style="font-size:.72rem;color:var(--muted);">לחץ לעריכת פרופיל</div>
       </div>
       <span style="color:var(--muted);font-size:1rem;">✏️</span>
+    </div>
+    <!-- Streak Card -->
+    <div id="streak-card" class="streak-card" style="display:none;">
+      <div class="streak-fire">🔥</div>
+      <div class="streak-info">
+        <div class="streak-title">רצף שבועי</div>
+        <div class="streak-count" id="streak-count-text">0 מתוך 3</div>
+        <div class="streak-sub" id="streak-sub-text">שחק 3 ימים השבוע לשמור על הרצף</div>
+        <div class="streak-dots" id="streak-dots"></div>
+      </div>
     </div>
     <div class="divider" style="margin:16px 0;">מה תרצה לעשות?</div>
     <div class="home-actions">
@@ -1201,10 +1314,179 @@
   let currentUser = null;
   window._dbg = { getAuth:()=>auth, getUser:()=>currentUser, getDb:()=>db };
 
+  // ═══════════════════════════════════════════════════════════════
+  // ─── ANALYTICS (#GA) ────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  function lacTrack(eventName, params = {}) {
+    try {
+      if (typeof gtag !== 'function') return;
+      gtag('event', eventName, {
+        ...params,
+        player_name: S?.pName || 'unknown',
+        is_supporter: (S_pSupporterLevel > 0),
+        supporter_level: S_pSupporterLevel || 0,
+      });
+    } catch(e) {}
+  }
+
+  function setAnalyticsUserProps() {
+    try {
+      if (typeof gtag !== 'function') return;
+      const isSupporter = (S_pSupporterLevel > 0);
+      gtag('set', 'user_properties', {
+        is_supporter:       isSupporter,
+        supporter_level:    S_pSupporterLevel || 0,
+        player_name:        S?.pName || 'unknown',
+        has_streak:         getStreakData ? getStreakData().isActive : false,
+        ref_count:          S_pRefCount || 0,
+        has_custom_profile: !!(S_pEmoji || S_pFrame || S_pTag),
+      });
+    } catch(e) {}
+  }
+
+  // Track session start time for session_duration event
+  const _sessionStartTs = Date.now();
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── PLAYER PROFILE MODAL ───────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  function computeAchievements(player, permLb) {
+    const achievements = [];
+    const name = player.name || '';
+    const level = player.supporterLevel || 0;
+    const role = player.devRole || null;
+
+    // Always: new player
+    achievements.push({ icon:'🎮', name:'שחקן רשום', desc:'הצטרף לארץ עיר' });
+
+    // Supporter badges
+    if (level >= 1) achievements.push({ icon:'🌟', name:'Supporter', desc:`תומך ברמה ${level} — הפיץ את המשחק` });
+    if (level >= 3) achievements.push({ icon:'🏅', name:'Supporter ותיק', desc:'10+ הפצות!' });
+    if (level >= 6) achievements.push({ icon:'🔥', name:'Supporter VI אגדי', desc:'50+ הפצות — מדהים!' });
+
+    // Dev role
+    if (role === 'main-dev') achievements.push({ icon:'⚡', name:'מפתח ראשי', desc:'בנה את ארץ עיר' });
+    else if (role === 'dev') achievements.push({ icon:'🔧', name:'מפתח', desc:'חלק מצוות הפיתוח' });
+    else if (role === 'supporter') achievements.push({ icon:'💚', name:'תומך', desc:'תמך בפיתוח' });
+
+    // Perm leaderboard stats
+    if (permLb) {
+      const key = name.replace(/[.#$/\[\]]/g, '_');
+      const entry = permLb[key];
+      if (entry) {
+        if (entry.games >= 5)  achievements.push({ icon:'🏆', name:'שחקן מנוסה', desc:`${entry.games} משחקים בחדר` });
+        if (entry.games >= 20) achievements.push({ icon:'👑', name:'לגנד', desc:`${entry.games} משחקים — מרשים!` });
+        const avg = entry.games > 0 ? Math.round(entry.total / entry.games) : 0;
+        if (avg >= 50) achievements.push({ icon:'🎯', name:'מדייק', desc:`ממוצע ${avg} נק' למשחק` });
+      }
+    }
+
+    // Tag set
+    if (player.tag) achievements.push({ icon:'🏷️', name:'בעל תגית', desc:`"${player.tag}"` });
+
+    // Frame
+    if (player.frame) achievements.push({ icon:'🖼️', name:'מסוגנן', desc:'פריים מותאם אישית' });
+
+    return achievements;
+  }
+
+  async function showPlayerProfile(player, roomId) {
+    // Remove existing modal
+    document.getElementById('ppm-modal')?.remove();
+
+    const c = avc(player.name, player.color);
+    const avatarContent = player.emoji || player.name?.charAt(0) || '?';
+    const frameClass = (player.devRole === 'main-dev') ? 'av-frame-main-dev' : (player.frame ? 'av-frame-' + player.frame : '');
+
+    // Load permLeaderboard if in a room
+    let permLb = null;
+    if (roomId) {
+      try {
+        const lbSnap = await get(ref(db, 'rooms/' + roomId + '/permLeaderboard'));
+        permLb = lbSnap.val() || null;
+      } catch(e) {}
+    }
+
+    const achievements = computeAchievements(player, permLb);
+
+    // Stats from permLb
+    let gamesPlayed = 0, totalScore = 0, avgScore = 0;
+    if (permLb) {
+      const key = (player.name || '').replace(/[.#$/\[\]]/g, '_');
+      const entry = permLb[key];
+      if (entry) {
+        gamesPlayed = entry.games || 0;
+        totalScore = entry.total || 0;
+        avgScore = gamesPlayed > 0 ? Math.round(totalScore / gamesPlayed) : 0;
+      }
+    }
+
+    // Badges HTML
+    const badgesHtml = [
+      devBadge(player.devRole, player.supporterLevel, player.activeBadge),
+      player.spectator ? '<span class="spec-b">👁 צופה</span>' : ''
+    ].filter(Boolean).join('');
+
+    const achievementsHtml = achievements.map(a => `
+      <div class="ppm-achievement">
+        <div class="ppm-ach-icon">${a.icon}</div>
+        <div>
+          <div class="ppm-ach-name">${a.name}</div>
+          <div class="ppm-ach-desc">${a.desc}</div>
+        </div>
+      </div>`).join('');
+
+    const statsHtml = (gamesPlayed > 0) ? `
+      <div class="ppm-section">
+        <div class="ppm-section-title">📊 סטטיסטיקות בחדר</div>
+        <div class="ppm-stat-row">
+          <div class="ppm-stat">
+            <div class="ppm-stat-num">${gamesPlayed}</div>
+            <div class="ppm-stat-label">משחקים</div>
+          </div>
+          <div class="ppm-stat">
+            <div class="ppm-stat-num">${totalScore}</div>
+            <div class="ppm-stat-label">נק' סה"כ</div>
+          </div>
+          <div class="ppm-stat">
+            <div class="ppm-stat-num">${avgScore}</div>
+            <div class="ppm-stat-label">ממוצע</div>
+          </div>
+        </div>
+      </div>` : '';
+
+    const modal = document.createElement('div');
+    modal.id = 'ppm-modal';
+    modal.className = 'ppm-overlay';
+    modal.innerHTML = `
+      <div class="ppm-inner">
+        <div class="ppm-hero">
+          <button class="ppm-close" id="ppm-close-btn">✕ סגור</button>
+          <div class="ppm-avatar ${frameClass}" style="background:${c}22;color:${c};">${avatarContent}</div>
+          <div class="ppm-name">${player.name || '?'}</div>
+          ${player.tag ? `<div class="ppm-tag">${player.tag}</div>` : ''}
+          <div class="ppm-badges">${badgesHtml || '<span style="font-size:.75rem;color:var(--muted);">אין תגים</span>'}</div>
+        </div>
+        <div class="ppm-body">
+          ${statsHtml}
+          <div class="ppm-section">
+            <div class="ppm-section-title">🏅 הישגים (${achievements.length})</div>
+            ${achievementsHtml}
+          </div>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.getElementById('ppm-close-btn').addEventListener('click', () => modal.remove());
+
+    lacTrack('view_player_profile', { viewed_player: player.name });
+  }
+
   // ─── FIREBASE SYNC HELPERS ────────────────────────────────────────
   // Keys that are synced to Firebase when user is logged in
   // lac_s (session) is intentionally NOT synced — it's device-specific
-  const FB_SYNC_KEYS = ['profile','myrooms','theme','tut','templates','gameHistory'];
+  const FB_SYNC_KEYS = ['profile','myrooms','theme','tut','templates','gameHistory','playDates'];
 
   async function fbSave(key, data) {
     if (!currentUser) return;
@@ -1402,6 +1684,20 @@
           await set(ref(db,'users/'+currentUser.uid+'/gameHistory'), dedupedH).catch(()=>{});
         }
         loadGameHistory();
+      }
+
+      // ── PLAY DATES: merge, keep last 30 ──
+      const localDates = (() => { try { return JSON.parse(localStorage.getItem(STREAK_KEY)||'[]'); } catch(e){ return []; } })();
+      const cloudDates = cloud.playDates ? (Array.isArray(cloud.playDates) ? cloud.playDates : Object.values(cloud.playDates)) : [];
+      if(cloudDates.length || localDates.length){
+        const merged = [...new Set([...cloudDates, ...localDates])];
+        const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+        const deduped = merged.filter(d=>new Date(d)>=cutoff).sort();
+        try{ localStorage.setItem(STREAK_KEY, JSON.stringify(deduped)); }catch(e){}
+        if(deduped.length > cloudDates.length){
+          await set(ref(db,'users/'+currentUser.uid+'/playDates'), deduped).catch(()=>{});
+        }
+        renderStreakCard();
       }
 
     } catch(e) { console.warn('Firebase sync error:', e); throw e; }
@@ -2030,13 +2326,18 @@
   document.getElementById('btn-profile-continue').addEventListener('click',()=>{
     const n=document.getElementById('prof-name').value.trim();
     if(!n){toast('נא להזין שם שחקן');return;}
+    const isFirstTime = !localStorage.getItem('aretz_ep_shown') && !S.pName;
     S.pName=n;
     S_pTag=( document.getElementById('prof-tag-inp').value.trim()||null );
     S_pRoomName=document.getElementById('prof-room-name').value.trim();
     document.getElementById('player-name').value=n;
     saveProfile();
+    setAnalyticsUserProps();
+    lacTrack('profile_complete', { has_emoji: !!S_pEmoji, has_frame: !!S_pFrame, has_tag: !!S_pTag, has_entry_effect: S_pEntry !== 'none' });
     updateHomeIdentity();
     showScreen('home');
+    renderStreakCard();
+    if(isFirstTime) setTimeout(showEndowedProgress, 400);
   });
   document.getElementById('prof-name').addEventListener('keydown',e=>{
     if(e.key==='Enter')document.getElementById('btn-profile-continue').click();
@@ -2049,6 +2350,7 @@
     setupProfileScreen();
     showScreen('home');
     updateHomeIdentity();
+    renderStreakCard();
     // Initialize refId if missing after loading profile
     if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
   } else {
@@ -2501,6 +2803,7 @@
     }
     saveSession();
     enterLobby();
+    lacTrack('room_created', { room_id: roomId, cat_count: active.length, round_time: S.rTime, race_mode: S.raceMode, visibility: S.visibility });
   };
 
   // ─── JOIN ROOM ────────────────────────────────────────────────────
@@ -2538,6 +2841,8 @@
       emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'
     });
     touchActivity();saveSession();
+
+    lacTrack('room_joined', { room_id: code, as_spectator: asSpectator });
 
     if(inProgress){
       enterRoom();
@@ -3050,6 +3355,11 @@
             ${S.isHost&&pid!==S.pId?(backupIdx>=0?`<button class="remove-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הסר מגיבויים" style="background:rgba(15,186,129,.15);border:1px solid rgba(15,186,129,.4);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️ ✓</button>`:`<button class="add-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הוסף לגיבויים" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️+</button>`):''}
           </div>`;
         list.appendChild(el);
+        // 👤 Click to show player profile (not self, not for buttons)
+        el.addEventListener('click', e => {
+          if (e.target.closest('button')) return;
+          showPlayerProfile(p, S.roomId);
+        });
       });
       // Kick button handler
       list.querySelectorAll('.kick-btn').forEach(btn=>{
@@ -3436,13 +3746,17 @@
     if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
+    // 🌟 Legendary round: schedule first legendary
+    const legendaryNext = getNextLegendaryRound(0);
     await update(ref(db,`rooms/${S.roomId}`),{
       status:'playing',round:1,letter,uniqueLetters:S.uniqueLetters,
       catStartedAt:Date.now(),currentCatIndex:0,
-      catAnswers:null,lastActivity:Date.now()
+      catAnswers:null,lastActivity:Date.now(),
+      legendaryNext, legendaryCat:null, isLegendary:false
     });
     // Remove from public listing once game starts
     if(S.visibility!=='private') remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});
+    lacTrack('round_start', { round_number: 1, letter: letter, is_legendary: false });
   };
 
   // ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
@@ -3460,6 +3774,25 @@
     S.bonusUsedThisRound=false;
     S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
     S.catSubmitted=false;
+
+    // 🌟 Legendary round: inject category if applicable (only on first cat of round)
+    if(r.isLegendary && r.legendaryCat && S.currentCatIndex===0){
+      const legCat = r.legendaryCat;
+      // Add legendary cat if not already there
+      const alreadyIn = S.cats.some(c=>c.id===legCat.id);
+      if(!alreadyIn){
+        S.cats = [...S.cats, {id:legCat.id, emoji:legCat.emoji, name:legCat.name, isLegendary:true}];
+      }
+      // Show overlay only once (flag per round)
+      const overlayFlag = `leg_shown_${S.roomId}_r${S.rNum}`;
+      if(!sessionStorage.getItem(overlayFlag)){
+        sessionStorage.setItem(overlayFlag,'1');
+        await new Promise(resolve=>{
+          showLegendaryOverlay(legCat, resolve);
+        });
+      }
+    }
+
     enterRoom();
     // Check if we already submitted this category
     const cat=S.cats[S.currentCatIndex];
@@ -3821,6 +4154,7 @@
     }
     showEditMode(ansArr);
     touchActivity();saveSession();
+    lacTrack('answer_submitted', { cat_name: cat?.name, answer_count: ansArr.length, has_bonus: bonusIdx >= 0, time_left: S.timeLeft, round_number: S.rNum });
   }
 
   function showEditMode(submittedAnswers){
@@ -4065,6 +4399,7 @@
             await remove(voteRef);
           }else{
             await set(voteRef,vKey);
+            lacTrack('veto_cast', { cat_id: cId, round_number: S.rNum });
           }
           touchActivity();
         });
@@ -4399,6 +4734,8 @@
 
     showScreen('results');
     setTimeout(()=>tryStartTut('results'),500);
+    // 🎯 Record play date for streak system
+    recordPlayDate();
 
     // Clear my previous vote
     await remove(ref(db,`rooms/${S.roomId}/continueVotes/${S.pId}`));
@@ -4454,6 +4791,18 @@
     const myRoundPlace=sortedByRound.findIndex(([pid])=>pid===S.pId)+1;
     const roundWinnerName=sortedByRound[0]?.[1]?.name||'';
     setTimeout(()=>showVictoryAnim(myRoundPlace, roundWinnerName),500);
+
+    // 📊 Track round_win
+    lacTrack('round_complete', {
+      round_number: room.round,
+      letter: room.letter,
+      my_place: myRoundPlace,
+      my_score: rScores[S.pId]||0,
+      player_count: sortedByRound.length,
+    });
+    if (myRoundPlace === 1) {
+      lacTrack('round_win', { round_number: room.round, letter: room.letter, score: rScores[S.pId]||0 });
+    }
 
     if(!S.isHost){
       addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
@@ -4688,6 +5037,16 @@
       .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
     const myPlace=sorted.findIndex(([pid])=>pid===S.pId)+1;
     setTimeout(()=>showVictoryAnim(myPlace, sorted[0]?.[1]?.name||''),400);
+
+    // 📊 Track game_complete + session_duration
+    const sessionSec = Math.round((Date.now() - _sessionStartTs) / 1000);
+    lacTrack('game_complete', {
+      final_place: myPlace,
+      final_score: players[S.pId]?.score || 0,
+      total_rounds: S.rNum,
+      player_count: sorted.length,
+    });
+    lacTrack('session_duration', { seconds: sessionSec, rounds_played: S.rNum });
   }
 
   async function nextRound(){
@@ -4697,11 +5056,28 @@
     }
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.rNum++;S.letter=letter;S.currentCatIndex=0;S.bonusUsedThisRound=false;
+
+    // 🌟 Check if this is a legendary round
+    const roomSnap = await get(ref(db,`rooms/${S.roomId}`));
+    const roomData2 = roomSnap.val()||{};
+    const legendaryNext = roomData2.legendaryNext || 999;
+    let isLegendary = false;
+    let legendaryCat = null;
+    let nextLegendaryNext = legendaryNext;
+    if(S.rNum >= legendaryNext){
+      isLegendary = true;
+      legendaryCat = pickLegendaryCat();
+      nextLegendaryNext = getNextLegendaryRound(S.rNum);
+    }
+
     await update(ref(db,`rooms/${S.roomId}`),{
       status:'playing',round:S.rNum,letter,
       catStartedAt:Date.now(),currentCatIndex:0,
-      catAnswers:null,vetoes:null,disqualified:null,continueVotes:null,lastActivity:Date.now()
+      catAnswers:null,vetoes:null,disqualified:null,continueVotes:null,lastActivity:Date.now(),
+      isLegendary, legendaryCat: legendaryCat||null, legendaryNext: nextLegendaryNext
     });
+    lacTrack('round_start', { round_number: S.rNum, letter, is_legendary: isLegendary });
+    if (isLegendary) lacTrack('legendary_round', { round_number: S.rNum, cat_name: legendaryCat?.name });
     await loadRound();
   }
 
@@ -5218,33 +5594,258 @@
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // ─── SHARE RESULTS ─────────────────────────────────────────────
+  // ─── STREAK SYSTEM (#2) ────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  const STREAK_KEY = 'aretz_play_dates';
+
+  function getTodayStr(){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function recordPlayDate(){
+    try{
+      const today = getTodayStr();
+      let dates = JSON.parse(localStorage.getItem(STREAK_KEY)||'[]');
+      const wasActive = getStreakData().isActive;
+      if(!dates.includes(today)) dates.push(today);
+      // Keep only last 30 days
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+      dates = dates.filter(d => new Date(d) >= cutoff);
+      localStorage.setItem(STREAK_KEY, JSON.stringify(dates));
+      fbSave('playDates', dates);
+      renderStreakCard();
+      // Track streak if newly achieved
+      const nowActive = getStreakData().isActive;
+      if(!wasActive && nowActive) lacTrack('streak_achieved', { streak_days: getStreakData().count });
+    }catch(e){}
+  }
+
+  function getStreakData(){
+    try{
+      const dates = JSON.parse(localStorage.getItem(STREAK_KEY)||'[]');
+      const today = new Date(); today.setHours(0,0,0,0);
+      const last7 = [];
+      for(let i=0; i<7; i++){
+        const d = new Date(today); d.setDate(today.getDate()-i);
+        const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        last7.unshift(s);
+      }
+      const playedSet = new Set(dates);
+      const days = last7.map(d=>({date:d, played:playedSet.has(d)}));
+      const count = days.filter(d=>d.played).length;
+      return {days, count, isActive: count>=3};
+    }catch(e){ return {days:[], count:0, isActive:false}; }
+  }
+
+  function renderStreakCard(){
+    const {days, count, isActive} = getStreakData();
+    const card = document.getElementById('streak-card');
+    if(!card) return;
+    // Always show if they have played at least 1 day
+    if(count === 0){ card.style.display='none'; return; }
+    card.style.display = 'flex';
+
+    document.getElementById('streak-count-text').textContent = `${count} מתוך 3 ימים השבוע`;
+    const subEl = document.getElementById('streak-sub-text');
+    if(isActive){
+      subEl.textContent = '✅ הרצף שלך מוגן לשבוע הזה!';
+      subEl.style.color = 'var(--green)';
+      card.style.borderColor = 'rgba(15,186,129,.3)';
+      document.querySelector('.streak-fire').textContent = '🏆';
+    } else {
+      const needed = 3 - count;
+      subEl.textContent = `עוד ${needed} ימים לשמור על הרצף 🔥`;
+      subEl.style.color = '';
+      card.style.borderColor = 'rgba(233,69,96,.25)';
+      document.querySelector('.streak-fire').textContent = '🔥';
+    }
+    const dotsEl = document.getElementById('streak-dots');
+    dotsEl.innerHTML = '';
+    const todayStr = getTodayStr();
+    days.forEach(({date, played})=>{
+      const dot = document.createElement('div');
+      dot.className = 'streak-dot' + (played ? (date===todayStr?' today':' done') : '');
+      dotsEl.appendChild(dot);
+    });
+  }
+
+  // Sync play dates from Firebase on login
+  const _origSyncFromFirebase = syncFromFirebase;
+  // We'll hook into syncFromFirebase by extending it below after it's defined
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── ENDOWED PROGRESS (#3) ─────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  function showEndowedProgress(){
+    if(localStorage.getItem('aretz_ep_shown')) return;
+    localStorage.setItem('aretz_ep_shown','1');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ep-popup';
+    overlay.innerHTML = `
+      <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:8px;">🎉 ברוך הבא לארץ עיר!</div>
+      <div class="ep-achievement">
+        <div class="ep-icon">🔥</div>
+        <div class="ep-label">הישג חדש</div>
+        <div class="ep-text">הרצף שלך התחיל!<br><span style="font-size:.85rem;color:var(--muted);">יום 1 מתוך 3 השבוע</span></div>
+      </div>
+      <div class="ep-achievement" style="animation-delay:.25s;animation-fill-mode:both;">
+        <div class="ep-icon">🎖️</div>
+        <div class="ep-label">הישג חדש</div>
+        <div class="ep-text">שחקן חדש!<br><span style="font-size:.85rem;color:var(--muted);">ברוך הבא למשחק</span></div>
+      </div>
+      <button style="background:var(--red);color:#fff;border:none;border-radius:12px;padding:12px 32px;font-family:Heebo,sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;" id="ep-close-btn">יאללה נשחק! 🚀</button>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('ep-close-btn').addEventListener('click',()=>{
+      overlay.style.animation='none';
+      overlay.style.opacity='0';
+      overlay.style.transition='opacity .3s';
+      setTimeout(()=>overlay.remove(), 300);
+    });
+    // Auto-dismiss after 5s
+    setTimeout(()=>{ if(overlay.parentNode){ overlay.style.opacity='0'; overlay.style.transition='opacity .3s'; setTimeout(()=>overlay.remove(),300); }},5000);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── LEGENDARY ROUND (#6) ──────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  const LEGENDARY_CATS = [
+    {id:'leg_bag',   emoji:'👜', name:'מה יש בתיק של סבתא'},
+    {id:'leg_work',  emoji:'🤒', name:'תירוצים לא לבוא לעבודה'},
+    {id:'leg_jam',   emoji:'🚗', name:'מה אנשים אומרים בפקק'},
+    {id:'leg_sleep', emoji:'😴', name:'תירוצים של ילדים לא ללכת לישון'},
+    {id:'leg_pack',  emoji:'🧳', name:'מה שוכחים לארוז לטיול'},
+  ];
+
+  // Pick a random legendary cat different from last one
+  let _lastLegCatId = null;
+  function pickLegendaryCat(){
+    const pool = LEGENDARY_CATS.filter(c=>c.id!==_lastLegCatId);
+    const cat = pool[Math.floor(Math.random()*pool.length)];
+    _lastLegCatId = cat.id;
+    return cat;
+  }
+
+  function showLegendaryOverlay(cat, onDone){
+    const overlay = document.createElement('div');
+    overlay.className = 'legendary-overlay';
+    overlay.innerHTML = `
+      <div class="legendary-star-ring">🌟</div>
+      <div class="legendary-title">סיבוב אגדי!</div>
+      <div class="legendary-cat-reveal">
+        <div class="legendary-cat-emoji">${cat.emoji}</div>
+        <div class="legendary-cat-name">${cat.name}</div>
+      </div>
+      <div class="legendary-badge">✨ קטגוריה מיוחדת נוספה לסיבוב הזה</div>
+    `;
+    document.body.appendChild(overlay);
+    // Auto-dismiss after 2.8s then call onDone
+    setTimeout(()=>{
+      overlay.style.opacity='0'; overlay.style.transition='opacity .4s';
+      setTimeout(()=>{ overlay.remove(); if(onDone) onDone(); }, 400);
+    }, 2800);
+  }
+
+  // ─── Legendary hook into startGame ─────────────────────────────
+  // We'll track in Firebase: rooms/{roomId}/legendaryNext (the round # when legendary fires)
+  // and rooms/{roomId}/legendaryCat
+
+  function getNextLegendaryRound(currentRound){
+    // Fire after 2-5 more rounds
+    return currentRound + 2 + Math.floor(Math.random()*4);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── UPGRADED SHARE CARD (#1) ──────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
   async function shareResults(){
     try{
-      const snap=await get(ref(db,`rooms/${S.roomId}/players`));
-      const players=snap.val()||{};
-      const sorted=Object.entries(players).filter(([,p])=>!p.spectator)
+      const snap = await get(ref(db,`rooms/${S.roomId}/players`));
+      const players = snap.val()||{};
+      const sorted = Object.entries(players).filter(([,p])=>!p.spectator)
         .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
-      const medals=['🥇','🥈','🥉'];
-      const lines=['🎮 ארץ עיר — תוצאות המשחק',''];
-      lines.push(`📝 קטגוריות: ${S.cats.map(c=>c.name).join(', ')}`);
+      const medals = ['🥇','🥈','🥉'];
+
+      // Build visual modal
+      const modal = document.createElement('div');
+      modal.className = 'share-modal-overlay';
+
+      const catsText = S.cats.map(c=>`${c.emoji||''} ${c.name}`).join(' · ');
+      const url = location.origin + location.pathname;
+      const refUrl = S_pRefId ? url+'?ref='+S_pRefId : url;
+
+      const rowsHtml = sorted.map(([pid,p],i)=>{
+        const isMe = pid===S.pId;
+        return `<div class="src-row">
+          <span class="src-rank">${medals[i]||`${i+1}.`}</span>
+          <span class="src-name${isMe?' me':''}">${p.name}${isMe?' (אתה)':''}</span>
+          <span class="src-pts">${p.score||0} נק'</span>
+        </div>`;
+      }).join('');
+
+      modal.innerHTML = `
+        <div class="share-modal-inner">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h3 style="font-size:1.1rem;font-weight:900;">📤 שתף תוצאות</h3>
+            <button id="smc-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:5px 13px;font-family:Heebo,sans-serif;cursor:pointer;">✕ סגור</button>
+          </div>
+          <div class="share-result-card" id="share-result-card">
+            <div class="src-title">🌍 ארץ עיר — תוצאות</div>
+            <div class="src-cats">${catsText}</div>
+            ${rowsHtml}
+            <div class="src-footer">שחקו גם אתם! ${refUrl}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-p" id="smc-native">📱 שתף</button>
+            <button class="btn btn-s" id="smc-copy">📋 העתק כטקסט</button>
+            <button class="btn btn-s" style="opacity:.6;font-size:.85rem;" id="smc-wa">💬 שלח בוואטסאפ</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Build plain text fallback
+      const lines = ['🌍 ארץ עיר — תוצאות',''];
+      lines.push(`📋 ${S.cats.map(c=>c.name).join(', ')}`);
       lines.push('');
       sorted.forEach(([pid,p],i)=>{
-        const m=medals[i]||`${i+1}.`;
-        const isMe=pid===S.pId?' ← אתה':'';
-        lines.push(`${m} ${p.name} — ${p.score||0} נק'${isMe}`);
+        lines.push(`${medals[i]||i+1+'.'} ${p.name} — ${p.score||0} נק'${pid===S.pId?' ← אתה':''}`);
       });
-      lines.push('');
-      lines.push('🕹️ שחקו גם אתם! אמרו לחברים 🚀');
-      const text=lines.join('\n');
-      if(navigator.share){
-        await navigator.share({title:'ארץ עיר תוצאות',text});
-      }else{
-        await navigator.clipboard.writeText(text);
-        toast('📋 הועתק! שתף עם חברים 🚀');
-      }
-    }catch(e){toast('שגיאה בשיתוף');}
+      lines.push(''); lines.push(`🕹️ שחקו גם אתם! ${refUrl}`);
+      const plainText = lines.join('\n');
+
+      // Close button
+      modal.querySelector('#smc-close').addEventListener('click',()=>modal.remove());
+      modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
+
+      // Native share
+      modal.querySelector('#smc-native').addEventListener('click',async()=>{
+        if(navigator.share){
+          try{ await navigator.share({title:'ארץ עיר תוצאות',text:plainText}); }catch(e){}
+        } else {
+          await navigator.clipboard.writeText(plainText);
+          toast('📋 הועתק! שתף עם חברים 🚀');
+        }
+        modal.remove();
+      });
+
+      // Copy text
+      modal.querySelector('#smc-copy').addEventListener('click',async()=>{
+        await navigator.clipboard.writeText(plainText);
+        toast('📋 הועתק ללוח!');
+        modal.remove();
+      });
+
+      // WhatsApp
+      modal.querySelector('#smc-wa').addEventListener('click',()=>{
+        const waMsg = encodeURIComponent(plainText);
+        window.open('https://wa.me/?text='+waMsg,'_blank','noopener');
+        modal.remove();
+      });
+      lacTrack('share_results_open', { player_count: sorted.length, round_count: S.rNum });
+    }catch(e){ toast('שגיאה בשיתוף'); }
   }
 
   document.getElementById('btn-sim-players').addEventListener('click',openSimPanel);
@@ -5825,6 +6426,8 @@
     updateAuthUI();
     if (user) {
       toast('מחובר: ' + (user.displayName || user.email));
+      setAnalyticsUserProps();
+      lacTrack('login', { method: user.providerData?.[0]?.providerId || 'unknown' });
       // Give RTDB time to receive the auth token, retry up to 5 times
       let synced = false;
       for (let attempt = 0; attempt < 5 && !synced; attempt++) {
