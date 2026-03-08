@@ -3,7 +3,14 @@
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ארץ עיר אונליין</title>
+  <title>ארץ עיר אונליין – משחק לממ"ד 🚨</title>
+  <meta name="description" content="משחק ארץ עיר מרובה משתתפים לממ"ד — חינמי, מיידי, בלי הורדה">
+  <meta property="og:title" content='ארץ עיר אונליין – משחק לממ"ד 🚨'>
+  <meta property="og:description" content="משחק ארץ עיר מרובה משתתפים לממ"ד — חינמי, מיידי, בלי הורדה">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content='ארץ עיר אונליין – משחק לממ"ד 🚨'>
+  <meta name="twitter:description" content="משחק ארץ עיר מרובה משתתפים לממ"ד — חינמי, מיידי, בלי הורדה">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-SN0STQDDYT"></script>
   <script>
     window.dataLayer=window.dataLayer||[];
@@ -903,7 +910,15 @@
       <div class="code" id="lobby-code">------</div>
       <div class="hint">לחץ להעתקת קוד 📋</div>
     </div>
-    <button class="share-btn" id="btn-share-link">🔗 העתק לינק לחדר</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+      <button class="share-btn" id="btn-share-link" style="margin-top:0;background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25d366;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        שלח בוואטסאפ
+      </button>
+      <button class="share-btn" id="btn-copy-link" style="margin-top:0;">
+        🔗 העתק לינק
+      </button>
+    </div>
     <div class="card"><h3>🎮 קטגוריות</h3><div class="cats-prev" id="lobby-cats"></div></div>
     <div class="card">
       <h3>👥 שחקנים (<span id="pl-count">0</span>)</h3>
@@ -921,11 +936,37 @@
       <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
       <button id="btn-invite-tmp" class="btn btn-s" style="display:none;margin-top:10px;">📨 הזמן משתמש זמני</button>
       <button id="btn-sim-players" class="btn btn-s" style="display:none;margin-top:10px;border-color:rgba(168,85,247,.4);color:#a855f7;font-size:.85rem;">🤖 הוסף שחקנים מדומים</button>
+      <!-- Space Game mini-banner for host while waiting -->
+      <a href="https://giamat13.github.io/space-game/" target="_blank" rel="noopener"
+        style="display:flex;align-items:center;gap:12px;margin-top:18px;padding:14px 16px;background:linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08));border:1.5px solid rgba(76,201,240,.2);border-radius:14px;text-decoration:none;transition:all .25s;"
+        onmouseover="this.style.borderColor='rgba(76,201,240,.5)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.15),rgba(168,85,247,.15))'"
+        onmouseout="this.style.borderColor='rgba(76,201,240,.2)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08))'">
+        <div style="font-size:2rem;flex-shrink:0;">🚀</div>
+        <div style="flex:1;">
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">מהמפתחים של ארץ עיר •</div>
+          <div style="font-size:.95rem;font-weight:800;color:var(--text);">Space Defender 🚀</div>
+          <div style="font-size:.75rem;color:var(--muted);">משחק חלל חינמי – לחץ לשחק!</div>
+        </div>
+        <div style="color:var(--blue);font-size:1rem;flex-shrink:0;">←</div>
+      </a>
     </div>
     <div id="guest-wait" style="display:none;">
       <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
       <button id="btn-spectator-upgrade" style="display:none;margin-top:12px;" class="btn btn-s">🎮 הצטרף כשחקן רגיל</button>
       <button id="btn-become-spectator" style="display:none;margin-top:8px;" class="btn btn-s" style="opacity:.7;font-size:.88rem;">👁 עבור למצב צופה</button>
+      <!-- Space Game mini-banner while waiting -->
+      <a href="https://giamat13.github.io/space-game/" target="_blank" rel="noopener"
+        style="display:flex;align-items:center;gap:12px;margin-top:18px;padding:14px 16px;background:linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08));border:1.5px solid rgba(76,201,240,.2);border-radius:14px;text-decoration:none;transition:all .25s;"
+        onmouseover="this.style.borderColor='rgba(76,201,240,.5)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.15),rgba(168,85,247,.15))'"
+        onmouseout="this.style.borderColor='rgba(76,201,240,.2)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08))'">
+        <div style="font-size:2rem;flex-shrink:0;">🚀</div>
+        <div style="flex:1;">
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">מהמפתחים של ארץ עיר •</div>
+          <div style="font-size:.95rem;font-weight:800;color:var(--text);">Space Defender 🚀</div>
+          <div style="font-size:.75rem;color:var(--muted);">משחק חלל חינמי – לחץ לשחק!</div>
+        </div>
+        <div style="color:var(--blue);font-size:1rem;flex-shrink:0;">←</div>
+      </a>
     </div>
   </div>
 
@@ -984,6 +1025,19 @@
           <span class="sub-label" id="sub-label-wait"></span>
         </div>
       </div>
+      <!-- Space Game mini-banner while waiting for others -->
+      <a href="https://giamat13.github.io/space-game/" target="_blank" rel="noopener"
+        style="display:flex;align-items:center;gap:12px;margin-top:16px;padding:14px 16px;background:linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08));border:1.5px solid rgba(76,201,240,.2);border-radius:14px;text-decoration:none;transition:all .25s;"
+        onmouseover="this.style.borderColor='rgba(76,201,240,.5)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.15),rgba(168,85,247,.15))'"
+        onmouseout="this.style.borderColor='rgba(76,201,240,.2)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08))'">
+        <div style="font-size:2rem;flex-shrink:0;">🚀</div>
+        <div style="flex:1;">
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">מהמפתחים של ארץ עיר •</div>
+          <div style="font-size:.95rem;font-weight:800;color:var(--text);">Space Defender 🚀</div>
+          <div style="font-size:.75rem;color:var(--muted);">משחק חלל חינמי – לחץ לשחק!</div>
+        </div>
+        <div style="color:var(--blue);font-size:1rem;flex-shrink:0;">←</div>
+      </a>
     </div>
   </div>
 
@@ -3109,11 +3163,57 @@
   }
   function shareLink(){
     const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
-    if(navigator.share){
-      navigator.share({title:'ארץ עיר אונליין',text:'הצטרף למשחק!',url}).catch(()=>{});
-    }else{
-      navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🔗'));
-    }
+    // Always show share panel with both options
+    showSharePanel(url,'הצטרף למשחק ארץ עיר! 🌍',S.roomId);
+  }
+
+  function showSharePanel(url, waText, code){
+    // Remove existing panel if any
+    const existing=document.getElementById('share-panel-overlay');
+    if(existing){existing.remove();return;}
+    const waMsg=encodeURIComponent(`${waText}\nהצטרף לחדר: ${code}\n${url}`);
+    const panel=document.createElement('div');
+    panel.id='share-panel-overlay';
+    panel.style.cssText=`position:fixed;inset:0;z-index:3000;background:rgba(10,10,25,.85);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;padding:16px;`;
+    panel.innerHTML=`
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="font-size:1rem;font-weight:900;">📤 שיתוף החדר</div>
+          <button onclick="document.getElementById('share-panel-overlay').remove()" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-family:Heebo,sans-serif;cursor:pointer;font-size:.85rem;">✕</button>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+          <span style="flex:1;font-size:.78rem;color:var(--muted);word-break:break-all;">${url}</span>
+          <button id="sp-copy-url" style="background:rgba(76,201,240,.15);color:var(--blue);border:1.5px solid rgba(76,201,240,.3);border-radius:8px;padding:7px 13px;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">📋 העתק</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <a href="https://wa.me/?text=${waMsg}" target="_blank" rel="noopener"
+            style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:rgba(37,211,102,.12);border:1.5px solid rgba(37,211,102,.3);border-radius:12px;color:#25d366;font-family:Heebo,sans-serif;font-size:.9rem;font-weight:700;text-decoration:none;transition:background .2s;"
+            onmouseover="this.style.background='rgba(37,211,102,.22)'" onmouseout="this.style.background='rgba(37,211,102,.12)'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            וואטסאפ
+          </a>
+          <button id="sp-native-share" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:rgba(76,201,240,.12);border:1.5px solid rgba(76,201,240,.3);border-radius:12px;color:var(--blue);font-family:Heebo,sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;width:100%;transition:background .2s;"
+            onmouseover="this.style.background='rgba(76,201,240,.22)'" onmouseout="this.style.background='rgba(76,201,240,.12)'">
+            🔗 שיתוף ישיר
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(panel);
+    panel.addEventListener('click',e=>{if(e.target===panel)panel.remove();});
+    document.getElementById('sp-copy-url').addEventListener('click',()=>{
+      navigator.clipboard.writeText(url).then(()=>{
+        const btn=document.getElementById('sp-copy-url');
+        if(btn){btn.textContent='✓ הועתק!';btn.style.color='var(--green)';}
+        toast('לינק הועתק! 🔗');
+      });
+    });
+    document.getElementById('sp-native-share').addEventListener('click',()=>{
+      if(navigator.share){
+        navigator.share({title:'ארץ עיר אונליין',text:waText,url}).catch(()=>{});
+      }else{
+        navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🔗'));
+      }
+    });
   }
 
   function leaveRoom(){
@@ -5151,7 +5251,15 @@
   document.getElementById('btn-sim-ingame').addEventListener('click',openSimPanel);
 
   document.getElementById('code-box').addEventListener('click',copyCode);
-  document.getElementById('btn-share-link').addEventListener('click',shareLink);
+  document.getElementById('btn-share-link').addEventListener('click',()=>{
+    const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    const waMsg=encodeURIComponent('הצטרף למשחק ארץ עיר! 🌍\nהצטרף לחדר: '+S.roomId+'\n'+url);
+    window.open('https://wa.me/?text='+waMsg,'_blank','noopener');
+  });
+  document.getElementById('btn-copy-link').addEventListener('click',()=>{
+    const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🔗'));
+  });
   document.getElementById('start-btn').addEventListener('click',startGame);
   document.getElementById('submit-btn').addEventListener('click',submitCatAnswer);
   document.getElementById('btn-exit-game').addEventListener('click',exitGame);
