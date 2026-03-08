@@ -1014,6 +1014,10 @@
         <div class="tog on" id="tog-creative-el"></div>
         <span class="tog-label">🌟 הצבעת יצירתיות אחרי פסילות (+10 נק' לזוכה)</span>
       </div>
+      <div class="tog-wrap" id="tog-legendary-mode" style="margin-bottom:16px;">
+        <div class="tog on" id="tog-legendary-el"></div>
+        <span class="tog-label">✨ סיבוב אגדי — קטגוריה מפתיעה אקראית (25% סיכוי)</span>
+      </div>
       <h3 style="margin-bottom:10px;">🌐 נראות חדר</h3>
       <div class="vis-opts" id="vis-opts">
         <div class="vis-opt sel" data-v="private">
@@ -2822,12 +2826,13 @@
 
     S.bonusAnswer=document.getElementById('tog-bonus-el').classList.contains('on');
     S.creativeVoteEnabled=document.getElementById('tog-creative-el').classList.contains('on');
+    S.legendaryEnabled=document.getElementById('tog-legendary-el')?.classList.contains('on')!==false;
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
     let roomId,t=0;
     do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
     S.roomId=roomId;
     await set(ref(db,'rooms/'+roomId),{
-      host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,bonusAnswer:S.bonusAnswer,creativeVoteEnabled:S.creativeVoteEnabled,
+      host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,bonusAnswer:S.bonusAnswer,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,
       uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
@@ -4336,8 +4341,7 @@
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
     const catAnswers=room.catAnswers||{};
-    const cats=room.categories||S.cats;
-    S.showVoters=room.showVoters||false;
+    const cats=getEffectiveCats(room);
     const vetoThresholdType=room.vetoThresholdType||'percent';
     const vetoThresholdValue=room.vetoThresholdValue!=null?room.vetoThresholdValue:50;
     // Update info label
@@ -4489,7 +4493,7 @@
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
     const catAnswers=room.catAnswers||{};
-    const cats=room.categories||S.cats;
+    const cats=getEffectiveCats(room);
     const vetoes=room.vetoes||{};
     const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=psSnap.val()||{};
@@ -4642,7 +4646,7 @@
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
     const catAnswers=room.catAnswers||{};
-    const cats=room.categories||S.cats;
+    const cats=getEffectiveCats(room);
     S.totalRounds=room.totalRounds||0;
     S.cumulativeSB=room.cumulativeSB!==false;
     S.uniqueLetters=room.uniqueLetters||false;
@@ -5127,7 +5131,8 @@
     const roomSnap = await get(ref(db,`rooms/${S.roomId}`));
     const roomData2 = roomSnap.val()||{};
     const forcedLegendary = roomData2.forceLegendaryNext === true;
-    let isLegendary = forcedLegendary || (Math.random() < 0.25);
+    const legendaryEnabled = roomData2.legendaryEnabled !== false;
+    let isLegendary = legendaryEnabled && (forcedLegendary || (Math.random() < 0.25));
     let legendaryCat = null;
     let nextLegendaryNext = 999; // no longer used but kept for compat
     if(isLegendary){
@@ -5585,7 +5590,8 @@
     tpls.unshift({name:name.trim(),cats,cCats,rTime,ts:Date.now(),
       raceMode:document.getElementById('tog-race-el').classList.contains('on'),
       bonusAnswer:document.getElementById('tog-bonus-el').classList.contains('on'),
-      creativeVote:document.getElementById('tog-creative-el').classList.contains('on')});
+      creativeVote:document.getElementById('tog-creative-el').classList.contains('on'),
+      legendaryEnabled:document.getElementById('tog-legendary-el').classList.contains('on')});
     const tplsToSave=tpls.slice(0,10);
     localStorage.setItem('aretz_templates',JSON.stringify(tplsToSave));
     fbSave('templates',tplsToSave);
@@ -5655,6 +5661,7 @@
     document.getElementById('tog-race-el').classList.toggle('on',!!t.raceMode);
     document.getElementById('tog-bonus-el').classList.toggle('on',!!t.bonusAnswer);
     document.getElementById('tog-creative-el').classList.toggle('on',t.creativeVote!==false);
+    document.getElementById('tog-legendary-el').classList.toggle('on',t.legendaryEnabled!==false);
     toast('✅ תבנית הוחלה!');
   }
 
@@ -5908,6 +5915,18 @@
       overlay.style.opacity='0'; overlay.style.transition='opacity .4s';
       setTimeout(()=>{ overlay.remove(); if(onDone) onDone(); }, 400);
     }, 2800);
+  }
+
+  // ─── Helper: get categories including legendary cat ─────────────
+  function getEffectiveCats(room){
+    let cats = (room.categories || S.cats).slice();
+    if(room.isLegendary && room.legendaryCat){
+      const legCat = room.legendaryCat;
+      if(!cats.some(c=>c.id===legCat.id)){
+        cats = [...cats, {id:legCat.id, emoji:legCat.emoji, name:legCat.name, isLegendary:true}];
+      }
+    }
+    return cats;
   }
 
   // ─── Legendary hook into startGame ─────────────────────────────
@@ -6285,6 +6304,10 @@
   // Creative vote toggle
   document.getElementById('tog-creative-vote').addEventListener('click',()=>{
     document.getElementById('tog-creative-el').classList.toggle('on');
+  });
+  // Legendary mode toggle
+  document.getElementById('tog-legendary-mode').addEventListener('click',()=>{
+    document.getElementById('tog-legendary-el').classList.toggle('on');
   });
   // Tournament toggle
   document.getElementById('btn-save-template-pre').addEventListener('click',saveTemplate);
