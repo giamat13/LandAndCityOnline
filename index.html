@@ -3,7 +3,14 @@
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ארץ עיר אונליין</title>
+  <title>ארץ עיר אונליין – משחק לממ"ד 🚨</title>
+  <meta name="description" content="משחק ארץ עיר מרובה משתתפים לממ"ד — חינמי, מיידי, בלי הורדה">
+  <meta property="og:title" content='ארץ עיר אונליין – משחק לממ"ד 🚨'>
+  <meta property="og:description" content="משחק ארץ עיר מרובה משתתפים לממ"ד — חינמי, מיידי, בלי הורדה">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content='ארץ עיר אונליין – משחק לממ"ד 🚨'>
+  <meta name="twitter:description" content="משחק ארץ עיר מרובה משתתפים לממ"ד — חינמי, מיידי, בלי הורדה">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-SN0STQDDYT"></script>
   <script>
     window.dataLayer=window.dataLayer||[];
@@ -584,6 +591,135 @@
   .hist-date{font-size:.7rem;color:var(--muted);}
   .hist-cats{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
   .hist-letter{font-size:1.3rem;font-weight:900;color:var(--red);}
+
+  /* ── Streak Card ─────────────────────────────────────────────── */
+  .streak-card{background:var(--surface);border:1px solid rgba(233,69,96,.25);border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;cursor:default;box-shadow:0 4px 20px rgba(233,69,96,.1);}
+  .streak-fire{font-size:2.2rem;flex-shrink:0;animation:firePulse 1.5s ease-in-out infinite;}
+  @keyframes firePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+  .streak-info{flex:1;}
+  .streak-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;}
+  .streak-count{font-size:1.5rem;font-weight:900;color:var(--red);line-height:1;}
+  .streak-sub{font-size:.72rem;color:var(--muted);margin-top:3px;}
+  .streak-dots{display:flex;gap:5px;margin-top:8px;}
+  .streak-dot{width:28px;height:8px;border-radius:100px;background:var(--border);transition:background .4s;}
+  .streak-dot.done{background:var(--red);}
+  .streak-dot.today{background:var(--orange);animation:dotPulse 1s ease-in-out infinite;}
+  @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+  /* ── Legendary Overlay ───────────────────────────────────────── */
+  .legendary-overlay{
+    position:fixed;inset:0;z-index:500;
+    background:rgba(8,8,20,.92);backdrop-filter:blur(8px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;animation:fadeIn .3s ease;
+  }
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .legendary-star-ring{
+    font-size:4rem;
+    animation:starSpin 0.8s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes starSpin{0%{transform:scale(0) rotate(-180deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
+  .legendary-title{
+    font-size:2rem;font-weight:900;
+    background:linear-gradient(135deg,#f5a623,#ffd700,#f5a623);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    animation:fadeUp .4s .3s ease both;
+    text-align:center;
+  }
+  .legendary-cat-reveal{
+    background:rgba(245,166,35,.12);border:2px solid rgba(245,166,35,.4);
+    border-radius:16px;padding:16px 28px;text-align:center;
+    animation:fadeUp .4s .5s ease both;
+  }
+  .legendary-cat-emoji{font-size:2.5rem;margin-bottom:6px;}
+  .legendary-cat-name{font-size:1.2rem;font-weight:900;color:var(--orange);}
+  .legendary-badge{
+    background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.35);
+    color:var(--orange);border-radius:100px;padding:5px 16px;
+    font-size:.78rem;font-weight:700;
+    animation:fadeUp .4s .7s ease both;
+  }
+
+  /* ── Share Modal ─────────────────────────────────────────────── */
+  .share-modal-overlay{position:fixed;inset:0;z-index:3000;background:rgba(7,7,18,.88);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;padding:0 0 0 0;}
+  .share-modal-inner{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:24px;animation:slideUpModal .35s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes slideUpModal{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .share-result-card{background:linear-gradient(135deg,#0f0f1a,#1a1a2e);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;}
+  .share-result-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left,rgba(233,69,96,.12),transparent 60%),radial-gradient(ellipse at bottom right,rgba(76,201,240,.1),transparent 60%);pointer-events:none;}
+  .src-title{font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:4px;text-align:center;}
+  .src-cats{font-size:.72rem;color:rgba(255,255,255,.45);text-align:center;margin-bottom:14px;}
+  .src-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+  .src-row:last-child{border-bottom:none;}
+  .src-rank{font-size:1.1rem;width:26px;flex-shrink:0;}
+  .src-name{flex:1;font-weight:700;font-size:.9rem;color:#eee;}
+  .src-name.me{color:var(--blue);}
+  .src-pts{font-size:1rem;font-weight:900;color:var(--orange);}
+  .src-footer{font-size:.7rem;color:rgba(255,255,255,.3);text-align:center;margin-top:12px;}
+
+  /* ── Endowed Progress Popup ──────────────────────────────────── */
+  .ep-popup{
+    position:fixed;inset:0;z-index:3500;background:rgba(7,7,18,.9);backdrop-filter:blur(12px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    padding:24px;
+  }
+  .ep-achievement{
+    background:var(--surface);border:1.5px solid rgba(245,166,35,.4);border-radius:20px;
+    padding:20px 28px;text-align:center;width:100%;max-width:320px;
+    animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes popIn{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}
+  .ep-achievement+.ep-achievement{animation-delay:.2s;animation-fill-mode:both;}
+  .ep-icon{font-size:2.5rem;margin-bottom:8px;}
+  .ep-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;}
+  .ep-text{font-size:1rem;font-weight:900;color:var(--orange);}
+  /* ── Player Profile Modal ────────────────────────────────────── */
+  .ppm-overlay{position:fixed;inset:0;z-index:3200;background:rgba(7,7,18,.88);backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center;}
+  .ppm-inner{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:0 0 32px 0;animation:slideUpModal .35s cubic-bezier(.34,1.56,.64,1);overflow:hidden;}
+  .ppm-hero{position:relative;padding:28px 24px 20px;background:linear-gradient(160deg,var(--s2),var(--bg));text-align:center;border-bottom:1px solid var(--border);}
+  .ppm-close{position:absolute;top:14px;left:14px;background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:5px 12px;font-family:Heebo,sans-serif;font-size:.85rem;cursor:pointer;}
+  .ppm-avatar{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:2rem;margin:0 auto 10px;box-shadow:0 0 32px rgba(0,0,0,.4);}
+  .ppm-name{font-size:1.3rem;font-weight:900;margin-bottom:4px;}
+  .ppm-tag{font-size:.8rem;color:var(--muted);margin-bottom:10px;}
+  .ppm-badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px;}
+  .ppm-body{padding:20px 24px 0;}
+  .ppm-section{margin-bottom:18px;}
+  .ppm-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;}
+  .ppm-achievement{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px 14px;margin-bottom:7px;}
+  .ppm-ach-icon{font-size:1.4rem;flex-shrink:0;}
+  .ppm-ach-name{font-weight:700;font-size:.9rem;}
+  .ppm-ach-desc{font-size:.72rem;color:var(--muted);margin-top:1px;}
+  .ppm-stat-row{display:flex;gap:10px;}
+  .ppm-stat{flex:1;background:var(--s2);border-radius:10px;padding:10px;text-align:center;}
+  .ppm-stat-num{font-size:1.4rem;font-weight:900;color:var(--orange);}
+  .ppm-stat-label{font-size:.68rem;color:var(--muted);margin-top:2px;}
+  .pl-item{cursor:pointer;transition:background .15s;}
+  .pl-item:hover{background:rgba(76,201,240,.06);}
+  /* ── Achievements Screen ─────────────────────────────────────── */
+  .ach-overlay{position:fixed;inset:0;z-index:3100;background:rgba(7,7,18,.9);backdrop-filter:blur(14px);display:flex;align-items:flex-end;justify-content:center;}
+  .ach-inner{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;animation:slideUpModal .35s cubic-bezier(.34,1.56,.64,1);}
+  .ach-hdr{padding:20px 20px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2;display:flex;align-items:center;justify-content:space-between;}
+  .ach-title-wrap{display:flex;flex-direction:column;}
+  .ach-title{font-size:1.15rem;font-weight:900;}
+  .ach-subtitle{font-size:.72rem;color:var(--muted);margin-top:2px;}
+  .ach-close{background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:5px 14px;font-family:Heebo,sans-serif;font-size:.85rem;cursor:pointer;}
+  .ach-body{padding:16px 18px 40px;}
+  .ach-section-title{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px;}
+  .ach-item{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 14px;margin-bottom:7px;transition:opacity .2s;}
+  .ach-item.done{background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.22);}
+  .ach-item.locked{background:var(--s2);border:1px solid transparent;opacity:.4;filter:grayscale(.5);}
+  .ach-icon{font-size:1.5rem;width:36px;text-align:center;flex-shrink:0;}
+  .ach-info{flex:1;}
+  .ach-name{font-weight:800;font-size:.88rem;}
+  .ach-desc{font-size:.7rem;color:var(--muted);margin-top:2px;}
+  .ach-badge{font-size:.75rem;border-radius:100px;padding:2px 10px;flex-shrink:0;}
+  .ach-badge.done{background:rgba(245,166,35,.2);color:var(--orange);}
+  .ach-badge.locked{background:var(--s2);color:var(--muted);}
+  .ach-progress-bar-wrap{height:5px;background:var(--border);border-radius:100px;margin-top:5px;overflow:hidden;}
+  .ach-progress-bar{height:100%;background:var(--orange);border-radius:100px;transition:width .4s;}
+  .ach-summary{display:flex;gap:10px;margin-bottom:4px;}
+  .ach-sum-box{flex:1;background:var(--s2);border-radius:12px;padding:12px;text-align:center;}
+  .ach-sum-num{font-size:1.6rem;font-weight:900;color:var(--orange);}
+  .ach-sum-lbl{font-size:.68rem;color:var(--muted);margin-top:2px;}
   </style>
   </head>
   <body>
@@ -734,6 +870,18 @@
       </div>
       <span style="color:var(--muted);font-size:1rem;">✏️</span>
     </div>
+    <!-- Streak Card -->
+    <div id="streak-card" class="streak-card" style="display:none;">
+      <div class="streak-fire">🔥</div>
+      <div class="streak-info">
+        <div class="streak-title">רצף שבועי</div>
+        <div class="streak-count" id="streak-count-text">0 מתוך 5</div>
+        <div class="streak-sub" id="streak-sub-text">שחק 5 ימים השבוע לשמור על הרצף</div>
+        <div class="streak-dots" id="streak-dots"></div>
+      </div>
+      <button id="btn-open-achievements-streak" title="הישגים שלי" style="background:none;border:none;font-size:1.6rem;cursor:pointer;padding:4px;flex-shrink:0;">🏅</button>
+    </div>
+    <button id="btn-open-achievements" style="width:100%;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.25);color:var(--orange);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;margin-bottom:6px;">🏅 הישגים שלי</button>
     <div class="divider" style="margin:16px 0;">מה תרצה לעשות?</div>
     <div class="home-actions">
       <button class="btn btn-p" id="btn-show-create">✨ צור חדר חדש</button>
@@ -866,6 +1014,10 @@
         <div class="tog on" id="tog-creative-el"></div>
         <span class="tog-label">🌟 הצבעת יצירתיות אחרי פסילות (+10 נק' לזוכה)</span>
       </div>
+      <div class="tog-wrap" id="tog-legendary-mode" style="margin-bottom:16px;">
+        <div class="tog on" id="tog-legendary-el"></div>
+        <span class="tog-label">✨ סיבוב אגדי — קטגוריה מפתיעה אקראית (25% סיכוי)</span>
+      </div>
       <h3 style="margin-bottom:10px;">🌐 נראות חדר</h3>
       <div class="vis-opts" id="vis-opts">
         <div class="vis-opt sel" data-v="private">
@@ -903,7 +1055,15 @@
       <div class="code" id="lobby-code">------</div>
       <div class="hint">לחץ להעתקת קוד 📋</div>
     </div>
-    <button class="share-btn" id="btn-share-link">🔗 העתק לינק לחדר</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+      <button class="share-btn" id="btn-share-link" style="margin-top:0;background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25d366;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        שלח בוואטסאפ
+      </button>
+      <button class="share-btn" id="btn-copy-link" style="margin-top:0;">
+        🔗 העתק לינק
+      </button>
+    </div>
     <div class="card"><h3>🎮 קטגוריות</h3><div class="cats-prev" id="lobby-cats"></div></div>
     <div class="card">
       <h3>👥 שחקנים (<span id="pl-count">0</span>)</h3>
@@ -921,11 +1081,37 @@
       <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
       <button id="btn-invite-tmp" class="btn btn-s" style="display:none;margin-top:10px;">📨 הזמן משתמש זמני</button>
       <button id="btn-sim-players" class="btn btn-s" style="display:none;margin-top:10px;border-color:rgba(168,85,247,.4);color:#a855f7;font-size:.85rem;">🤖 הוסף שחקנים מדומים</button>
+      <!-- Space Game mini-banner for host while waiting -->
+      <a href="https://giamat13.github.io/space-game/" target="_blank" rel="noopener"
+        style="display:flex;align-items:center;gap:12px;margin-top:18px;padding:14px 16px;background:linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08));border:1.5px solid rgba(76,201,240,.2);border-radius:14px;text-decoration:none;transition:all .25s;"
+        onmouseover="this.style.borderColor='rgba(76,201,240,.5)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.15),rgba(168,85,247,.15))'"
+        onmouseout="this.style.borderColor='rgba(76,201,240,.2)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08))'">
+        <div style="font-size:2rem;flex-shrink:0;">🚀</div>
+        <div style="flex:1;">
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">מהמפתחים של ארץ עיר •</div>
+          <div style="font-size:.95rem;font-weight:800;color:var(--text);">Space Defender 🚀</div>
+          <div style="font-size:.75rem;color:var(--muted);">משחק חלל חינמי – לחץ לשחק!</div>
+        </div>
+        <div style="color:var(--blue);font-size:1rem;flex-shrink:0;">←</div>
+      </a>
     </div>
     <div id="guest-wait" style="display:none;">
       <div class="wait"><div class="spin"></div><p>מחכים שהמארח יתחיל...</p></div>
       <button id="btn-spectator-upgrade" style="display:none;margin-top:12px;" class="btn btn-s">🎮 הצטרף כשחקן רגיל</button>
       <button id="btn-become-spectator" style="display:none;margin-top:8px;" class="btn btn-s" style="opacity:.7;font-size:.88rem;">👁 עבור למצב צופה</button>
+      <!-- Space Game mini-banner while waiting -->
+      <a href="https://giamat13.github.io/space-game/" target="_blank" rel="noopener"
+        style="display:flex;align-items:center;gap:12px;margin-top:18px;padding:14px 16px;background:linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08));border:1.5px solid rgba(76,201,240,.2);border-radius:14px;text-decoration:none;transition:all .25s;"
+        onmouseover="this.style.borderColor='rgba(76,201,240,.5)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.15),rgba(168,85,247,.15))'"
+        onmouseout="this.style.borderColor='rgba(76,201,240,.2)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08))'">
+        <div style="font-size:2rem;flex-shrink:0;">🚀</div>
+        <div style="flex:1;">
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">מהמפתחים של ארץ עיר •</div>
+          <div style="font-size:.95rem;font-weight:800;color:var(--text);">Space Defender 🚀</div>
+          <div style="font-size:.75rem;color:var(--muted);">משחק חלל חינמי – לחץ לשחק!</div>
+        </div>
+        <div style="color:var(--blue);font-size:1rem;flex-shrink:0;">←</div>
+      </a>
     </div>
   </div>
 
@@ -984,6 +1170,19 @@
           <span class="sub-label" id="sub-label-wait"></span>
         </div>
       </div>
+      <!-- Space Game mini-banner while waiting for others -->
+      <a href="https://giamat13.github.io/space-game/" target="_blank" rel="noopener"
+        style="display:flex;align-items:center;gap:12px;margin-top:16px;padding:14px 16px;background:linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08));border:1.5px solid rgba(76,201,240,.2);border-radius:14px;text-decoration:none;transition:all .25s;"
+        onmouseover="this.style.borderColor='rgba(76,201,240,.5)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.15),rgba(168,85,247,.15))'"
+        onmouseout="this.style.borderColor='rgba(76,201,240,.2)';this.style.background='linear-gradient(135deg,rgba(76,201,240,.08),rgba(168,85,247,.08))'">
+        <div style="font-size:2rem;flex-shrink:0;">🚀</div>
+        <div style="flex:1;">
+          <div style="font-size:.78rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">מהמפתחים של ארץ עיר •</div>
+          <div style="font-size:.95rem;font-weight:800;color:var(--text);">Space Defender 🚀</div>
+          <div style="font-size:.75rem;color:var(--muted);">משחק חלל חינמי – לחץ לשחק!</div>
+        </div>
+        <div style="color:var(--blue);font-size:1rem;flex-shrink:0;">←</div>
+      </a>
     </div>
   </div>
 
@@ -1063,6 +1262,7 @@
     <div id="host-next" style="display:none;">
       <button class="btn btn-p" id="btn-next-round">▶️ סיבוב הבא</button>
       <button class="btn btn-s" id="btn-end-game" style="display:none;margin-top:10px;">🏁 סיים משחק</button>
+      <button class="btn btn-s" id="btn-force-legendary" style="display:none;margin-top:8px;border-color:rgba(245,166,35,.5);color:var(--orange);font-size:.82rem;">🌟 [DEV] הסיבוב הבא אגדי</button>
     </div>
     <div id="guest-next" style="display:none;">
       <div class="wait"><div class="spin"></div><p>מחכים שהמארח יחליט...</p></div>
@@ -1147,10 +1347,200 @@
   let currentUser = null;
   window._dbg = { getAuth:()=>auth, getUser:()=>currentUser, getDb:()=>db };
 
+  // ═══════════════════════════════════════════════════════════════
+  // ─── ANALYTICS (#GA) ────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  function lacTrack(eventName, params = {}) {
+    try {
+      if (typeof gtag !== 'function') return;
+      gtag('event', eventName, {
+        ...params,
+        player_name: S?.pName || 'unknown',
+        is_supporter: (S_pSupporterLevel > 0),
+        supporter_level: S_pSupporterLevel || 0,
+      });
+    } catch(e) {}
+  }
+
+  function setAnalyticsUserProps() {
+    try {
+      if (typeof gtag !== 'function') return;
+      const isSupporter = (S_pSupporterLevel > 0);
+      gtag('set', 'user_properties', {
+        is_supporter:       isSupporter,
+        supporter_level:    S_pSupporterLevel || 0,
+        player_name:        S?.pName || 'unknown',
+        has_streak:         getStreakData ? getStreakData().isActive : false,
+        ref_count:          S_pRefCount || 0,
+        has_custom_profile: !!(S_pEmoji || S_pFrame || S_pTag),
+      });
+    } catch(e) {}
+  }
+
+  // Track session start time for session_duration event
+  const _sessionStartTs = Date.now();
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── PLAYER PROFILE MODAL ───────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  function computeAchievements(player, permLb) {
+    const achievements = [];
+    const name = player.name || '';
+    const level = player.supporterLevel || 0;
+    const role = player.devRole || null;
+
+    // Always: new player
+    achievements.push({ icon:'🎮', name:'שחקן רשום', desc:'הצטרף לארץ עיר' });
+
+    // Supporter badges
+    if (level >= 1) achievements.push({ icon:'🌟', name:'Supporter', desc:`תומך ברמה ${level} — הפיץ את המשחק` });
+    if (level >= 3) achievements.push({ icon:'🏅', name:'Supporter ותיק', desc:'10+ הפצות!' });
+    if (level >= 6) achievements.push({ icon:'🔥', name:'Supporter VI אגדי', desc:'50+ הפצות — מדהים!' });
+
+    // Dev role
+    if (role === 'main-dev') achievements.push({ icon:'⚡', name:'מפתח ראשי', desc:'בנה את ארץ עיר' });
+    else if (role === 'dev') achievements.push({ icon:'🔧', name:'מפתח', desc:'חלק מצוות הפיתוח' });
+    else if (role === 'supporter') achievements.push({ icon:'💚', name:'תומך', desc:'תמך בפיתוח' });
+
+    // Perm leaderboard stats
+    if (permLb) {
+      const key = name.replace(/[.#$/\[\]]/g, '_');
+      const entry = permLb[key];
+      if (entry) {
+        if (entry.games >= 5)  achievements.push({ icon:'🏆', name:'שחקן מנוסה', desc:`${entry.games} משחקים בחדר` });
+        if (entry.games >= 20) achievements.push({ icon:'👑', name:'לגנד', desc:`${entry.games} משחקים — מרשים!` });
+        const avg = entry.games > 0 ? Math.round(entry.total / entry.games) : 0;
+        if (avg >= 50) achievements.push({ icon:'🎯', name:'מדייק', desc:`ממוצע ${avg} נק' למשחק` });
+      }
+    }
+
+    // Tag set
+    if (player.tag) achievements.push({ icon:'🏷️', name:'בעל תגית', desc:`"${player.tag}"` });
+
+    // Frame
+    if (player.frame) achievements.push({ icon:'🖼️', name:'מסוגנן', desc:'פריים מותאם אישית' });
+
+    return achievements;
+  }
+
+  async function showPlayerProfile(player, roomId) {
+    // Remove existing modal
+    document.getElementById('ppm-modal')?.remove();
+
+    const c = avc(player.name, player.color);
+    const avatarContent = player.emoji || player.name?.charAt(0) || '?';
+    const frameClass = (player.devRole === 'main-dev') ? 'av-frame-main-dev' : (player.frame ? 'av-frame-' + player.frame : '');
+
+    // Load permLeaderboard if in a room
+    let permLb = null;
+    if (roomId) {
+      try {
+        const lbSnap = await get(ref(db, 'rooms/' + roomId + '/permLeaderboard'));
+        permLb = lbSnap.val() || null;
+      } catch(e) {}
+    }
+
+    const achievements = computeAchievements(player, permLb);
+
+    // Stats from permLb
+    let gamesPlayed = 0, totalScore = 0, avgScore = 0;
+    if (permLb) {
+      const key = (player.name || '').replace(/[.#$/\[\]]/g, '_');
+      const entry = permLb[key];
+      if (entry) {
+        gamesPlayed = entry.games || 0;
+        totalScore = entry.total || 0;
+        avgScore = gamesPlayed > 0 ? Math.round(totalScore / gamesPlayed) : 0;
+      }
+    }
+
+    // Badges HTML
+    const badgesHtml = [
+      devBadge(player.devRole, player.supporterLevel, player.activeBadge),
+      player.spectator ? '<span class="spec-b">👁 צופה</span>' : ''
+    ].filter(Boolean).join('');
+
+    const achievementsHtml = achievements.map(a => `
+      <div class="ppm-achievement">
+        <div class="ppm-ach-icon">${a.icon}</div>
+        <div>
+          <div class="ppm-ach-name">${a.name}</div>
+          <div class="ppm-ach-desc">${a.desc}</div>
+        </div>
+      </div>`).join('');
+
+    const statsHtml = (gamesPlayed > 0) ? `
+      <div class="ppm-section">
+        <div class="ppm-section-title">📊 סטטיסטיקות בחדר</div>
+        <div class="ppm-stat-row">
+          <div class="ppm-stat">
+            <div class="ppm-stat-num">${gamesPlayed}</div>
+            <div class="ppm-stat-label">משחקים</div>
+          </div>
+          <div class="ppm-stat">
+            <div class="ppm-stat-num">${totalScore}</div>
+            <div class="ppm-stat-label">נק' סה"כ</div>
+          </div>
+          <div class="ppm-stat">
+            <div class="ppm-stat-num">${avgScore}</div>
+            <div class="ppm-stat-label">ממוצע</div>
+          </div>
+        </div>
+      </div>` : '';
+
+    // Streak: show our own or try to get from Firebase if other player
+    let streakHtml = '';
+    const isMyProfile = (player.name === S.pName);
+    if (isMyProfile) {
+      const sd = getStreakData();
+      if (sd.count > 0) {
+        const dotsHtml = sd.days.map(d => `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${d.played?'var(--orange)':'var(--border)'};margin:0 2px;"></span>`).join('');
+        streakHtml = `<div class="ppm-section">
+          <div class="ppm-section-title">🔥 רצף שבועי</div>
+          <div style="background:var(--s2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="font-size:1.8rem;">${sd.isActive?'🏆':'🔥'}</div>
+            <div>
+              <div style="font-weight:800;font-size:.95rem;">${sd.count} מתוך 5 ימים ${sd.isActive?'✅':''}</div>
+              <div style="margin-top:6px;">${dotsHtml}</div>
+            </div>
+          </div>
+        </div>`;
+      }
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'ppm-modal';
+    modal.className = 'ppm-overlay';
+    modal.innerHTML = `
+      <div class="ppm-inner">
+        <div class="ppm-hero">
+          <button class="ppm-close" id="ppm-close-btn">✕ סגור</button>
+          <div class="ppm-avatar ${frameClass}" style="background:${c}22;color:${c};">${avatarContent}</div>
+          <div class="ppm-name">${player.name || '?'}</div>
+          ${player.tag ? `<div class="ppm-tag">${player.tag}</div>` : ''}
+          <div class="ppm-badges">${badgesHtml || '<span style="font-size:.75rem;color:var(--muted);">אין תגים</span>'}</div>
+        </div>
+        <div class="ppm-body">
+          ${statsHtml}
+          ${streakHtml}
+          <div class="ppm-section">
+            <div class="ppm-section-title">🏅 הישגים (${achievements.length})</div>
+            ${achievementsHtml}
+          </div>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.getElementById('ppm-close-btn').addEventListener('click', () => modal.remove());
+
+    lacTrack('view_player_profile', { viewed_player: player.name });
+  }
+
   // ─── FIREBASE SYNC HELPERS ────────────────────────────────────────
   // Keys that are synced to Firebase when user is logged in
   // lac_s (session) is intentionally NOT synced — it's device-specific
-  const FB_SYNC_KEYS = ['profile','myrooms','theme','tut','templates','gameHistory'];
+  const FB_SYNC_KEYS = ['profile','myrooms','theme','tut','templates','gameHistory','playDates'];
 
   async function fbSave(key, data) {
     if (!currentUser) return;
@@ -1348,6 +1738,20 @@
           await set(ref(db,'users/'+currentUser.uid+'/gameHistory'), dedupedH).catch(()=>{});
         }
         loadGameHistory();
+      }
+
+      // ── PLAY DATES: merge, keep last 30 ──
+      const localDates = (() => { try { return JSON.parse(localStorage.getItem(STREAK_KEY)||'[]'); } catch(e){ return []; } })();
+      const cloudDates = cloud.playDates ? (Array.isArray(cloud.playDates) ? cloud.playDates : Object.values(cloud.playDates)) : [];
+      if(cloudDates.length || localDates.length){
+        const merged = [...new Set([...cloudDates, ...localDates])];
+        const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+        const deduped = merged.filter(d=>new Date(d)>=cutoff).sort();
+        try{ localStorage.setItem(STREAK_KEY, JSON.stringify(deduped)); }catch(e){}
+        if(deduped.length > cloudDates.length){
+          await set(ref(db,'users/'+currentUser.uid+'/playDates'), deduped).catch(()=>{});
+        }
+        renderStreakCard();
       }
 
     } catch(e) { console.warn('Firebase sync error:', e); throw e; }
@@ -1976,13 +2380,18 @@
   document.getElementById('btn-profile-continue').addEventListener('click',()=>{
     const n=document.getElementById('prof-name').value.trim();
     if(!n){toast('נא להזין שם שחקן');return;}
+    const isFirstTime = !localStorage.getItem('aretz_ep_shown') && !S.pName;
     S.pName=n;
     S_pTag=( document.getElementById('prof-tag-inp').value.trim()||null );
     S_pRoomName=document.getElementById('prof-room-name').value.trim();
     document.getElementById('player-name').value=n;
     saveProfile();
+    setAnalyticsUserProps();
+    lacTrack('profile_complete', { has_emoji: !!S_pEmoji, has_frame: !!S_pFrame, has_tag: !!S_pTag, has_entry_effect: S_pEntry !== 'none' });
     updateHomeIdentity();
     showScreen('home');
+    renderStreakCard();
+    if(isFirstTime) setTimeout(showEndowedProgress, 400);
   });
   document.getElementById('prof-name').addEventListener('keydown',e=>{
     if(e.key==='Enter')document.getElementById('btn-profile-continue').click();
@@ -1995,6 +2404,7 @@
     setupProfileScreen();
     showScreen('home');
     updateHomeIdentity();
+    renderStreakCard();
     // Initialize refId if missing after loading profile
     if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
   } else {
@@ -2416,12 +2826,13 @@
 
     S.bonusAnswer=document.getElementById('tog-bonus-el').classList.contains('on');
     S.creativeVoteEnabled=document.getElementById('tog-creative-el').classList.contains('on');
+    S.legendaryEnabled=document.getElementById('tog-legendary-el')?.classList.contains('on')!==false;
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
     let roomId,t=0;
     do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
     S.roomId=roomId;
     await set(ref(db,'rooms/'+roomId),{
-      host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,bonusAnswer:S.bonusAnswer,creativeVoteEnabled:S.creativeVoteEnabled,
+      host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,bonusAnswer:S.bonusAnswer,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,
       uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
@@ -2447,6 +2858,10 @@
     }
     saveSession();
     enterLobby();
+    lacTrack('room_created', { room_id: roomId, cat_count: active.length, round_time: S.rTime, race_mode: S.raceMode, visibility: S.visibility });
+    // Track room creation for achievements
+    const rc = parseInt(localStorage.getItem('aretz_rooms_created')||'0')+1;
+    localStorage.setItem('aretz_rooms_created', rc);
   };
 
   // ─── JOIN ROOM ────────────────────────────────────────────────────
@@ -2484,6 +2899,8 @@
       emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'
     });
     touchActivity();saveSession();
+
+    lacTrack('room_joined', { room_id: code, as_spectator: asSpectator });
 
     if(inProgress){
       enterRoom();
@@ -2996,6 +3413,11 @@
             ${S.isHost&&pid!==S.pId?(backupIdx>=0?`<button class="remove-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הסר מגיבויים" style="background:rgba(15,186,129,.15);border:1px solid rgba(15,186,129,.4);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️ ✓</button>`:`<button class="add-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הוסף לגיבויים" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️+</button>`):''}
           </div>`;
         list.appendChild(el);
+        // 👤 Click to show player profile (not self, not for buttons)
+        el.addEventListener('click', e => {
+          if (e.target.closest('button')) return;
+          showPlayerProfile(p, S.roomId);
+        });
       });
       // Kick button handler
       list.querySelectorAll('.kick-btn').forEach(btn=>{
@@ -3109,11 +3531,57 @@
   }
   function shareLink(){
     const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
-    if(navigator.share){
-      navigator.share({title:'ארץ עיר אונליין',text:'הצטרף למשחק!',url}).catch(()=>{});
-    }else{
-      navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🔗'));
-    }
+    // Always show share panel with both options
+    showSharePanel(url,'הצטרף למשחק ארץ עיר! 🌍',S.roomId);
+  }
+
+  function showSharePanel(url, waText, code){
+    // Remove existing panel if any
+    const existing=document.getElementById('share-panel-overlay');
+    if(existing){existing.remove();return;}
+    const waMsg=encodeURIComponent(`${waText}\nהצטרף לחדר: ${code}\n${url}`);
+    const panel=document.createElement('div');
+    panel.id='share-panel-overlay';
+    panel.style.cssText=`position:fixed;inset:0;z-index:3000;background:rgba(10,10,25,.85);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;padding:16px;`;
+    panel.innerHTML=`
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="font-size:1rem;font-weight:900;">📤 שיתוף החדר</div>
+          <button onclick="document.getElementById('share-panel-overlay').remove()" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-family:Heebo,sans-serif;cursor:pointer;font-size:.85rem;">✕</button>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+          <span style="flex:1;font-size:.78rem;color:var(--muted);word-break:break-all;">${url}</span>
+          <button id="sp-copy-url" style="background:rgba(76,201,240,.15);color:var(--blue);border:1.5px solid rgba(76,201,240,.3);border-radius:8px;padding:7px 13px;font-family:Heebo,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">📋 העתק</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <a href="https://wa.me/?text=${waMsg}" target="_blank" rel="noopener"
+            style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:rgba(37,211,102,.12);border:1.5px solid rgba(37,211,102,.3);border-radius:12px;color:#25d366;font-family:Heebo,sans-serif;font-size:.9rem;font-weight:700;text-decoration:none;transition:background .2s;"
+            onmouseover="this.style.background='rgba(37,211,102,.22)'" onmouseout="this.style.background='rgba(37,211,102,.12)'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            וואטסאפ
+          </a>
+          <button id="sp-native-share" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:rgba(76,201,240,.12);border:1.5px solid rgba(76,201,240,.3);border-radius:12px;color:var(--blue);font-family:Heebo,sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;width:100%;transition:background .2s;"
+            onmouseover="this.style.background='rgba(76,201,240,.22)'" onmouseout="this.style.background='rgba(76,201,240,.12)'">
+            🔗 שיתוף ישיר
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(panel);
+    panel.addEventListener('click',e=>{if(e.target===panel)panel.remove();});
+    document.getElementById('sp-copy-url').addEventListener('click',()=>{
+      navigator.clipboard.writeText(url).then(()=>{
+        const btn=document.getElementById('sp-copy-url');
+        if(btn){btn.textContent='✓ הועתק!';btn.style.color='var(--green)';}
+        toast('לינק הועתק! 🔗');
+      });
+    });
+    document.getElementById('sp-native-share').addEventListener('click',()=>{
+      if(navigator.share){
+        navigator.share({title:'ארץ עיר אונליין',text:waText,url}).catch(()=>{});
+      }else{
+        navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🔗'));
+      }
+    });
   }
 
   function leaveRoom(){
@@ -3336,13 +3804,17 @@
     if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
+    // 🌟 Legendary round: schedule first legendary
+    const legendaryNext = getNextLegendaryRound(0);
     await update(ref(db,`rooms/${S.roomId}`),{
       status:'playing',round:1,letter,uniqueLetters:S.uniqueLetters,
       catStartedAt:Date.now(),currentCatIndex:0,
-      catAnswers:null,lastActivity:Date.now()
+      catAnswers:null,lastActivity:Date.now(),
+      legendaryNext, legendaryCat:null, isLegendary:false
     });
     // Remove from public listing once game starts
     if(S.visibility!=='private') remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});
+    lacTrack('round_start', { round_number: 1, letter: letter, is_legendary: false });
   };
 
   // ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
@@ -3360,6 +3832,26 @@
     S.bonusUsedThisRound=false;
     S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
     S.catSubmitted=false;
+
+    // 🌟 Legendary round: always inject cat (not just on first cat)
+    if(r.isLegendary && r.legendaryCat){
+      const legCat = r.legendaryCat;
+      const alreadyIn = S.cats.some(c=>c.id===legCat.id);
+      if(!alreadyIn){
+        S.cats = [...S.cats, {id:legCat.id, emoji:legCat.emoji, name:legCat.name, isLegendary:true}];
+      }
+      // Show overlay only on first cat of the round
+      if(S.currentCatIndex===0){
+        const overlayFlag = `leg_shown_${S.roomId}_r${S.rNum}`;
+        if(!sessionStorage.getItem(overlayFlag)){
+          sessionStorage.setItem(overlayFlag,'1');
+          await new Promise(resolve=>{
+            showLegendaryOverlay(legCat, resolve);
+          });
+        }
+      }
+    }
+
     enterRoom();
     // Check if we already submitted this category
     const cat=S.cats[S.currentCatIndex];
@@ -3721,6 +4213,7 @@
     }
     showEditMode(ansArr);
     touchActivity();saveSession();
+    lacTrack('answer_submitted', { cat_name: cat?.name, answer_count: ansArr.length, has_bonus: bonusIdx >= 0, time_left: S.timeLeft, round_number: S.rNum });
   }
 
   function showEditMode(submittedAnswers){
@@ -3849,8 +4342,7 @@
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
     const catAnswers=room.catAnswers||{};
-    const cats=room.categories||S.cats;
-    S.showVoters=room.showVoters||false;
+    const cats=getEffectiveCats(room);
     const vetoThresholdType=room.vetoThresholdType||'percent';
     const vetoThresholdValue=room.vetoThresholdValue!=null?room.vetoThresholdValue:50;
     // Update info label
@@ -3965,6 +4457,7 @@
             await remove(voteRef);
           }else{
             await set(voteRef,vKey);
+            lacTrack('veto_cast', { cat_id: cId, round_number: S.rNum });
           }
           touchActivity();
         });
@@ -4001,7 +4494,7 @@
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
     const catAnswers=room.catAnswers||{};
-    const cats=room.categories||S.cats;
+    const cats=getEffectiveCats(room);
     const vetoes=room.vetoes||{};
     const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=psSnap.val()||{};
@@ -4154,7 +4647,7 @@
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
     const catAnswers=room.catAnswers||{};
-    const cats=room.categories||S.cats;
+    const cats=getEffectiveCats(room);
     S.totalRounds=room.totalRounds||0;
     S.cumulativeSB=room.cumulativeSB!==false;
     S.uniqueLetters=room.uniqueLetters||false;
@@ -4299,6 +4792,8 @@
 
     showScreen('results');
     setTimeout(()=>tryStartTut('results'),500);
+    // 🎯 Record play date for streak system
+    recordPlayDate();
 
     // Clear my previous vote
     await remove(ref(db,`rooms/${S.roomId}/continueVotes/${S.pId}`));
@@ -4341,6 +4836,12 @@
           btnEndG.style.display=endWins?'block':'none';
           btnNext.textContent=`▶️ סיבוב הבא (${contCount} הצביעו)`;
           btnEndG.textContent=`🏁 סיים משחק (${endCount} הצביעו)`;
+          // Dev button: show if host has any dev role
+          const devBtn=document.getElementById('btn-force-legendary');
+          if(devBtn){
+            const isDev=S_pDevRoles&&(S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev'));
+            devBtn.style.display=(isDev&&!endWins)?'block':'none';
+          }
         }else{
           hostNext.style.display='none';
         }
@@ -4354,6 +4855,18 @@
     const myRoundPlace=sortedByRound.findIndex(([pid])=>pid===S.pId)+1;
     const roundWinnerName=sortedByRound[0]?.[1]?.name||'';
     setTimeout(()=>showVictoryAnim(myRoundPlace, roundWinnerName),500);
+
+    // 📊 Track round_win
+    lacTrack('round_complete', {
+      round_number: room.round,
+      letter: room.letter,
+      my_place: myRoundPlace,
+      my_score: rScores[S.pId]||0,
+      player_count: sortedByRound.length,
+    });
+    if (myRoundPlace === 1) {
+      lacTrack('round_win', { round_number: room.round, letter: room.letter, score: rScores[S.pId]||0 });
+    }
 
     if(!S.isHost){
       addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
@@ -4588,6 +5101,23 @@
       .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
     const myPlace=sorted.findIndex(([pid])=>pid===S.pId)+1;
     setTimeout(()=>showVictoryAnim(myPlace, sorted[0]?.[1]?.name||''),400);
+
+    // 📊 Track game_complete + session_duration
+    const sessionSec = Math.round((Date.now() - _sessionStartTs) / 1000);
+    lacTrack('game_complete', {
+      final_place: myPlace,
+      final_score: players[S.pId]?.score || 0,
+      total_rounds: S.rNum,
+      player_count: sorted.length,
+    });
+    lacTrack('session_duration', { seconds: sessionSec, rounds_played: S.rNum });
+    // Increment games played counter for achievements
+    const gp = parseInt(localStorage.getItem('aretz_games_played')||'0')+1;
+    localStorage.setItem('aretz_games_played', gp);
+    // Track wins
+    if(myPlace === 1){ const w=parseInt(localStorage.getItem('aretz_wins')||'0')+1; localStorage.setItem('aretz_wins',w); }
+    // Track top-3 finishes
+    if(myPlace <= 3){ const t3=parseInt(localStorage.getItem('aretz_top3')||'0')+1; localStorage.setItem('aretz_top3',t3); }
   }
 
   async function nextRound(){
@@ -4597,11 +5127,28 @@
     }
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.rNum++;S.letter=letter;S.currentCatIndex=0;S.bonusUsedThisRound=false;
+
+    // 🌟 Legendary: 25% chance, or forced by dev button
+    const roomSnap = await get(ref(db,`rooms/${S.roomId}`));
+    const roomData2 = roomSnap.val()||{};
+    const forcedLegendary = roomData2.forceLegendaryNext === true;
+    const legendaryEnabled = roomData2.legendaryEnabled !== false;
+    let isLegendary = legendaryEnabled && (forcedLegendary || (Math.random() < 0.25));
+    let legendaryCat = null;
+    let nextLegendaryNext = 999; // no longer used but kept for compat
+    if(isLegendary){
+      legendaryCat = pickLegendaryCat();
+    }
+
     await update(ref(db,`rooms/${S.roomId}`),{
       status:'playing',round:S.rNum,letter,
       catStartedAt:Date.now(),currentCatIndex:0,
-      catAnswers:null,vetoes:null,disqualified:null,continueVotes:null,lastActivity:Date.now()
+      catAnswers:null,vetoes:null,disqualified:null,continueVotes:null,lastActivity:Date.now(),
+      isLegendary, legendaryCat: legendaryCat||null, legendaryNext: nextLegendaryNext,
+      forceLegendaryNext: null
     });
+    lacTrack('round_start', { round_number: S.rNum, letter, is_legendary: isLegendary });
+    if (isLegendary) lacTrack('legendary_round', { round_number: S.rNum, cat_name: legendaryCat?.name });
     await loadRound();
   }
 
@@ -5044,7 +5591,8 @@
     tpls.unshift({name:name.trim(),cats,cCats,rTime,ts:Date.now(),
       raceMode:document.getElementById('tog-race-el').classList.contains('on'),
       bonusAnswer:document.getElementById('tog-bonus-el').classList.contains('on'),
-      creativeVote:document.getElementById('tog-creative-el').classList.contains('on')});
+      creativeVote:document.getElementById('tog-creative-el').classList.contains('on'),
+      legendaryEnabled:document.getElementById('tog-legendary-el').classList.contains('on')});
     const tplsToSave=tpls.slice(0,10);
     localStorage.setItem('aretz_templates',JSON.stringify(tplsToSave));
     fbSave('templates',tplsToSave);
@@ -5114,44 +5662,598 @@
     document.getElementById('tog-race-el').classList.toggle('on',!!t.raceMode);
     document.getElementById('tog-bonus-el').classList.toggle('on',!!t.bonusAnswer);
     document.getElementById('tog-creative-el').classList.toggle('on',t.creativeVote!==false);
+    document.getElementById('tog-legendary-el').classList.toggle('on',t.legendaryEnabled!==false);
     toast('✅ תבנית הוחלה!');
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // ─── SHARE RESULTS ─────────────────────────────────────────────
+  // ─── STREAK SYSTEM (#2) ────────────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
+  const STREAK_KEY = 'aretz_play_dates';
+
+  function getTodayStr(){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function recordPlayDate(){
+    try{
+      const today = getTodayStr();
+      let dates = JSON.parse(localStorage.getItem(STREAK_KEY)||'[]');
+      const wasActive = getStreakData().isActive;
+      if(!dates.includes(today)) dates.push(today);
+      // Keep only last 30 days
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+      dates = dates.filter(d => new Date(d) >= cutoff);
+      localStorage.setItem(STREAK_KEY, JSON.stringify(dates));
+      fbSave('playDates', dates);
+      renderStreakCard();
+      // Track streak if newly achieved
+      const nowActive = getStreakData().isActive;
+      if(!wasActive && nowActive) lacTrack('streak_achieved', { streak_days: getStreakData().count });
+    }catch(e){}
+  }
+
+  function getStreakData(){
+    try{
+      const dates = JSON.parse(localStorage.getItem(STREAK_KEY)||'[]');
+      const today = new Date(); today.setHours(0,0,0,0);
+      const last7 = [];
+      for(let i=0; i<7; i++){
+        const d = new Date(today); d.setDate(today.getDate()-i);
+        const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        last7.unshift(s);
+      }
+      const playedSet = new Set(dates);
+      const days = last7.map(d=>({date:d, played:playedSet.has(d)}));
+      const count = days.filter(d=>d.played).length;
+      return {days, count, isActive: count>=5};
+    }catch(e){ return {days:[], count:0, isActive:false}; }
+  }
+
+  function renderStreakCard(){
+    const {days, count, isActive} = getStreakData();
+    const card = document.getElementById('streak-card');
+    if(!card) return;
+    // Always show if they have played at least 1 day
+    if(count === 0){ card.style.display='none'; return; }
+    card.style.display = 'flex';
+
+    document.getElementById('streak-count-text').textContent = `${count} מתוך 5 ימים השבוע`;
+    const subEl = document.getElementById('streak-sub-text');
+    if(isActive){
+      subEl.textContent = '✅ הרצף שלך מוגן לשבוע הזה!';
+      subEl.style.color = 'var(--green)';
+      card.style.borderColor = 'rgba(15,186,129,.3)';
+      document.querySelector('.streak-fire').textContent = '🏆';
+    } else {
+      const needed = 5 - count;
+      subEl.textContent = `עוד ${needed} ימים לשמור על הרצף 🔥`;
+      subEl.style.color = '';
+      card.style.borderColor = 'rgba(233,69,96,.25)';
+      document.querySelector('.streak-fire').textContent = '🔥';
+    }
+    const dotsEl = document.getElementById('streak-dots');
+    dotsEl.innerHTML = '';
+    const todayStr = getTodayStr();
+    days.forEach(({date, played})=>{
+      const dot = document.createElement('div');
+      dot.className = 'streak-dot' + (played ? (date===todayStr?' today':' done') : '');
+      dotsEl.appendChild(dot);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── ACHIEVEMENTS SCREEN ────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  const ALL_ACHIEVEMENTS = [
+    // Streak
+    { id:'streak_1',    section:'🔥 רצף שבועי',   icon:'🔥', name:'ניצוץ ראשון',       desc:'שחקת יום אחד השבוע',              check: ()=>getStreakData().count>=1 },
+    { id:'streak_3',    section:'🔥 רצף שבועי',   icon:'🔥', name:'חצי שבוע',           desc:'שחקת 3 ימים השבוע',               check: ()=>getStreakData().count>=3 },
+    { id:'streak_5',    section:'🔥 רצף שבועי',   icon:'🏆', name:'שחקן שבועי',         desc:'שחקת 5 ימים השבוע — רצף שמור!',  check: ()=>getStreakData().isActive },
+    // Profile
+    { id:'prof_name',   section:'👤 פרופיל',        icon:'✍️', name:'שם שלי',             desc:'הגדרת שם שחקן',                   check: ()=>!!S.pName },
+    { id:'prof_emoji',  section:'👤 פרופיל',        icon:'😎', name:'אמוג\'י אישי',      desc:'בחרת אמוג\'י',                    check: ()=>!!S_pEmoji },
+    { id:'prof_tag',    section:'👤 פרופיל',        icon:'🏷️', name:'תגית אישית',         desc:'הוספת תגית',                      check: ()=>!!S_pTag },
+    { id:'prof_frame',  section:'👤 פרופיל',        icon:'🖼️', name:'פריים',              desc:'בחרת פריים לאווטאר',              check: ()=>!!S_pFrame },
+    { id:'prof_entry',  section:'👤 פרופיל',        icon:'✨', name:'כניסה מושלמת',      desc:'הפעלת אפקט כניסה',                check: ()=>S_pEntry&&S_pEntry!=='none' },
+    // Wins
+    { id:'first_win',   section:'🏆 ניצחונות',     icon:'🥇', name:'ניצחון ראשון',       desc:'סיימת במקום הראשון!',             check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=1 },
+    { id:'wins_3',      section:'🏆 ניצחונות',     icon:'🏆', name:'מנצח',               desc:'3 ניצחונות',                       check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=3 },
+    { id:'wins_5',      section:'🏆 ניצחונות',     icon:'👑', name:'מנצח סדרתי',         desc:'5 ניצחונות',                       check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=5 },
+    { id:'wins_10',     section:'🏆 ניצחונות',     icon:'💎', name:'מלך ארץ עיר',        desc:'10 ניצחונות — מדהים!',             check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=10 },
+    { id:'top3_5',      section:'🏆 ניצחונות',     icon:'🥉', name:'שחקן top3',          desc:'סיימת בשלוש הראשונים 5 פעמים',    check: ()=>parseInt(localStorage.getItem('aretz_top3')||'0')>=5 },
+    // Games
+    { id:'first_game',  section:'🎮 משחקים',        icon:'🎮', name:'משחק ראשון',         desc:'שיחקת בפעם הראשונה',              check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=1 },
+    { id:'games_5',     section:'🎮 משחקים',        icon:'🏅', name:'שחקן מנוסה',         desc:'שיחקת 5 משחקים',                  check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=5 },
+    { id:'games_10',    section:'🎮 משחקים',        icon:'⭐', name:'מכור',               desc:'10 משחקים — יאללה!',               check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=10 },
+    { id:'games_20',    section:'🎮 משחקים',        icon:'👑', name:'ותיק',               desc:'20+ משחקים',                       check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=20 },
+    { id:'games_50',    section:'🎮 משחקים',        icon:'🌈', name:'לגנד',              desc:'50+ משחקים',                       check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=50 },
+    // Room creation
+    { id:'room_1',      section:'🏠 חדרים',         icon:'🔑', name:'מארח ראשי',          desc:'יצרת חדר פעם ראשונה',             check: ()=>parseInt(localStorage.getItem('aretz_rooms_created')||'0')>=1 },
+    { id:'room_5',      section:'🏠 חדרים',         icon:'🏠', name:'בעל בית',            desc:'יצרת 5 חדרים',                    check: ()=>parseInt(localStorage.getItem('aretz_rooms_created')||'0')>=5 },
+    { id:'room_10',     section:'🏠 חדרים',         icon:'🏰', name:'קברניט',             desc:'יצרת 10 חדרים',                   check: ()=>parseInt(localStorage.getItem('aretz_rooms_created')||'0')>=10 },
+    // Supporter
+    { id:'sup_1',       section:'🌟 Supporter',     icon:'🌟', name:'Supporter I',        desc:'הפצת 1 קישור',                    check: ()=>(S_pSupporterLevel||0)>=1 },
+    { id:'sup_3',       section:'🌟 Supporter',     icon:'🔵', name:'Supporter III',      desc:'10+ הפצות',                       check: ()=>(S_pSupporterLevel||0)>=3 },
+    { id:'sup_6',       section:'🌟 Supporter',     icon:'🔥', name:'Supporter VI אגדי', desc:'50+ הפצות — מדהים!',              check: ()=>(S_pSupporterLevel||0)>=6 },
+    // Social
+    { id:'share_1',     section:'📤 שיתוף',         icon:'📤', name:'מפיץ',               desc:'שיתפת תוצאות פעם אחת',            check: ()=>parseInt(localStorage.getItem('aretz_share_count')||'0')>=1 },
+    { id:'share_5',     section:'📤 שיתוף',         icon:'📣', name:'שגריר ארץ עיר',    desc:'שיתפת 5 פעמים',                   check: ()=>parseInt(localStorage.getItem('aretz_share_count')||'0')>=5 },
+    { id:'ref_1',       section:'📤 שיתוף',         icon:'🔗', name:'מגייס',              desc:'הפצת קישור שהביא שחקן חדש',      check: ()=>(S_pRefCount||0)>=1 },
+  ];
+
+  function showAchievements() {
+    document.getElementById('ach-modal')?.remove();
+    const done = ALL_ACHIEVEMENTS.filter(a=>{ try{ return a.check(); }catch(e){ return false; } });
+    const locked = ALL_ACHIEVEMENTS.filter(a=>{ try{ return !a.check(); }catch(e){ return true; } });
+    const pct = Math.round((done.length/ALL_ACHIEVEMENTS.length)*100);
+
+    // Group by section
+    const sections = {};
+    ALL_ACHIEVEMENTS.forEach(a=>{
+      if(!sections[a.section]) sections[a.section]=[];
+      sections[a.section].push(a);
+    });
+
+    const sectionsHtml = Object.entries(sections).map(([sec, items])=>`
+      <div class="ach-section-title">${sec}</div>
+      ${items.map(a=>{
+        let isDone; try{ isDone=a.check(); }catch(e){ isDone=false; }
+        return `<div class="ach-item ${isDone?'done':'locked'}">
+          <div class="ach-icon">${a.icon}</div>
+          <div class="ach-info">
+            <div class="ach-name">${a.name}</div>
+            <div class="ach-desc">${a.desc}</div>
+          </div>
+          <span class="ach-badge ${isDone?'done':'locked'}">${isDone?'✅ הושג':'🔒'}</span>
+        </div>`;
+      }).join('')}
+    `).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'ach-modal';
+    modal.className = 'ach-overlay';
+    modal.innerHTML = `
+      <div class="ach-inner">
+        <div class="ach-hdr">
+          <div class="ach-title-wrap">
+            <div class="ach-title">🏅 הישגים שלי</div>
+            <div class="ach-subtitle">${done.length} מתוך ${ALL_ACHIEVEMENTS.length} הושגו</div>
+          </div>
+          <button class="ach-close" id="ach-close-btn">✕ סגור</button>
+        </div>
+        <div class="ach-body">
+          <div class="ach-summary">
+            <div class="ach-sum-box"><div class="ach-sum-num">${done.length}</div><div class="ach-sum-lbl">הושגו</div></div>
+            <div class="ach-sum-box"><div class="ach-sum-num">${pct}%</div><div class="ach-sum-lbl">הושלם</div></div>
+            <div class="ach-sum-box"><div class="ach-sum-num">${locked.length}</div><div class="ach-sum-lbl">נותרו</div></div>
+          </div>
+          <div class="ach-progress-bar-wrap" style="margin-bottom:6px;">
+            <div class="ach-progress-bar" style="width:${pct}%"></div>
+          </div>
+          ${sectionsHtml}
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+    document.getElementById('ach-close-btn').addEventListener('click', ()=>modal.remove());
+  }
+
+  document.getElementById('btn-open-achievements').addEventListener('click', showAchievements);
+  document.getElementById('btn-open-achievements-streak').addEventListener('click', showAchievements);
+  // We'll hook into syncFromFirebase by extending it below after it's defined
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── ENDOWED PROGRESS (#3) ─────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  function showEndowedProgress(){
+    if(localStorage.getItem('aretz_ep_shown')) return;
+    localStorage.setItem('aretz_ep_shown','1');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ep-popup';
+    overlay.innerHTML = `
+      <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:8px;">🎉 ברוך הבא לארץ עיר!</div>
+      <div class="ep-achievement">
+        <div class="ep-icon">🔥</div>
+        <div class="ep-label">הישג חדש</div>
+        <div class="ep-text">הרצף שלך התחיל!<br><span style="font-size:.85rem;color:var(--muted);">יום 1 מתוך 5 השבוע</span></div>
+      </div>
+      <div class="ep-achievement" style="animation-delay:.25s;animation-fill-mode:both;">
+        <div class="ep-icon">🎖️</div>
+        <div class="ep-label">הישג חדש</div>
+        <div class="ep-text">שחקן חדש!<br><span style="font-size:.85rem;color:var(--muted);">ברוך הבא למשחק</span></div>
+      </div>
+      <button style="background:var(--red);color:#fff;border:none;border-radius:12px;padding:12px 32px;font-family:Heebo,sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;" id="ep-close-btn">יאללה נשחק! 🚀</button>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('ep-close-btn').addEventListener('click',()=>{
+      overlay.style.animation='none';
+      overlay.style.opacity='0';
+      overlay.style.transition='opacity .3s';
+      setTimeout(()=>overlay.remove(), 300);
+    });
+    // Auto-dismiss after 5s
+    setTimeout(()=>{ if(overlay.parentNode){ overlay.style.opacity='0'; overlay.style.transition='opacity .3s'; setTimeout(()=>overlay.remove(),300); }},5000);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── LEGENDARY ROUND (#6) ──────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  const LEGENDARY_CATS = [
+    {id:'leg_bag',   emoji:'👜', name:'מה יש בתיק של סבתא'},
+    {id:'leg_work',  emoji:'🤒', name:'תירוצים לא לבוא לעבודה'},
+    {id:'leg_jam',   emoji:'🚗', name:'מה אנשים אומרים בפקק'},
+    {id:'leg_sleep', emoji:'😴', name:'תירוצים של ילדים לא ללכת לישון'},
+    {id:'leg_pack',  emoji:'🧳', name:'מה שוכחים לארוז לטיול'},
+  ];
+
+  // Pick a random legendary cat different from last one
+  let _lastLegCatId = null;
+  function pickLegendaryCat(){
+    const pool = LEGENDARY_CATS.filter(c=>c.id!==_lastLegCatId);
+    const cat = pool[Math.floor(Math.random()*pool.length)];
+    _lastLegCatId = cat.id;
+    return cat;
+  }
+
+  function showLegendaryOverlay(cat, onDone){
+    const overlay = document.createElement('div');
+    overlay.className = 'legendary-overlay';
+    overlay.innerHTML = `
+      <div class="legendary-star-ring">🌟</div>
+      <div class="legendary-title">סיבוב אגדי!</div>
+      <div class="legendary-cat-reveal">
+        <div class="legendary-cat-emoji">${cat.emoji}</div>
+        <div class="legendary-cat-name">${cat.name}</div>
+      </div>
+      <div class="legendary-badge">✨ קטגוריה מיוחדת נוספה לסיבוב הזה</div>
+    `;
+    document.body.appendChild(overlay);
+    // Auto-dismiss after 2.8s then call onDone
+    setTimeout(()=>{
+      overlay.style.opacity='0'; overlay.style.transition='opacity .4s';
+      setTimeout(()=>{ overlay.remove(); if(onDone) onDone(); }, 400);
+    }, 2800);
+  }
+
+  // ─── Helper: get categories including legendary cat ─────────────
+  function getEffectiveCats(room){
+    let cats = (room.categories || S.cats).slice();
+    if(room.isLegendary && room.legendaryCat){
+      const legCat = room.legendaryCat;
+      if(!cats.some(c=>c.id===legCat.id)){
+        cats = [...cats, {id:legCat.id, emoji:legCat.emoji, name:legCat.name, isLegendary:true}];
+      }
+    }
+    return cats;
+  }
+
+  // ─── Legendary hook into startGame ─────────────────────────────
+  // We'll track in Firebase: rooms/{roomId}/legendaryNext (the round # when legendary fires)
+  // and rooms/{roomId}/legendaryCat
+
+  // ─── Legendary: 25% chance per round ─────────────────────────
+  // Keep getNextLegendaryRound for startGame initial value (not used in nextRound anymore)
+  function getNextLegendaryRound(currentRound){ return currentRound + 999; } // unused sentinel
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── UPGRADED SHARE CARD (#1) ──────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+
+  function buildShareCanvas(sorted, medals, refUrl) {
+    // ── Layout constants ─────────────────────────────────────────
+    const SCALE = 2;               // retina
+    const W = 540;
+    const PAD = 32;
+    const HEADER_H = 116;          // title + letter + cats strip
+    const ROW_H = 52;
+    const FOOTER_H = 52;
+    const H = HEADER_H + sorted.length * ROW_H + FOOTER_H;
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = W * SCALE;
+    canvas.height = H * SCALE;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(SCALE, SCALE);
+    ctx.direction = 'rtl';         // Hebrew RTL support
+
+    // ── Palette ──────────────────────────────────────────────────
+    const BG      = '#0d0d1c';
+    const CARD    = '#161626';
+    const BORDER  = '#2a2a42';
+    const WHITE   = '#f0f0f0';
+    const MUTED   = '#6b6b8a';
+    const RED     = '#e94560';
+    const ORANGE  = '#f5a623';
+    const BLUE    = '#4cc9f0';
+    const GOLD_BG = '#3a2e10';
+    const GOLD_TX = '#f5c842';
+    const SLV_BG  = '#252530';
+    const SLV_TX  = '#b8bcc8';
+    const BRZ_BG  = '#2e2018';
+    const BRZ_TX  = '#c8894a';
+    const ME_BG   = '#102030';
+    const ME_TX   = '#4cc9f0';
+
+    // ── Background ───────────────────────────────────────────────
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Card ─────────────────────────────────────────────────────
+    ctx.fillStyle = CARD;
+    rr(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 18);
+    ctx.fill();
+    ctx.strokeStyle = BORDER;
+    ctx.lineWidth = 1;
+    rr(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 18);
+    ctx.stroke();
+
+    // ── Top accent line ──────────────────────────────────────────
+    ctx.fillStyle = RED;
+    rr(ctx, PAD + 18, PAD, W - PAD*2 - 36, 3, 2);
+    ctx.fill();
+
+    // ── Title row ────────────────────────────────────────────────
+    const titleY = PAD + 34;
+    ctx.font      = `bold 20px Arial`;
+    ctx.fillStyle = WHITE;
+    ctx.textAlign = 'center';
+    ctx.fillText('ארץ עיר — תוצאות', W/2, titleY);
+
+    // globe emoji (LTR, draw manually on left of center)
+    ctx.font      = '18px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('🌍', W/2 - 98, titleY);
+
+    // ── Letter + round badge ─────────────────────────────────────
+    const badgeW = 150, badgeH = 22, badgeX = W/2 - badgeW/2, badgeY = PAD + 44;
+    ctx.fillStyle = '#1e1e30';
+    rr(ctx, badgeX, badgeY, badgeW, badgeH, 11);
+    ctx.fill();
+    ctx.strokeStyle = '#3a3a58';
+    ctx.lineWidth = 1;
+    rr(ctx, badgeX, badgeY, badgeW, badgeH, 11);
+    ctx.stroke();
+    ctx.font      = 'bold 12px Arial';
+    ctx.fillStyle = ORANGE;
+    ctx.textAlign = 'center';
+    ctx.fillText(`סיבוב ${S.rNum}   ·   אות: ${S.letter||'?'}`, W/2, badgeY + 15);
+
+    // ── Categories strip ─────────────────────────────────────────
+    const catsY = PAD + 76;
+    const catsText = S.cats.slice(0,5).map(c=>`${c.emoji||''}${c.name}`).join('  ·  ');
+    ctx.font      = '11px Arial';
+    ctx.fillStyle = MUTED;
+    ctx.textAlign = 'center';
+    ctx.fillText(catsText, W/2, catsY);
+
+    // ── Thin divider ─────────────────────────────────────────────
+    const divY = HEADER_H + PAD - 6;
+    ctx.strokeStyle = BORDER;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD + 18, divY);
+    ctx.lineTo(W - PAD - 18, divY);
+    ctx.stroke();
+
+    // ── Player rows ──────────────────────────────────────────────
+    sorted.forEach(([pid, p], i) => {
+      const rowTop = HEADER_H + PAD + i * ROW_H;
+      const midY   = rowTop + ROW_H / 2;
+      const isMe   = pid === S.pId;
+      const isGold = i === 0, isSilv = i === 1, isBronz = i === 2;
+
+      // Row fill
+      const rowBg = isMe     ? ME_BG
+                  : isGold   ? GOLD_BG
+                  : isSilv   ? SLV_BG
+                  : isBronz  ? BRZ_BG
+                  : 'transparent';
+      if(rowBg !== 'transparent'){
+        ctx.fillStyle = rowBg;
+        rr(ctx, PAD + 8, rowTop + 4, W - PAD*2 - 16, ROW_H - 8, 10);
+        ctx.fill();
+      }
+
+      // Row border for top-3 / me
+      const rowBorder = isMe     ? '#1a4060'
+                      : isGold   ? '#5a4010'
+                      : isSilv   ? '#3a3a50'
+                      : isBronz  ? '#4a3010'
+                      : null;
+      if(rowBorder){
+        ctx.strokeStyle = rowBorder;
+        ctx.lineWidth = 1;
+        rr(ctx, PAD + 8, rowTop + 4, W - PAD*2 - 16, ROW_H - 8, 10);
+        ctx.stroke();
+      }
+
+      // Rank number / medal (LTR side = right since card is RTL — use LTR explicitly)
+      const medal   = medals[i];
+      const rankStr = medal || `${i+1}`;
+      ctx.font      = i < 3 ? 'bold 20px Arial' : 'bold 14px Arial';
+      ctx.fillStyle = isGold ? GOLD_TX : isSilv ? SLV_TX : isBronz ? BRZ_TX : MUTED;
+      ctx.textAlign = 'left';
+      ctx.fillText(rankStr, PAD + 16, midY + 7);
+
+      // Score pill (right side of card)
+      const score    = p.score || 0;
+      const pillW    = 58, pillH = 24;
+      const pillX    = W - PAD - 18 - pillW;
+      const pillY    = midY - pillH/2;
+      const pillColor = isMe ? '#163040' : isGold ? '#3a2d0a' : isSilv ? '#22222e' : isBronz ? '#2c2010' : '#1a1a28';
+      const pillTx   = isMe ? ME_TX : isGold ? GOLD_TX : isSilv ? SLV_TX : isBronz ? BRZ_TX : MUTED;
+      ctx.fillStyle = pillColor;
+      rr(ctx, pillX, pillY, pillW, pillH, 12);
+      ctx.fill();
+      ctx.font      = 'bold 13px Arial';
+      ctx.fillStyle = pillTx;
+      ctx.textAlign = 'center';
+      ctx.fillText(`${score}`, pillX + pillW/2 - 7, midY + 5);
+      ctx.font      = '10px Arial';
+      ctx.fillStyle = pillTx;
+      ctx.fillText(`נק'`, pillX + pillW/2 + 12, midY + 5);
+
+      // Player name (center, taking remaining space)
+      const nameX    = PAD + 52;
+      const nameMaxW = pillX - nameX - 8;
+      const nameColor = isMe ? ME_TX : isGold ? GOLD_TX : isSilv ? SLV_TX : isBronz ? BRZ_TX : WHITE;
+      ctx.font      = isMe || i === 0 ? 'bold 15px Arial' : '14px Arial';
+      ctx.fillStyle = nameColor;
+      ctx.textAlign = 'right';
+      // truncate long names
+      let displayName = p.name + (isMe ? ' ← אתה' : '');
+      const maxW = nameMaxW;
+      while(ctx.measureText(displayName).width > maxW && displayName.length > 2){
+        displayName = displayName.slice(0, -2) + '…';
+      }
+      ctx.fillText(displayName, W - PAD - 88, midY + 6);
+    });
+
+    // ── Footer ───────────────────────────────────────────────────
+    const footerY = H - FOOTER_H + PAD/2;
+    ctx.strokeStyle = BORDER;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD + 18, footerY - 6);
+    ctx.lineTo(W - PAD - 18, footerY - 6);
+    ctx.stroke();
+
+    // Show ref URL or default URL
+    const footerUrl = refUrl || 'giamat13.github.io/homework-easy-times/';
+    const footerLabel = 'שחקו גם אתם ←  ' + footerUrl;
+    ctx.font      = '11px Arial';
+    ctx.fillStyle = '#4a4a6a';
+    ctx.textAlign = 'center';
+    ctx.fillText(footerLabel, W/2, footerY + 14);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  // roundRect helper used by buildShareCanvas
+  function rr(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+  }
+
   async function shareResults(){
     try{
-      const snap=await get(ref(db,`rooms/${S.roomId}/players`));
-      const players=snap.val()||{};
-      const sorted=Object.entries(players).filter(([,p])=>!p.spectator)
+      const snap = await get(ref(db,`rooms/${S.roomId}/players`));
+      const players = snap.val()||{};
+      const sorted = Object.entries(players).filter(([,p])=>!p.spectator)
         .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
-      const medals=['🥇','🥈','🥉'];
-      const lines=['🎮 ארץ עיר — תוצאות המשחק',''];
-      lines.push(`📝 קטגוריות: ${S.cats.map(c=>c.name).join(', ')}`);
+      const medals = ['🥇','🥈','🥉'];
+
+      // Build image
+      const url = location.origin + location.pathname;
+      const refUrl = S_pRefId ? url+'?ref='+S_pRefId : url;
+      const imgDataUrl = buildShareCanvas(sorted, medals, refUrl);
+      const lines = ['🌍 ארץ עיר — תוצאות', ''];
+      lines.push(`📋 ${S.cats.map(c=>c.name).join(', ')}`);
       lines.push('');
       sorted.forEach(([pid,p],i)=>{
-        const m=medals[i]||`${i+1}.`;
-        const isMe=pid===S.pId?' ← אתה':'';
-        lines.push(`${m} ${p.name} — ${p.score||0} נק'${isMe}`);
+        lines.push(`${medals[i]||i+1+'.'} ${p.name} — ${p.score||0} נק'${pid===S.pId?' ← אתה':''}`);
       });
-      lines.push('');
-      lines.push('🕹️ שחקו גם אתם! אמרו לחברים 🚀');
-      const text=lines.join('\n');
-      if(navigator.share){
-        await navigator.share({title:'ארץ עיר תוצאות',text});
-      }else{
-        await navigator.clipboard.writeText(text);
-        toast('📋 הועתק! שתף עם חברים 🚀');
-      }
-    }catch(e){toast('שגיאה בשיתוף');}
+      lines.push(''); lines.push(`🕹️ שחקו גם אתם! ${refUrl}`);
+      const plainText = lines.join('\n');
+
+      // Build modal
+      const modal = document.createElement('div');
+      modal.className = 'share-modal-overlay';
+      const rowsHtml = sorted.map(([pid,p],i)=>{
+        const isMe = pid===S.pId;
+        return `<div class="src-row">
+          <span class="src-rank">${medals[i]||`${i+1}.`}</span>
+          <span class="src-name${isMe?' me':''}">${p.name}${isMe?' (אתה)':''}</span>
+          <span class="src-pts">${p.score||0} נק'</span>
+        </div>`;
+      }).join('');
+      const catsText = S.cats.map(c=>`${c.emoji||''} ${c.name}`).join(' · ');
+
+      modal.innerHTML = `
+        <div class="share-modal-inner">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <h3 style="font-size:1.1rem;font-weight:900;">📤 שתף תוצאות</h3>
+            <button id="smc-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:5px 13px;font-family:Heebo,sans-serif;cursor:pointer;">✕ סגור</button>
+          </div>
+          <img id="share-img-preview" src="${imgDataUrl}" style="width:100%;border-radius:12px;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);" />
+          <div class="share-result-card" id="share-result-card" style="display:none;">
+            <div class="src-title">🌍 ארץ עיר — תוצאות</div>
+            <div class="src-cats">${catsText}</div>
+            ${rowsHtml}
+            <div class="src-footer">שחקו גם אתם! ${refUrl}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-p" id="smc-native">📱 שתף תמונה + טקסט</button>
+            <button class="btn btn-s" style="opacity:.6;font-size:.85rem;" id="smc-wa">💬 וואטסאפ</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      modal.querySelector('#smc-close').addEventListener('click',()=>modal.remove());
+      modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
+
+      // Native share with image
+      modal.querySelector('#smc-native').addEventListener('click',async()=>{
+        try{
+          // Convert dataURL to Blob
+          const res = await fetch(imgDataUrl);
+          const blob = await res.blob();
+          const file = new File([blob],'aretz-ir-results.png',{type:'image/png'});
+          if(navigator.canShare&&navigator.canShare({files:[file]})){
+            await navigator.share({ title:'ארץ עיר תוצאות', text:plainText, files:[file] });
+          } else if(navigator.share){
+            await navigator.share({ title:'ארץ עיר תוצאות', text:plainText });
+          } else {
+            await navigator.clipboard.writeText(plainText);
+            toast('📋 הועתק! שתף עם חברים 🚀');
+          }
+        }catch(e){ if(e.name!=='AbortError') toast('שגיאה בשיתוף'); }
+        modal.remove();
+        // Count share
+        const sc = parseInt(localStorage.getItem('aretz_share_count')||'0')+1;
+        localStorage.setItem('aretz_share_count', sc);
+      });
+
+      // WhatsApp (text + image description)
+      modal.querySelector('#smc-wa').addEventListener('click',()=>{
+        const waMsg = encodeURIComponent(plainText);
+        window.open('https://wa.me/?text='+waMsg,'_blank','noopener');
+        modal.remove();
+      });
+
+      lacTrack('share_results_open', { player_count: sorted.length, round_count: S.rNum });
+      // Count share for achievements
+      const sc = parseInt(localStorage.getItem('aretz_share_count')||'0');
+      if(!sc) localStorage.setItem('aretz_share_count','0');
+    }catch(e){ toast('שגיאה בשיתוף'); }
   }
 
   document.getElementById('btn-sim-players').addEventListener('click',openSimPanel);
   document.getElementById('btn-sim-ingame').addEventListener('click',openSimPanel);
 
   document.getElementById('code-box').addEventListener('click',copyCode);
-  document.getElementById('btn-share-link').addEventListener('click',shareLink);
+  document.getElementById('btn-share-link').addEventListener('click',()=>{
+    const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    const waMsg=encodeURIComponent('הצטרף למשחק ארץ עיר! 🌍\nהצטרף לחדר: '+S.roomId+'\n'+url);
+    window.open('https://wa.me/?text='+waMsg,'_blank','noopener');
+  });
+  document.getElementById('btn-copy-link').addEventListener('click',()=>{
+    const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🔗'));
+  });
   document.getElementById('start-btn').addEventListener('click',startGame);
   document.getElementById('submit-btn').addEventListener('click',submitCatAnswer);
   document.getElementById('btn-exit-game').addEventListener('click',exitGame);
@@ -5167,6 +6269,10 @@
   document.getElementById('btn-show-results').addEventListener('click',commitVotingAndShowResults);
   document.getElementById('btn-next-round').addEventListener('click',nextRound);
   document.getElementById('btn-end-game').addEventListener('click',endGame);
+  document.getElementById('btn-force-legendary').addEventListener('click',async()=>{
+    await update(ref(db,`rooms/${S.roomId}`),{forceLegendaryNext:true});
+    toast('🌟 הסיבוב הבא יהיה אגדי!');
+  });
   document.getElementById('btn-go-home').addEventListener('click',goHome);
   document.getElementById('btn-share-results').addEventListener('click',shareResults);
   document.getElementById('btn-show-templates').addEventListener('click',showTemplatesModal);
@@ -5182,6 +6288,10 @@
   // Creative vote toggle
   document.getElementById('tog-creative-vote').addEventListener('click',()=>{
     document.getElementById('tog-creative-el').classList.toggle('on');
+  });
+  // Legendary mode toggle
+  document.getElementById('tog-legendary-mode').addEventListener('click',()=>{
+    document.getElementById('tog-legendary-el').classList.toggle('on');
   });
   // Tournament toggle
   document.getElementById('btn-save-template-pre').addEventListener('click',saveTemplate);
@@ -5717,6 +6827,8 @@
     updateAuthUI();
     if (user) {
       toast('מחובר: ' + (user.displayName || user.email));
+      setAnalyticsUserProps();
+      lacTrack('login', { method: user.providerData?.[0]?.providerId || 'unknown' });
       // Give RTDB time to receive the auth token, retry up to 5 times
       let synced = false;
       for (let attempt = 0; attempt < 5 && !synced; attempt++) {
