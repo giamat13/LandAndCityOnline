@@ -3833,21 +3833,22 @@
     S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
     S.catSubmitted=false;
 
-    // 🌟 Legendary round: inject category if applicable (only on first cat of round)
-    if(r.isLegendary && r.legendaryCat && S.currentCatIndex===0){
+    // 🌟 Legendary round: always inject cat (not just on first cat)
+    if(r.isLegendary && r.legendaryCat){
       const legCat = r.legendaryCat;
-      // Add legendary cat if not already there
       const alreadyIn = S.cats.some(c=>c.id===legCat.id);
       if(!alreadyIn){
         S.cats = [...S.cats, {id:legCat.id, emoji:legCat.emoji, name:legCat.name, isLegendary:true}];
       }
-      // Show overlay only once (flag per round)
-      const overlayFlag = `leg_shown_${S.roomId}_r${S.rNum}`;
-      if(!sessionStorage.getItem(overlayFlag)){
-        sessionStorage.setItem(overlayFlag,'1');
-        await new Promise(resolve=>{
-          showLegendaryOverlay(legCat, resolve);
-        });
+      // Show overlay only on first cat of the round
+      if(S.currentCatIndex===0){
+        const overlayFlag = `leg_shown_${S.roomId}_r${S.rNum}`;
+        if(!sessionStorage.getItem(overlayFlag)){
+          sessionStorage.setItem(overlayFlag,'1');
+          await new Promise(resolve=>{
+            showLegendaryOverlay(legCat, resolve);
+          });
+        }
       }
     }
 
@@ -5941,223 +5942,208 @@
   // ─── UPGRADED SHARE CARD (#1) ──────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
 
-  function buildShareCanvas(sorted, medals) {
-    const W = 640, ROW = 58, PAD = 28;
-    const headerH = 130, catsH = 48, footerH = 70;
-    const H = headerH + catsH + sorted.length * ROW + footerH + PAD * 2;
+  function buildShareCanvas(sorted, medals, refUrl) {
+    // ── Layout constants ─────────────────────────────────────────
+    const SCALE = 2;               // retina
+    const W = 540;
+    const PAD = 32;
+    const HEADER_H = 116;          // title + letter + cats strip
+    const ROW_H = 52;
+    const FOOTER_H = 52;
+    const H = HEADER_H + sorted.length * ROW_H + FOOTER_H;
+
     const canvas = document.createElement('canvas');
-    canvas.width = W * 2; canvas.height = H * 2; // retina
-    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    canvas.width  = W * SCALE;
+    canvas.height = H * SCALE;
     const ctx = canvas.getContext('2d');
-    ctx.scale(2, 2);
+    ctx.scale(SCALE, SCALE);
+    ctx.direction = 'rtl';         // Hebrew RTL support
 
-    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-    const accentRed = '#e94560';
-    const accentOrange = '#f5a623';
-    const accentBlue = '#4cc9f0';
-    const gold = '#f5a623', silver = '#b0b8c8', bronze = '#cd7f32';
-    const textColor = isDark ? '#eaeaea' : '#1a1a2e';
-    const mutedColor = isDark ? '#7a7a9a' : '#6b7280';
+    // ── Palette ──────────────────────────────────────────────────
+    const BG      = '#0d0d1c';
+    const CARD    = '#161626';
+    const BORDER  = '#2a2a42';
+    const WHITE   = '#f0f0f0';
+    const MUTED   = '#6b6b8a';
+    const RED     = '#e94560';
+    const ORANGE  = '#f5a623';
+    const BLUE    = '#4cc9f0';
+    const GOLD_BG = '#3a2e10';
+    const GOLD_TX = '#f5c842';
+    const SLV_BG  = '#252530';
+    const SLV_TX  = '#b8bcc8';
+    const BRZ_BG  = '#2e2018';
+    const BRZ_TX  = '#c8894a';
+    const ME_BG   = '#102030';
+    const ME_TX   = '#4cc9f0';
 
-    // ── Dark gradient background ──────────────────────────────────
-    const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-    if (isDark) {
-      bgGrad.addColorStop(0, '#0a0a16');
-      bgGrad.addColorStop(0.5, '#0f0f1a');
-      bgGrad.addColorStop(1, '#0a1020');
-    } else {
-      bgGrad.addColorStop(0, '#e8edf5');
-      bgGrad.addColorStop(1, '#f5f7fb');
-    }
-    ctx.fillStyle = bgGrad;
+    // ── Background ───────────────────────────────────────────────
+    ctx.fillStyle = BG;
     ctx.fillRect(0, 0, W, H);
 
-    // ── Subtle corner glows ──────────────────────────────────────
-    const glow1 = ctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.55);
-    glow1.addColorStop(0, 'rgba(233,69,96,0.12)');
-    glow1.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow1;
-    ctx.fillRect(0, 0, W, H);
-    const glow2 = ctx.createRadialGradient(W, H, 0, W, H, W * 0.55);
-    glow2.addColorStop(0, 'rgba(76,201,240,0.10)');
-    glow2.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow2;
-    ctx.fillRect(0, 0, W, H);
-
-    // ── Card background ──────────────────────────────────────────
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 28;
-    ctx.shadowOffsetY = 8;
-    const cardGrad = ctx.createLinearGradient(PAD, PAD, W-PAD, H-PAD);
-    if (isDark) {
-      cardGrad.addColorStop(0, '#1a1a2e');
-      cardGrad.addColorStop(1, '#16213e');
-    } else {
-      cardGrad.addColorStop(0, '#ffffff');
-      cardGrad.addColorStop(1, '#f0f4fb');
-    }
-    ctx.fillStyle = cardGrad;
-    roundRect(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 22);
+    // ── Card ─────────────────────────────────────────────────────
+    ctx.fillStyle = CARD;
+    rr(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 18);
     ctx.fill();
-    ctx.restore();
-
-    // ── Card border (subtle gradient) ───────────────────────────
-    ctx.save();
-    const borderGrad = ctx.createLinearGradient(PAD, PAD, W-PAD, H-PAD);
-    borderGrad.addColorStop(0, 'rgba(233,69,96,0.35)');
-    borderGrad.addColorStop(0.5, 'rgba(76,201,240,0.2)');
-    borderGrad.addColorStop(1, 'rgba(245,166,35,0.3)');
-    ctx.strokeStyle = borderGrad;
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 22);
-    ctx.stroke();
-    ctx.restore();
-
-    // ── Header accent bar ────────────────────────────────────────
-    const barGrad = ctx.createLinearGradient(PAD+22, PAD+22, W-PAD-22, PAD+22);
-    barGrad.addColorStop(0, accentRed);
-    barGrad.addColorStop(0.5, accentOrange);
-    barGrad.addColorStop(1, accentBlue);
-    ctx.fillStyle = barGrad;
-    roundRect(ctx, PAD+22, PAD+22, W-PAD*2-44, 4, 2);
-    ctx.fill();
-
-    // ── Game title ───────────────────────────────────────────────
-    const titleGrad = ctx.createLinearGradient(W*0.3, 0, W*0.7, 0);
-    titleGrad.addColorStop(0, accentRed);
-    titleGrad.addColorStop(1, accentOrange);
-    ctx.fillStyle = titleGrad;
-    ctx.font = 'bold 30px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🌍 ארץ עיר — תוצאות', W/2, PAD + 52);
-
-    // ── Round + letter badge ─────────────────────────────────────
-    const badgeX = W/2, badgeY = PAD + 72;
-    const bW = 160, bH = 26;
-    ctx.fillStyle = isDark ? 'rgba(233,69,96,0.15)' : 'rgba(233,69,96,0.1)';
-    roundRect(ctx, badgeX - bW/2, badgeY, bW, bH, 100);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(233,69,96,0.4)';
+    ctx.strokeStyle = BORDER;
     ctx.lineWidth = 1;
-    roundRect(ctx, badgeX - bW/2, badgeY, bW, bH, 100);
+    rr(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 18);
     ctx.stroke();
-    ctx.fillStyle = accentRed;
-    ctx.font = 'bold 13px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`סיבוב ${S.rNum}  ·  אות: ${S.letter||'?'}`, W/2, badgeY + 17);
 
-    // ── Categories line ──────────────────────────────────────────
-    const catsBg = isDark ? 'rgba(76,201,240,0.06)' : 'rgba(76,201,240,0.08)';
-    ctx.fillStyle = catsBg;
-    roundRect(ctx, PAD+22, headerH + PAD/2, W-PAD*2-44, catsH - 4, 10);
+    // ── Top accent line ──────────────────────────────────────────
+    ctx.fillStyle = RED;
+    rr(ctx, PAD + 18, PAD, W - PAD*2 - 36, 3, 2);
     ctx.fill();
-    const catsText = S.cats.slice(0,5).map(c=>`${c.emoji||''}${c.name}`).join('  ·  ');
-    ctx.fillStyle = accentBlue;
-    ctx.font = '13px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(catsText, W/2, headerH + PAD/2 + (catsH-4)/2 + 5);
 
-    // ── Divider ──────────────────────────────────────────────────
-    const divY = headerH + catsH + PAD/2 + 4;
-    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
+    // ── Title row ────────────────────────────────────────────────
+    const titleY = PAD + 34;
+    ctx.font      = `bold 20px Arial`;
+    ctx.fillStyle = WHITE;
+    ctx.textAlign = 'center';
+    ctx.fillText('ארץ עיר — תוצאות', W/2, titleY);
+
+    // globe emoji (LTR, draw manually on left of center)
+    ctx.font      = '18px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('🌍', W/2 - 98, titleY);
+
+    // ── Letter + round badge ─────────────────────────────────────
+    const badgeW = 150, badgeH = 22, badgeX = W/2 - badgeW/2, badgeY = PAD + 44;
+    ctx.fillStyle = '#1e1e30';
+    rr(ctx, badgeX, badgeY, badgeW, badgeH, 11);
+    ctx.fill();
+    ctx.strokeStyle = '#3a3a58';
+    ctx.lineWidth = 1;
+    rr(ctx, badgeX, badgeY, badgeW, badgeH, 11);
+    ctx.stroke();
+    ctx.font      = 'bold 12px Arial';
+    ctx.fillStyle = ORANGE;
+    ctx.textAlign = 'center';
+    ctx.fillText(`סיבוב ${S.rNum}   ·   אות: ${S.letter||'?'}`, W/2, badgeY + 15);
+
+    // ── Categories strip ─────────────────────────────────────────
+    const catsY = PAD + 76;
+    const catsText = S.cats.slice(0,5).map(c=>`${c.emoji||''}${c.name}`).join('  ·  ');
+    ctx.font      = '11px Arial';
+    ctx.fillStyle = MUTED;
+    ctx.textAlign = 'center';
+    ctx.fillText(catsText, W/2, catsY);
+
+    // ── Thin divider ─────────────────────────────────────────────
+    const divY = HEADER_H + PAD - 6;
+    ctx.strokeStyle = BORDER;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(PAD+22, divY);
-    ctx.lineTo(W-PAD-22, divY);
+    ctx.moveTo(PAD + 18, divY);
+    ctx.lineTo(W - PAD - 18, divY);
     ctx.stroke();
 
     // ── Player rows ──────────────────────────────────────────────
-    const rowColors = [
-      { bg: 'rgba(245,166,35,0.13)', border: 'rgba(245,166,35,0.35)', score: gold },
-      { bg: 'rgba(176,184,200,0.1)',  border: 'rgba(176,184,200,0.3)',  score: silver },
-      { bg: 'rgba(205,127,50,0.1)',   border: 'rgba(205,127,50,0.3)',   score: bronze },
-    ];
-
     sorted.forEach(([pid, p], i) => {
-      const rowY = divY + 8 + i * ROW;
-      const isMe = pid === S.pId;
-      const rc = rowColors[i] || { bg: isDark?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.02)', border: 'transparent', score: accentOrange };
-      const rowBg = isMe ? (isDark?'rgba(76,201,240,0.12)':'rgba(76,201,240,0.1)') : rc.bg;
-      const rowBorder = isMe ? 'rgba(76,201,240,0.4)' : rc.border;
+      const rowTop = HEADER_H + PAD + i * ROW_H;
+      const midY   = rowTop + ROW_H / 2;
+      const isMe   = pid === S.pId;
+      const isGold = i === 0, isSilv = i === 1, isBronz = i === 2;
 
-      // Row background
-      ctx.fillStyle = rowBg;
-      roundRect(ctx, PAD+18, rowY, W-PAD*2-36, ROW - 8, 12);
-      ctx.fill();
-      ctx.strokeStyle = rowBorder;
-      ctx.lineWidth = 1;
-      roundRect(ctx, PAD+18, rowY, W-PAD*2-36, ROW - 8, 12);
-      ctx.stroke();
+      // Row fill
+      const rowBg = isMe     ? ME_BG
+                  : isGold   ? GOLD_BG
+                  : isSilv   ? SLV_BG
+                  : isBronz  ? BRZ_BG
+                  : 'transparent';
+      if(rowBg !== 'transparent'){
+        ctx.fillStyle = rowBg;
+        rr(ctx, PAD + 8, rowTop + 4, W - PAD*2 - 16, ROW_H - 8, 10);
+        ctx.fill();
+      }
 
-      const midY = rowY + (ROW-8)/2;
+      // Row border for top-3 / me
+      const rowBorder = isMe     ? '#1a4060'
+                      : isGold   ? '#5a4010'
+                      : isSilv   ? '#3a3a50'
+                      : isBronz  ? '#4a3010'
+                      : null;
+      if(rowBorder){
+        ctx.strokeStyle = rowBorder;
+        ctx.lineWidth = 1;
+        rr(ctx, PAD + 8, rowTop + 4, W - PAD*2 - 16, ROW_H - 8, 10);
+        ctx.stroke();
+      }
 
-      // Medal emoji
-      ctx.font = 'bold 22px Arial, sans-serif';
+      // Rank number / medal (LTR side = right since card is RTL — use LTR explicitly)
+      const medal   = medals[i];
+      const rankStr = medal || `${i+1}`;
+      ctx.font      = i < 3 ? 'bold 20px Arial' : 'bold 14px Arial';
+      ctx.fillStyle = isGold ? GOLD_TX : isSilv ? SLV_TX : isBronz ? BRZ_TX : MUTED;
       ctx.textAlign = 'left';
-      ctx.fillStyle = textColor;
-      ctx.fillText(medals[i] || `${i+1}.`, PAD+28, midY + 7);
+      ctx.fillText(rankStr, PAD + 16, midY + 7);
 
-      // Name
-      ctx.font = isMe ? 'bold 16px Arial, sans-serif' : (i===0 ? 'bold 16px Arial, sans-serif' : '15px Arial, sans-serif');
-      ctx.fillStyle = isMe ? accentBlue : (i===0 ? gold : textColor);
-      ctx.textAlign = 'right';
-      const nameDisplay = p.name + (isMe ? ' ← אתה' : '');
-      ctx.fillText(nameDisplay, W - PAD - 48, midY + 6);
-
-      // Score pill
-      const scoreText = `${p.score||0}`;
-      const scoreColor = isMe ? accentBlue : (rowColors[i]?.score || accentOrange);
-      ctx.fillStyle = isMe ? 'rgba(76,201,240,0.18)' : (i<3 ? rc.bg : isDark?'rgba(245,166,35,0.12)':'rgba(245,166,35,0.1)');
-      const pillW = 70, pillH = 26;
-      roundRect(ctx, W-PAD-18-pillW, midY - pillH/2, pillW, pillH, 100);
+      // Score pill (right side of card)
+      const score    = p.score || 0;
+      const pillW    = 58, pillH = 24;
+      const pillX    = W - PAD - 18 - pillW;
+      const pillY    = midY - pillH/2;
+      const pillColor = isMe ? '#163040' : isGold ? '#3a2d0a' : isSilv ? '#22222e' : isBronz ? '#2c2010' : '#1a1a28';
+      const pillTx   = isMe ? ME_TX : isGold ? GOLD_TX : isSilv ? SLV_TX : isBronz ? BRZ_TX : MUTED;
+      ctx.fillStyle = pillColor;
+      rr(ctx, pillX, pillY, pillW, pillH, 12);
       ctx.fill();
-      ctx.fillStyle = scoreColor;
-      ctx.font = 'bold 15px Arial, sans-serif';
+      ctx.font      = 'bold 13px Arial';
+      ctx.fillStyle = pillTx;
       ctx.textAlign = 'center';
-      ctx.fillText(`${scoreText} נק'`, W-PAD-18-pillW/2, midY + 5);
+      ctx.fillText(`${score}`, pillX + pillW/2 - 7, midY + 5);
+      ctx.font      = '10px Arial';
+      ctx.fillStyle = pillTx;
+      ctx.fillText(`נק'`, pillX + pillW/2 + 12, midY + 5);
+
+      // Player name (center, taking remaining space)
+      const nameX    = PAD + 52;
+      const nameMaxW = pillX - nameX - 8;
+      const nameColor = isMe ? ME_TX : isGold ? GOLD_TX : isSilv ? SLV_TX : isBronz ? BRZ_TX : WHITE;
+      ctx.font      = isMe || i === 0 ? 'bold 15px Arial' : '14px Arial';
+      ctx.fillStyle = nameColor;
+      ctx.textAlign = 'right';
+      // truncate long names
+      let displayName = p.name + (isMe ? ' ← אתה' : '');
+      const maxW = nameMaxW;
+      while(ctx.measureText(displayName).width > maxW && displayName.length > 2){
+        displayName = displayName.slice(0, -2) + '…';
+      }
+      ctx.fillText(displayName, W - PAD - 88, midY + 6);
     });
 
-    // ── Footer divider ───────────────────────────────────────────
-    const footerY = divY + 8 + sorted.length * ROW + 8;
-    const footerBarGrad = ctx.createLinearGradient(PAD+22, 0, W-PAD-22, 0);
-    footerBarGrad.addColorStop(0, 'rgba(233,69,96,0.0)');
-    footerBarGrad.addColorStop(0.5, 'rgba(255,255,255,0.1)');
-    footerBarGrad.addColorStop(1, 'rgba(76,201,240,0.0)');
-    ctx.strokeStyle = footerBarGrad;
+    // ── Footer ───────────────────────────────────────────────────
+    const footerY = H - FOOTER_H + PAD/2;
+    ctx.strokeStyle = BORDER;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(PAD+22, footerY);
-    ctx.lineTo(W-PAD-22, footerY);
+    ctx.moveTo(PAD + 18, footerY - 6);
+    ctx.lineTo(W - PAD - 18, footerY - 6);
     ctx.stroke();
 
-    // ── Footer text ──────────────────────────────────────────────
-    ctx.fillStyle = mutedColor;
-    ctx.font = '12px Arial, sans-serif';
+    // Show ref URL or default URL
+    const footerUrl = refUrl || 'giamat13.github.io/homework-easy-times/';
+    const footerLabel = 'שחקו גם אתם ←  ' + footerUrl;
+    ctx.font      = '11px Arial';
+    ctx.fillStyle = '#4a4a6a';
     ctx.textAlign = 'center';
-    ctx.fillText('שחקו גם אתם! → giamat13.github.io/homework-easy-times/', W/2, footerY + 22);
-
-    // ── Tiny stars decoration ────────────────────────────────────
-    ctx.font = '11px Arial, sans-serif';
-    ctx.fillStyle = 'rgba(245,166,35,0.35)';
-    ctx.textAlign = 'center';
-    ctx.fillText('✦', PAD + 40, footerY + 22);
-    ctx.fillText('✦', W - PAD - 40, footerY + 22);
+    ctx.fillText(footerLabel, W/2, footerY + 14);
 
     return canvas.toDataURL('image/png');
   }
 
-  function roundRect(ctx, x, y, w, h, r) {
+  // roundRect helper used by buildShareCanvas
+  function rr(ctx, x, y, w, h, r){
     ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.lineTo(x+w-r, y);
-    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-    ctx.lineTo(x+w, y+h-r);
-    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-    ctx.lineTo(x+r, y+h);
-    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-    ctx.lineTo(x, y+r);
-    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
     ctx.closePath();
   }
 
@@ -6170,11 +6156,9 @@
       const medals = ['🥇','🥈','🥉'];
 
       // Build image
-      const imgDataUrl = buildShareCanvas(sorted, medals);
-
-      // Build plain text
       const url = location.origin + location.pathname;
       const refUrl = S_pRefId ? url+'?ref='+S_pRefId : url;
+      const imgDataUrl = buildShareCanvas(sorted, medals, refUrl);
       const lines = ['🌍 ארץ עיר — תוצאות', ''];
       lines.push(`📋 ${S.cats.map(c=>c.name).join(', ')}`);
       lines.push('');
