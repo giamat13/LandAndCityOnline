@@ -2854,6 +2854,9 @@
     saveSession();
     enterLobby();
     lacTrack('room_created', { room_id: roomId, cat_count: active.length, round_time: S.rTime, race_mode: S.raceMode, visibility: S.visibility });
+    // Track room creation for achievements
+    const rc = parseInt(localStorage.getItem('aretz_rooms_created')||'0')+1;
+    localStorage.setItem('aretz_rooms_created', rc);
   };
 
   // ─── JOIN ROOM ────────────────────────────────────────────────────
@@ -5106,6 +5109,10 @@
     // Increment games played counter for achievements
     const gp = parseInt(localStorage.getItem('aretz_games_played')||'0')+1;
     localStorage.setItem('aretz_games_played', gp);
+    // Track wins
+    if(myPlace === 1){ const w=parseInt(localStorage.getItem('aretz_wins')||'0')+1; localStorage.setItem('aretz_wins',w); }
+    // Track top-3 finishes
+    if(myPlace <= 3){ const t3=parseInt(localStorage.getItem('aretz_top3')||'0')+1; localStorage.setItem('aretz_top3',t3); }
   }
 
   async function nextRound(){
@@ -5733,28 +5740,39 @@
   // ═══════════════════════════════════════════════════════════════
   const ALL_ACHIEVEMENTS = [
     // Streak
-    { id:'streak_1',    section:'🔥 רצף שבועי',  icon:'🔥', name:'ניצוץ ראשון',      desc:'שחקת יום אחד השבוע',             check: ()=>getStreakData().count>=1 },
-    { id:'streak_3',    section:'🔥 רצף שבועי',  icon:'🔥', name:'חצי שבוע',          desc:'שחקת 3 ימים השבוע',              check: ()=>getStreakData().count>=3 },
-    { id:'streak_5',    section:'🔥 רצף שבועי',  icon:'🏆', name:'שחקן שבועי',        desc:'שחקת 5 ימים השבוע — רצף שמור!', check: ()=>getStreakData().isActive },
+    { id:'streak_1',    section:'🔥 רצף שבועי',   icon:'🔥', name:'ניצוץ ראשון',       desc:'שחקת יום אחד השבוע',              check: ()=>getStreakData().count>=1 },
+    { id:'streak_3',    section:'🔥 רצף שבועי',   icon:'🔥', name:'חצי שבוע',           desc:'שחקת 3 ימים השבוע',               check: ()=>getStreakData().count>=3 },
+    { id:'streak_5',    section:'🔥 רצף שבועי',   icon:'🏆', name:'שחקן שבועי',         desc:'שחקת 5 ימים השבוע — רצף שמור!',  check: ()=>getStreakData().isActive },
     // Profile
-    { id:'prof_name',   section:'👤 פרופיל',       icon:'✍️', name:'שם שלי',            desc:'הגדרת שם שחקן',                  check: ()=>!!S.pName },
-    { id:'prof_emoji',  section:'👤 פרופיל',       icon:'😎', name:'אמוג\'י אישי',     desc:'בחרת אמוג\'י',                   check: ()=>!!S_pEmoji },
-    { id:'prof_tag',    section:'👤 פרופיל',       icon:'🏷️', name:'תגית אישית',        desc:'הוספת תגית',                     check: ()=>!!S_pTag },
-    { id:'prof_frame',  section:'👤 פרופיל',       icon:'🖼️', name:'פריים',             desc:'בחרת פריים לאווטאר',             check: ()=>!!S_pFrame },
-    { id:'prof_entry',  section:'👤 פרופיל',       icon:'✨', name:'כניסה מושלמת',     desc:'הפעלת אפקט כניסה',               check: ()=>S_pEntry&&S_pEntry!=='none' },
-    // Supporter
-    { id:'sup_1',       section:'🌟 Supporter',    icon:'🌟', name:'Supporter I',       desc:'הפצת 1 קישור',                   check: ()=>(S_pSupporterLevel||0)>=1 },
-    { id:'sup_3',       section:'🌟 Supporter',    icon:'🔵', name:'Supporter III',     desc:'10+ הפצות',                      check: ()=>(S_pSupporterLevel||0)>=3 },
-    { id:'sup_6',       section:'🌟 Supporter',    icon:'🔥', name:'Supporter VI אגדי',desc:'50+ הפצות — מדהים!',             check: ()=>(S_pSupporterLevel||0)>=6 },
+    { id:'prof_name',   section:'👤 פרופיל',        icon:'✍️', name:'שם שלי',             desc:'הגדרת שם שחקן',                   check: ()=>!!S.pName },
+    { id:'prof_emoji',  section:'👤 פרופיל',        icon:'😎', name:'אמוג\'י אישי',      desc:'בחרת אמוג\'י',                    check: ()=>!!S_pEmoji },
+    { id:'prof_tag',    section:'👤 פרופיל',        icon:'🏷️', name:'תגית אישית',         desc:'הוספת תגית',                      check: ()=>!!S_pTag },
+    { id:'prof_frame',  section:'👤 פרופיל',        icon:'🖼️', name:'פריים',              desc:'בחרת פריים לאווטאר',              check: ()=>!!S_pFrame },
+    { id:'prof_entry',  section:'👤 פרופיל',        icon:'✨', name:'כניסה מושלמת',      desc:'הפעלת אפקט כניסה',                check: ()=>S_pEntry&&S_pEntry!=='none' },
+    // Wins
+    { id:'first_win',   section:'🏆 ניצחונות',     icon:'🥇', name:'ניצחון ראשון',       desc:'סיימת במקום הראשון!',             check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=1 },
+    { id:'wins_3',      section:'🏆 ניצחונות',     icon:'🏆', name:'מנצח',               desc:'3 ניצחונות',                       check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=3 },
+    { id:'wins_5',      section:'🏆 ניצחונות',     icon:'👑', name:'מנצח סדרתי',         desc:'5 ניצחונות',                       check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=5 },
+    { id:'wins_10',     section:'🏆 ניצחונות',     icon:'💎', name:'מלך ארץ עיר',        desc:'10 ניצחונות — מדהים!',             check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=10 },
+    { id:'top3_5',      section:'🏆 ניצחונות',     icon:'🥉', name:'שחקן top3',          desc:'סיימת בשלוש הראשונים 5 פעמים',    check: ()=>parseInt(localStorage.getItem('aretz_top3')||'0')>=5 },
     // Games
-    { id:'first_game',  section:'🎮 משחקים',       icon:'🎮', name:'משחק ראשון',        desc:'שיחקת בפעם הראשונה',            check: ()=>(parseInt(localStorage.getItem('aretz_games_played')||'0'))>=1 },
-    { id:'games_5',     section:'🎮 משחקים',       icon:'🏅', name:'שחקן מנוסה',        desc:'שיחקת 5 משחקים',                check: ()=>(parseInt(localStorage.getItem('aretz_games_played')||'0'))>=5 },
-    { id:'games_20',    section:'🎮 משחקים',       icon:'👑', name:'ותיק',              desc:'20+ משחקים',                    check: ()=>(parseInt(localStorage.getItem('aretz_games_played')||'0'))>=20 },
-    { id:'games_50',    section:'🎮 משחקים',       icon:'🌈', name:'לגנד',             desc:'50+ משחקים',                    check: ()=>(parseInt(localStorage.getItem('aretz_games_played')||'0'))>=50 },
+    { id:'first_game',  section:'🎮 משחקים',        icon:'🎮', name:'משחק ראשון',         desc:'שיחקת בפעם הראשונה',              check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=1 },
+    { id:'games_5',     section:'🎮 משחקים',        icon:'🏅', name:'שחקן מנוסה',         desc:'שיחקת 5 משחקים',                  check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=5 },
+    { id:'games_10',    section:'🎮 משחקים',        icon:'⭐', name:'מכור',               desc:'10 משחקים — יאללה!',               check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=10 },
+    { id:'games_20',    section:'🎮 משחקים',        icon:'👑', name:'ותיק',               desc:'20+ משחקים',                       check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=20 },
+    { id:'games_50',    section:'🎮 משחקים',        icon:'🌈', name:'לגנד',              desc:'50+ משחקים',                       check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=50 },
+    // Room creation
+    { id:'room_1',      section:'🏠 חדרים',         icon:'🔑', name:'מארח ראשי',          desc:'יצרת חדר פעם ראשונה',             check: ()=>parseInt(localStorage.getItem('aretz_rooms_created')||'0')>=1 },
+    { id:'room_5',      section:'🏠 חדרים',         icon:'🏠', name:'בעל בית',            desc:'יצרת 5 חדרים',                    check: ()=>parseInt(localStorage.getItem('aretz_rooms_created')||'0')>=5 },
+    { id:'room_10',     section:'🏠 חדרים',         icon:'🏰', name:'קברניט',             desc:'יצרת 10 חדרים',                   check: ()=>parseInt(localStorage.getItem('aretz_rooms_created')||'0')>=10 },
+    // Supporter
+    { id:'sup_1',       section:'🌟 Supporter',     icon:'🌟', name:'Supporter I',        desc:'הפצת 1 קישור',                    check: ()=>(S_pSupporterLevel||0)>=1 },
+    { id:'sup_3',       section:'🌟 Supporter',     icon:'🔵', name:'Supporter III',      desc:'10+ הפצות',                       check: ()=>(S_pSupporterLevel||0)>=3 },
+    { id:'sup_6',       section:'🌟 Supporter',     icon:'🔥', name:'Supporter VI אגדי', desc:'50+ הפצות — מדהים!',              check: ()=>(S_pSupporterLevel||0)>=6 },
     // Social
-    { id:'share_1',     section:'📤 שיתוף',        icon:'📤', name:'מפיץ',              desc:'שיתפת תוצאות פעם אחת',          check: ()=>(parseInt(localStorage.getItem('aretz_share_count')||'0'))>=1 },
-    { id:'share_5',     section:'📤 שיתוף',        icon:'📣', name:'שגריר ארץ עיר',   desc:'שיתפת 5 פעמים',                 check: ()=>(parseInt(localStorage.getItem('aretz_share_count')||'0'))>=5 },
-    { id:'ref_1',       section:'📤 שיתוף',        icon:'🔗', name:'מגייס',             desc:'הפצת קישור שהביא שחקן חדש',    check: ()=>(S_pRefCount||0)>=1 },
+    { id:'share_1',     section:'📤 שיתוף',         icon:'📤', name:'מפיץ',               desc:'שיתפת תוצאות פעם אחת',            check: ()=>parseInt(localStorage.getItem('aretz_share_count')||'0')>=1 },
+    { id:'share_5',     section:'📤 שיתוף',         icon:'📣', name:'שגריר ארץ עיר',    desc:'שיתפת 5 פעמים',                   check: ()=>parseInt(localStorage.getItem('aretz_share_count')||'0')>=5 },
+    { id:'ref_1',       section:'📤 שיתוף',         icon:'🔗', name:'מגייס',              desc:'הפצת קישור שהביא שחקן חדש',      check: ()=>(S_pRefCount||0)>=1 },
   ];
 
   function showAchievements() {
@@ -5905,93 +5923,207 @@
   // ═══════════════════════════════════════════════════════════════
 
   function buildShareCanvas(sorted, medals) {
-    // Draw the result card onto a canvas and return a dataURL
-    const W = 600, ROW = 52, PAD = 32;
-    const headerH = 110, catsH = 40, footerH = 60;
-    const H = headerH + catsH + sorted.length * ROW + footerH + PAD;
+    const W = 640, ROW = 58, PAD = 28;
+    const headerH = 130, catsH = 48, footerH = 70;
+    const H = headerH + catsH + sorted.length * ROW + footerH + PAD * 2;
     const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
+    canvas.width = W * 2; canvas.height = H * 2; // retina
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-    const bg = isDark ? '#0f0f1a' : '#f0f2f5';
-    const surface = isDark ? '#1a1a2e' : '#ffffff';
-    const textColor = isDark ? '#eaeaea' : '#1a1a2e';
-    const mutedColor = isDark ? '#7a7a9a' : '#6b7280';
     const accentRed = '#e94560';
     const accentOrange = '#f5a623';
+    const accentBlue = '#4cc9f0';
+    const gold = '#f5a623', silver = '#b0b8c8', bronze = '#cd7f32';
+    const textColor = isDark ? '#eaeaea' : '#1a1a2e';
+    const mutedColor = isDark ? '#7a7a9a' : '#6b7280';
 
-    // Background
-    ctx.fillStyle = bg;
+    // ── Dark gradient background ──────────────────────────────────
+    const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+    if (isDark) {
+      bgGrad.addColorStop(0, '#0a0a16');
+      bgGrad.addColorStop(0.5, '#0f0f1a');
+      bgGrad.addColorStop(1, '#0a1020');
+    } else {
+      bgGrad.addColorStop(0, '#e8edf5');
+      bgGrad.addColorStop(1, '#f5f7fb');
+    }
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
-    // Card background
-    ctx.fillStyle = surface;
-    roundRect(ctx, 16, 16, W-32, H-32, 20);
+    // ── Subtle corner glows ──────────────────────────────────────
+    const glow1 = ctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.55);
+    glow1.addColorStop(0, 'rgba(233,69,96,0.12)');
+    glow1.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow1;
+    ctx.fillRect(0, 0, W, H);
+    const glow2 = ctx.createRadialGradient(W, H, 0, W, H, W * 0.55);
+    glow2.addColorStop(0, 'rgba(76,201,240,0.10)');
+    glow2.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow2;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Card background ──────────────────────────────────────────
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 28;
+    ctx.shadowOffsetY = 8;
+    const cardGrad = ctx.createLinearGradient(PAD, PAD, W-PAD, H-PAD);
+    if (isDark) {
+      cardGrad.addColorStop(0, '#1a1a2e');
+      cardGrad.addColorStop(1, '#16213e');
+    } else {
+      cardGrad.addColorStop(0, '#ffffff');
+      cardGrad.addColorStop(1, '#f0f4fb');
+    }
+    ctx.fillStyle = cardGrad;
+    roundRect(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 22);
+    ctx.fill();
+    ctx.restore();
+
+    // ── Card border (subtle gradient) ───────────────────────────
+    ctx.save();
+    const borderGrad = ctx.createLinearGradient(PAD, PAD, W-PAD, H-PAD);
+    borderGrad.addColorStop(0, 'rgba(233,69,96,0.35)');
+    borderGrad.addColorStop(0.5, 'rgba(76,201,240,0.2)');
+    borderGrad.addColorStop(1, 'rgba(245,166,35,0.3)');
+    ctx.strokeStyle = borderGrad;
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 22);
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Header accent bar ────────────────────────────────────────
+    const barGrad = ctx.createLinearGradient(PAD+22, PAD+22, W-PAD-22, PAD+22);
+    barGrad.addColorStop(0, accentRed);
+    barGrad.addColorStop(0.5, accentOrange);
+    barGrad.addColorStop(1, accentBlue);
+    ctx.fillStyle = barGrad;
+    roundRect(ctx, PAD+22, PAD+22, W-PAD*2-44, 4, 2);
     ctx.fill();
 
-    // Title
-    ctx.fillStyle = accentOrange;
-    ctx.font = 'bold 26px Arial, sans-serif';
+    // ── Game title ───────────────────────────────────────────────
+    const titleGrad = ctx.createLinearGradient(W*0.3, 0, W*0.7, 0);
+    titleGrad.addColorStop(0, accentRed);
+    titleGrad.addColorStop(1, accentOrange);
+    ctx.fillStyle = titleGrad;
+    ctx.font = 'bold 30px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🌍 ארץ עיר — תוצאות', W/2, 62);
+    ctx.fillText('🌍 ארץ עיר — תוצאות', W/2, PAD + 52);
 
-    // Round info
-    ctx.fillStyle = mutedColor;
-    ctx.font = '15px Arial, sans-serif';
-    ctx.fillText(`סיבוב ${S.rNum} · ${S.letter ? 'אות: ' + S.letter : ''}`, W/2, 92);
+    // ── Round + letter badge ─────────────────────────────────────
+    const badgeX = W/2, badgeY = PAD + 72;
+    const bW = 160, bH = 26;
+    ctx.fillStyle = isDark ? 'rgba(233,69,96,0.15)' : 'rgba(233,69,96,0.1)';
+    roundRect(ctx, badgeX - bW/2, badgeY, bW, bH, 100);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(233,69,96,0.4)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, badgeX - bW/2, badgeY, bW, bH, 100);
+    ctx.stroke();
+    ctx.fillStyle = accentRed;
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`סיבוב ${S.rNum}  ·  אות: ${S.letter||'?'}`, W/2, badgeY + 17);
 
-    // Cats line
-    const catsText = S.cats.slice(0,4).map(c=>`${c.emoji||''}${c.name}`).join('  ·  ');
-    ctx.fillStyle = mutedColor;
+    // ── Categories line ──────────────────────────────────────────
+    const catsBg = isDark ? 'rgba(76,201,240,0.06)' : 'rgba(76,201,240,0.08)';
+    ctx.fillStyle = catsBg;
+    roundRect(ctx, PAD+22, headerH + PAD/2, W-PAD*2-44, catsH - 4, 10);
+    ctx.fill();
+    const catsText = S.cats.slice(0,5).map(c=>`${c.emoji||''}${c.name}`).join('  ·  ');
+    ctx.fillStyle = accentBlue;
     ctx.font = '13px Arial, sans-serif';
-    ctx.fillText(catsText, W/2, headerH + 20);
+    ctx.textAlign = 'center';
+    ctx.fillText(catsText, W/2, headerH + PAD/2 + (catsH-4)/2 + 5);
 
-    // Divider
-    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+    // ── Divider ──────────────────────────────────────────────────
+    const divY = headerH + catsH + PAD/2 + 4;
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(PAD, headerH + catsH);
-    ctx.lineTo(W - PAD, headerH + catsH);
+    ctx.moveTo(PAD+22, divY);
+    ctx.lineTo(W-PAD-22, divY);
     ctx.stroke();
 
-    // Rows
+    // ── Player rows ──────────────────────────────────────────────
+    const rowColors = [
+      { bg: 'rgba(245,166,35,0.13)', border: 'rgba(245,166,35,0.35)', score: gold },
+      { bg: 'rgba(176,184,200,0.1)',  border: 'rgba(176,184,200,0.3)',  score: silver },
+      { bg: 'rgba(205,127,50,0.1)',   border: 'rgba(205,127,50,0.3)',   score: bronze },
+    ];
+
     sorted.forEach(([pid, p], i) => {
-      const y = headerH + catsH + i * ROW + ROW * 0.62;
+      const rowY = divY + 8 + i * ROW;
       const isMe = pid === S.pId;
-      const medal = medals[i] || `${i+1}.`;
-      // Row bg if me
-      if (isMe) {
-        ctx.fillStyle = isDark ? 'rgba(76,201,240,0.08)' : 'rgba(76,201,240,0.1)';
-        roundRect(ctx, PAD, headerH + catsH + i*ROW + 4, W-PAD*2, ROW-8, 10);
-        ctx.fill();
-      }
-      // Medal
-      ctx.font = 'bold 20px Arial, sans-serif';
+      const rc = rowColors[i] || { bg: isDark?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.02)', border: 'transparent', score: accentOrange };
+      const rowBg = isMe ? (isDark?'rgba(76,201,240,0.12)':'rgba(76,201,240,0.1)') : rc.bg;
+      const rowBorder = isMe ? 'rgba(76,201,240,0.4)' : rc.border;
+
+      // Row background
+      ctx.fillStyle = rowBg;
+      roundRect(ctx, PAD+18, rowY, W-PAD*2-36, ROW - 8, 12);
+      ctx.fill();
+      ctx.strokeStyle = rowBorder;
+      ctx.lineWidth = 1;
+      roundRect(ctx, PAD+18, rowY, W-PAD*2-36, ROW - 8, 12);
+      ctx.stroke();
+
+      const midY = rowY + (ROW-8)/2;
+
+      // Medal emoji
+      ctx.font = 'bold 22px Arial, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillStyle = textColor;
-      ctx.fillText(medal, PAD + 8, y);
+      ctx.fillText(medals[i] || `${i+1}.`, PAD+28, midY + 7);
+
       // Name
-      ctx.font = isMe ? 'bold 17px Arial, sans-serif' : '17px Arial, sans-serif';
-      ctx.fillStyle = isMe ? '#4cc9f0' : textColor;
-      ctx.fillText(p.name + (isMe ? ' ←' : ''), PAD + 44, y);
-      // Score
+      ctx.font = isMe ? 'bold 16px Arial, sans-serif' : (i===0 ? 'bold 16px Arial, sans-serif' : '15px Arial, sans-serif');
+      ctx.fillStyle = isMe ? accentBlue : (i===0 ? gold : textColor);
       ctx.textAlign = 'right';
-      ctx.fillStyle = accentOrange;
-      ctx.font = 'bold 17px Arial, sans-serif';
-      ctx.fillText(`${p.score||0} נק'`, W - PAD - 8, y);
+      const nameDisplay = p.name + (isMe ? ' ← אתה' : '');
+      ctx.fillText(nameDisplay, W - PAD - 48, midY + 6);
+
+      // Score pill
+      const scoreText = `${p.score||0}`;
+      const scoreColor = isMe ? accentBlue : (rowColors[i]?.score || accentOrange);
+      ctx.fillStyle = isMe ? 'rgba(76,201,240,0.18)' : (i<3 ? rc.bg : isDark?'rgba(245,166,35,0.12)':'rgba(245,166,35,0.1)');
+      const pillW = 70, pillH = 26;
+      roundRect(ctx, W-PAD-18-pillW, midY - pillH/2, pillW, pillH, 100);
+      ctx.fill();
+      ctx.fillStyle = scoreColor;
+      ctx.font = 'bold 15px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${scoreText} נק'`, W-PAD-18-pillW/2, midY + 5);
     });
 
-    // Footer
-    const footerY = headerH + catsH + sorted.length * ROW + 20;
-    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)';
+    // ── Footer divider ───────────────────────────────────────────
+    const footerY = divY + 8 + sorted.length * ROW + 8;
+    const footerBarGrad = ctx.createLinearGradient(PAD+22, 0, W-PAD-22, 0);
+    footerBarGrad.addColorStop(0, 'rgba(233,69,96,0.0)');
+    footerBarGrad.addColorStop(0.5, 'rgba(255,255,255,0.1)');
+    footerBarGrad.addColorStop(1, 'rgba(76,201,240,0.0)');
+    ctx.strokeStyle = footerBarGrad;
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(PAD, footerY);
-    ctx.lineTo(W - PAD, footerY);
+    ctx.moveTo(PAD+22, footerY);
+    ctx.lineTo(W-PAD-22, footerY);
     ctx.stroke();
+
+    // ── Footer text ──────────────────────────────────────────────
     ctx.fillStyle = mutedColor;
-    ctx.font = '13px Arial, sans-serif';
+    ctx.font = '12px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('שחקו גם אתם! aretzir.online', W/2, footerY + 24);
+    ctx.fillText('שחקו גם אתם! → giamat13.github.io/homework-easy-times/', W/2, footerY + 22);
+
+    // ── Tiny stars decoration ────────────────────────────────────
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillStyle = 'rgba(245,166,35,0.35)';
+    ctx.textAlign = 'center';
+    ctx.fillText('✦', PAD + 40, footerY + 22);
+    ctx.fillText('✦', W - PAD - 40, footerY + 22);
 
     return canvas.toDataURL('image/png');
   }
@@ -6061,8 +6193,6 @@
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <button class="btn btn-p" id="smc-native">📱 שתף תמונה + טקסט</button>
-            <button class="btn btn-s" id="smc-download">💾 שמור תמונה</button>
-            <button class="btn btn-s" id="smc-copy">📋 העתק טקסט</button>
             <button class="btn btn-s" style="opacity:.6;font-size:.85rem;" id="smc-wa">💬 וואטסאפ</button>
           </div>
         </div>
@@ -6092,22 +6222,6 @@
         // Count share
         const sc = parseInt(localStorage.getItem('aretz_share_count')||'0')+1;
         localStorage.setItem('aretz_share_count', sc);
-      });
-
-      // Download image
-      modal.querySelector('#smc-download').addEventListener('click',()=>{
-        const a = document.createElement('a');
-        a.href = imgDataUrl;
-        a.download = 'aretz-ir-results.png';
-        a.click();
-        toast('💾 התמונה נשמרה!');
-      });
-
-      // Copy text
-      modal.querySelector('#smc-copy').addEventListener('click',async()=>{
-        await navigator.clipboard.writeText(plainText);
-        toast('📋 הועתק ללוח!');
-        modal.remove();
       });
 
       // WhatsApp (text + image description)
