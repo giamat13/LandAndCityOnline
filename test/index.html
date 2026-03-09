@@ -6301,9 +6301,13 @@
       modal.querySelector('#adm-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);">⏳ טוען הפצות...</div>';
       modal.querySelector('#adm-subtitle').textContent = 'טוען...';
       try {
-        // Step 1: fetch all referrals (public path)
-        const refSnap = await get(ref(db, 'referrals'));
-        const referrals = refSnap.val() || {};
+        // Step 1: fetch all referrals (public path) + anon stats
+        const [refSnap, anonSnap] = await Promise.all([
+          get(ref(db, 'referrals')),
+          get(ref(db, 'adminData/anonStats'))
+        ]);
+        const referrals = refSnap.val() || {}; // { refId: { count: N } }
+        const anonData = anonSnap.val() || {};
 
         // Step 2: fetch adminData/referrals to get uid→refId mapping
         // (each user writes their own entry, so we can read it with auth)
@@ -6343,10 +6347,17 @@
         allUsers.sort((a, b) => b.refCount - a.refCount);
         const activeRefs = allUsers.filter(u => u.refCount > 0).length;
 
-        modal.querySelector(`#adm-stats`).innerHTML = `
+        // Anon stats
+        const anonDays = Object.values(anonData);
+        const anonRooms = anonDays.reduce((s, d) => s + (d.rooms||0), 0);
+        const anonPlayers = anonDays.reduce((s, d) => s + (d.players||0), 0);
+
+        modal.querySelector('#adm-stats').innerHTML = `
           <div class="adm-stat"><div class="adm-stat-n">${allUsers.length}</div><div class="adm-stat-l">מחוברים</div></div>
           <div class="adm-stat"><div class="adm-stat-n">${totalRefs}</div><div class="adm-stat-l">סה"כ הפניות</div></div>
-          <div class="adm-stat"><div class="adm-stat-n">${activeRefs}</div><div class="adm-stat-l">מפיצים פעילים</div></div>`;
+          <div class="adm-stat"><div class="adm-stat-n">${activeRefs}</div><div class="adm-stat-l">מפיצים פעילים</div></div>
+          <div class="adm-stat" style="grid-column:span 2;"><div class="adm-stat-n" style="color:var(--orange);">${anonPlayers.toLocaleString()}</div><div class="adm-stat-l">שחקנים אנונימיים (יצרו חדר)</div></div>
+          <div class="adm-stat"><div class="adm-stat-n" style="color:var(--orange);">${anonRooms.toLocaleString()}</div><div class="adm-stat-l">חדרים אנונימיים</div></div>`;
         modal.querySelector('#adm-subtitle').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
         renderList();
       } catch(e) {
@@ -8187,5 +8198,16 @@
     </div>
   </div>
 
+  <!-- EVENT LOADER: אין לשנות כאן כלום בנוגע לתוכן האירועים! כל הלוגיקה בתיקיית event/ -->
+  <script>
+    (function(){
+      var _n=new Date();
+      if(_n<new Date('2026-04-09T00:00:00')){
+        var _s=document.createElement('script');
+        _s.src='event/pesach2026/event.js';
+        document.body.appendChild(_s);
+      }
+    })();
+  </script>
   </body>
   </html>
