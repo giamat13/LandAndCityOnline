@@ -45,11 +45,24 @@
       }
     },
     "referrals": {
+      ".read": true,
       "$refId": {
         "count": {
-          ".read": true,
           ".write": true,
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999"
+        }
+      }
+    },
+    "adminData": {
+      ".read": "auth != null",
+      "referrals": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      },
+      "anonStats": {
+        "$day": {
+          ".write": true
         }
       }
     },

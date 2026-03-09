@@ -1043,9 +1043,11 @@
         </a>
       </div>
     </div>
+    <!-- Admin panel (main-dev only) -->
+    <div id="admin-panel-btn-wrap" style="display:none;margin-top:8px;">
+      <button id="btn-open-admin" style="width:100%;background:rgba(233,69,96,.08);border:1px solid rgba(233,69,96,.2);color:var(--red);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">👑 פאנל מנהל</button>
+    </div>
   </div>
-
-  <!-- CREATE -->
   <div id="screen-create" class="screen">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
       <button class="btn btn-s btn-sm" style="width:auto" id="btn-back-home">← חזור</button>
@@ -2967,6 +2969,14 @@
       _updatedAt:Date.now()};
     try{localStorage.setItem('lac_profile',JSON.stringify(_pd));}catch(e){}
     fbSave('profile',_pd);
+    // Write public referral summary for admin dashboard
+    if(currentUser && S.pName){
+      set(ref(db,'adminData/referrals/'+currentUser.uid),{
+        name:S.pName,emoji:S_pEmoji||null,refId:S_pRefId||null,
+        refCount:S_pRefCount||0,supporterLevel:S_pSupporterLevel||0,
+        _updatedAt:Date.now()
+      }).catch(()=>{});
+    }
   }
   function loadProfile(){
     try{
@@ -3206,6 +3216,9 @@
     renderBadgePicker();
     renderProfileStats();
     updateNotifButton();
+    // Show admin panel button for main-dev only
+    const adminWrap = document.getElementById('admin-panel-btn-wrap');
+    if (adminWrap) adminWrap.style.display = S_pDevRoles.includes('main-dev') ? 'block' : 'none';
   }
 
   // Wire input listener once
@@ -3749,6 +3762,17 @@
     S.cCats.forEach((name,i)=>active.push({id:'cc_'+i,name,emoji:'⭐'}));
     if(!active.length){toast('בחר לפחות קטגוריה אחת');return;}
     S.cats=active;S.pId=gid(10);S.isHost=true;S.totScores={};S.currentCatIndex=0;
+    // Track anonymous players
+    if(!currentUser){
+      const today=new Date().toISOString().slice(0,10);
+      get(ref(db,'adminData/anonStats/'+today)).then(s=>{
+        set(ref(db,'adminData/anonStats/'+today),{
+          rooms:(s.val()?.rooms||0)+1,
+          players:(s.val()?.players||0)+1,
+          _date:today
+        }).catch(()=>{});
+      }).catch(()=>{});
+    }
     // Read veto threshold from create screen
     const crVetoType=document.getElementById('cr-veto-pct-btn').classList.contains('active')?'percent':'count';
     const crVetoValue=crVetoType==='percent'
@@ -6176,6 +6200,174 @@
     return 0;
   }
 
+  // ─── ADMIN: REFERRAL DASHBOARD (main-dev only) ────────────────────
+  async function openAdminReferrals() {
+    document.getElementById('admin-referrals-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'admin-referrals-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.88);display:flex;align-items:flex-end;justify-content:center;';
+    modal.innerHTML = `<div style="background:var(--surface);border-radius:20px 20px 0 0;padding:22px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-shrink:0;">
+        <div>
+          <div style="font-size:1.1rem;font-weight:900;">👑 לוח מפיצים</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px;" id="adm-subtitle">טוען...</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="adm-refresh" style="background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.3);color:var(--blue);border-radius:8px;padding:6px 12px;font-family:Heebo,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;">🔄</button>
+          <button id="adm-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;">✕</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;flex-shrink:0;" id="adm-stats"></div>
+      <input id="adm-search" placeholder="🔍 חיפוש שם..." style="width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-family:Heebo,sans-serif;font-size:.88rem;outline:none;margin-bottom:10px;direction:rtl;flex-shrink:0;">
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-shrink:0;" id="adm-filters">
+        <button class="adm-f active" data-f="all">הכל</button>
+        <button class="adm-f" data-f="1">1+</button>
+        <button class="adm-f" data-f="2">2+</button>
+        <button class="adm-f" data-f="3">3+</button>
+      </div>
+      <div style="overflow-y:auto;flex:1;" id="adm-list"></div>
+    </div>`;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .adm-f{background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 12px;font-family:Heebo,sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;}
+      .adm-f.active{background:rgba(76,201,240,.12);border-color:rgba(76,201,240,.35);color:var(--blue);}
+      .adm-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border);}
+      .adm-row:last-child{border-bottom:none;}
+      .adm-rank{font-weight:900;font-size:.85rem;width:28px;text-align:center;flex-shrink:0;}
+      .adm-name{flex:1;font-weight:700;font-size:.9rem;}
+      .adm-refid{font-size:.65rem;color:var(--muted);font-family:monospace;}
+      .adm-bar-wrap{display:flex;align-items:center;gap:8px;width:120px;flex-shrink:0;}
+      .adm-bar{flex:1;background:rgba(255,255,255,.07);border-radius:100px;height:5px;overflow:hidden;}
+      .adm-bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--blue),#a855f7);}
+      .adm-count{font-weight:900;font-size:.95rem;color:var(--blue);min-width:24px;text-align:center;}
+      .adm-badge{font-size:.7rem;padding:2px 8px;border-radius:100px;font-weight:700;background:rgba(76,201,240,.1);color:var(--blue);}
+      .adm-stat{background:var(--s2);border-radius:12px;padding:12px;text-align:center;}
+      .adm-stat-n{font-size:1.5rem;font-weight:900;color:var(--blue);}
+      .adm-stat-l{font-size:.68rem;color:var(--muted);margin-top:2px;}
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+
+    modal.querySelector('#adm-close').addEventListener('click', () => { modal.remove(); style.remove(); });
+    modal.addEventListener('click', e => { if (e.target === modal) { modal.remove(); style.remove(); } });
+
+    let allUsers = [];
+    let filterLevel = 'all';
+
+    modal.querySelector('#adm-search').addEventListener('input', renderList);
+    modal.querySelectorAll('.adm-f').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modal.querySelectorAll('.adm-f').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterLevel = btn.dataset.f === 'all' ? 'all' : parseInt(btn.dataset.f);
+        renderList();
+      });
+    });
+    modal.querySelector('#adm-refresh').addEventListener('click', loadUsers);
+
+    function renderList() {
+      const search = modal.querySelector('#adm-search').value.trim().toLowerCase();
+      const filtered = allUsers.filter(u => {
+        if (filterLevel !== 'all' && u.level < filterLevel) return false;
+        if (search && !u.name.toLowerCase().includes(search)) return false;
+        return true;
+      });
+      const maxRef = allUsers[0]?.refCount || 1;
+      const medals = ['🥇','🥈','🥉'];
+      const badgeNames = ['','🥉 L1','🥈 L2','🥇 L3','💎 L4','🌟 L5','👑 L6'];
+      if (!filtered.length) {
+        modal.querySelector('#adm-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">אין תוצאות</div>';
+        return;
+      }
+      modal.querySelector('#adm-list').innerHTML = filtered.map((u, i) => {
+        const pct = Math.round((u.refCount / maxRef) * 100);
+        return `<div class="adm-row">
+          <div class="adm-rank">${medals[i] || '#'+(i+1)}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="adm-name">${u.emoji||''} ${u.name}</div>
+            ${u.refId ? `<div class="adm-refid">${u.refId}</div>` : ''}
+          </div>
+          <div class="adm-bar-wrap">
+            <div class="adm-bar"><div class="adm-bar-fill" style="width:${pct}%"></div></div>
+            <span class="adm-count">${u.refCount}</span>
+          </div>
+          ${u.level > 0 ? `<span class="adm-badge">${badgeNames[u.level]}</span>` : '<span style="width:40px;"></span>'}
+        </div>`;
+      }).join('');
+    }
+
+    async function loadUsers() {
+      modal.querySelector('#adm-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);">⏳ טוען הפצות...</div>';
+      modal.querySelector('#adm-subtitle').textContent = 'טוען...';
+      try {
+        // Step 1: fetch all referrals (public path) + anon stats
+        const [refSnap, anonSnap] = await Promise.all([
+          get(ref(db, 'referrals')),
+          get(ref(db, 'adminData/anonStats'))
+        ]);
+        const referrals = refSnap.val() || {}; // { refId: { count: N } }
+        const anonData = anonSnap.val() || {};
+
+        // Step 2: fetch adminData/referrals to get uid→refId mapping
+        // (each user writes their own entry, so we can read it with auth)
+        const adminSnap = await get(ref(db, 'adminData/referrals'));
+        const adminUsers = adminSnap.val() || {}; // { uid: { name, refId, refCount, ... } }
+
+        // Build refId → user map
+        const refIdToUser = {};
+        Object.entries(adminUsers).forEach(([uid, p]) => {
+          if (p.refId) refIdToUser[p.refId] = { uid, ...p };
+        });
+
+        // Step 3: for each referral entry, attach user info
+        allUsers = [];
+        let totalRefs = 0;
+        Object.entries(referrals).forEach(([refId, data]) => {
+          const count = data.count || 0;
+          if (count === 0) return;
+          const user = refIdToUser[refId];
+          const name = user?.name || `(${refId})`;
+          const emoji = user?.emoji || null;
+          const level = getSupporterLevel(count);
+          totalRefs += count;
+          allUsers.push({ uid: user?.uid || refId, name, refCount: count, level, refId, emoji });
+        });
+
+        // Also add users with 0 refs but who have accounts (so all users are visible)
+        Object.entries(adminUsers).forEach(([uid, p]) => {
+          if (!p.name) return;
+          const alreadyIn = allUsers.find(u => u.uid === uid);
+          if (!alreadyIn) {
+            const level = Math.max(p.supporterLevel || 0, getSupporterLevel(p.refCount || 0));
+            allUsers.push({ uid, name: p.name, refCount: p.refCount || 0, level, refId: p.refId || null, emoji: p.emoji || null });
+          }
+        });
+
+        allUsers.sort((a, b) => b.refCount - a.refCount);
+        const activeRefs = allUsers.filter(u => u.refCount > 0).length;
+
+        // Anon stats
+        const anonDays = Object.values(anonData);
+        const anonRooms = anonDays.reduce((s, d) => s + (d.rooms||0), 0);
+        const anonPlayers = anonDays.reduce((s, d) => s + (d.players||0), 0);
+
+        modal.querySelector('#adm-stats').innerHTML = `
+          <div class="adm-stat"><div class="adm-stat-n">${allUsers.length}</div><div class="adm-stat-l">מחוברים</div></div>
+          <div class="adm-stat"><div class="adm-stat-n">${totalRefs}</div><div class="adm-stat-l">סה"כ הפניות</div></div>
+          <div class="adm-stat"><div class="adm-stat-n">${activeRefs}</div><div class="adm-stat-l">מפיצים פעילים</div></div>
+          <div class="adm-stat" style="grid-column:span 2;"><div class="adm-stat-n" style="color:var(--orange);">${anonPlayers.toLocaleString()}</div><div class="adm-stat-l">שחקנים אנונימיים (יצרו חדר)</div></div>
+          <div class="adm-stat"><div class="adm-stat-n" style="color:var(--orange);">${anonRooms.toLocaleString()}</div><div class="adm-stat-l">חדרים אנונימיים</div></div>`;
+        modal.querySelector('#adm-subtitle').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+        renderList();
+      } catch(e) {
+        modal.querySelector('#adm-list').innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);">❌ שגיאה: ${e.message}</div>`;
+      }
+    }
+
+    loadUsers();
+  }
+
   // Returns the single badge HTML to display for a player, based on their activeBadge choice
   function devBadge(role, supporterLevel, activeBadge){
     // activeBadge = 'auto' | 'none' | 'main-dev' | 'dev' | 'supporter' | 'sup-1'..'sup-6'
@@ -7398,6 +7590,7 @@
   });
   // Tournament toggle
   document.getElementById('btn-save-template-pre').addEventListener('click',saveTemplate);
+  document.getElementById('btn-open-admin').addEventListener('click', openAdminReferrals);
 
   // Chat emoji picker
   const CHAT_EMOJIS=['😂','🔥','😮','❤️','👏','💀','🤣','😭','👍','🤔','😅','🎉','💯','🤯','😤','🥳','😎','🙏','💪','🤦'];
@@ -7956,6 +8149,18 @@
           await syncFromFirebase();
           synced = true;
           console.log('Sync succeeded on attempt', attempt + 1);
+          // Backfill adminData/referrals for this user (runs once per login)
+          try {
+            const profSnap = await get(ref(db, 'users/' + user.uid + '/profile'));
+            const p = profSnap.val();
+            if (p && p.name) {
+              await set(ref(db, 'adminData/referrals/' + user.uid), {
+                name: p.name, emoji: p.emoji || null, refId: p.refId || null,
+                refCount: p.refCount || 0, supporterLevel: p.supporterLevel || 0,
+                _updatedAt: Date.now()
+              });
+            }
+          } catch(e) { /* silent */ }
         } catch(e) {
           console.warn('sync attempt', attempt + 1, 'failed:', e.message);
         }
