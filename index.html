@@ -6003,7 +6003,7 @@
   // ─── UPGRADED SHARE CARD (#1) ──────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
 
-  function buildShareCanvas(sorted, medals, refUrl) {
+  async function buildShareCanvas(sorted, medals, refUrl) {
     const SCALE = 2;
     const W = 540;
     const PAD = 32;
@@ -6172,14 +6172,23 @@
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(PAD+16, fY); ctx.lineTo(W-PAD-16, fY); ctx.stroke();
 
-    // QR code — right side, large enough to scan
-    const qrSize = FOOTER_H - 22; // ~78px logical (×2 scale = 156px actual)
+    const qrSize = FOOTER_H - 22;
     const qrX = W - PAD - 12 - qrSize;
     const qrY = fY + 8;
     const qrUrl = refUrl || 'https://giamat13.github.io/homework-easy-times/';
-    try { drawQROnCanvas(ctx, qrUrl, qrX, qrY, qrSize); } catch(e) {}
 
-    // Text left of QR
+    // Load QR from API
+    try {
+      const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrUrl)}&bgcolor=ffffff&color=111120&margin=2`;
+      await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { ctx.drawImage(img, qrX, qrY, qrSize, qrSize); resolve(); };
+        img.onerror = () => resolve();
+        img.src = apiUrl;
+      });
+    } catch(e) {}
+
     ctx.textAlign = 'right';
     ctx.font = 'bold 13px Arial';
     ctx.fillStyle = '#c0c0d8';
@@ -6206,224 +6215,6 @@
     ctx.closePath();
   }
 
-  // ── Self-contained QR Code renderer ────────────────────────────
-  function drawQROnCanvas(ctx, text, x, y, size){
-    try{
-      const matrix = generateQRMatrix(text);
-      if(!matrix) throw new Error('qr fail');
-      const n = matrix.length;
-      const QUIET = 2; // quiet zone modules on each side
-      const totalMods = n + QUIET * 2;
-      const mod = size / totalMods;
-      const offsetX = x + QUIET * mod;
-      const offsetY = y + QUIET * mod;
-
-      // White background (including quiet zone)
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x, y, size, size);
-      // Draw dark modules
-      ctx.fillStyle = '#111120';
-      for(let r = 0; r < n; r++){
-        for(let c = 0; c < n; c++){
-          if(matrix[r][c]){
-            // Use ceil+1 to avoid sub-pixel gaps between modules
-            ctx.fillRect(
-              Math.floor(offsetX + c * mod),
-              Math.floor(offsetY + r * mod),
-              Math.ceil(mod) + 1,
-              Math.ceil(mod) + 1
-            );
-          }
-        }
-      }
-    }catch(e){
-      ctx.fillStyle='#1c1c2e';
-      ctx.fillRect(x,y,size,size);
-      ctx.font=`bold ${Math.round(size*0.18)}px Arial`;
-      ctx.fillStyle='#4cc9f0';
-      ctx.textAlign='center';
-      ctx.fillText('SCAN',x+size/2,y+size*0.55);
-    }
-  }
-
-  // ── Tiny QR matrix generator (Version 1, ECC=M, byte mode) ─────
-  // Returns a 2D boolean array. Supports short URLs up to ~14 bytes (V1-M).
-  // For longer URLs uses V2 or V3 automatically.
-  function generateQRMatrix(text){
-    // We use a minimal implementation supporting versions 1-4, ECC M
-    // Reed-Solomon and masking included.
-    const utf8 = unescape(encodeURIComponent(text));
-    const bytes = Array.from(utf8).map(c=>c.charCodeAt(0));
-    const len = bytes.length;
-
-    // Version selection (ECC M capacity: V1=14,V2=26,V3=42,V4=62)
-    const caps = [14,26,42,62];
-    let version = caps.findIndex(c=>c>=len)+1;
-    if(version<=0) version=4;
-    if(len>62) return null; // too long
-
-    const size = 17+version*4;
-
-    // ECC parameters for M level
-    const eccParams = {
-      1:{ecBytes:10,dataBlocks:[[1,19]]},
-      2:{ecBytes:16,dataBlocks:[[1,34]]},
-      3:{ecBytes:26,dataBlocks:[[2,22]]},
-      4:{ecBytes:18,dataBlocks:[[2,33]]}
-    }[version];
-
-    // Build data codewords (byte mode)
-    const bits=[];
-    const push=(v,n)=>{for(let i=n-1;i>=0;i--)bits.push((v>>i)&1)};
-    push(0b0100,4); // byte mode
-    const charCountBits = version<10?8:16;
-    push(len,charCountBits);
-    bytes.forEach(b=>push(b,8));
-    // Terminator & padding
-    for(let i=0;i<4&&bits.length<eccParams.dataBlocks[0][1]*8-eccParams.ecBytes*8;i++) bits.push(0);
-    while(bits.length%8) bits.push(0);
-    const padBytes=[0xEC,0x11];
-    let pi=0;
-    const totalData=eccParams.dataBlocks.reduce((s,[n,cw])=>s+n*cw,0)-eccParams.dataBlocks.reduce((s,[n])=>s+n*eccParams.ecBytes,0);
-    while(bits.length<totalData*8) {push(padBytes[pi%2],8);pi++;}
-
-    // Bits to codewords
-    const codewords=[];
-    for(let i=0;i<bits.length;i+=8){
-      let b=0;for(let j=0;j<8;j++)b=(b<<1)|(bits[i+j]||0);
-      codewords.push(b);
-    }
-
-    // Reed-Solomon
-    const gfExp=new Uint8Array(512);
-    const gfLog=new Uint8Array(256);
-    let x=1;
-    for(let i=0;i<255;i++){gfExp[i]=x;gfLog[x]=i;x<<=1;if(x&256)x^=285;}
-    for(let i=255;i<512;i++)gfExp[i]=gfExp[i-255];
-    const gfMul=(a,b)=>a&&b?gfExp[gfLog[a]+gfLog[b]]:0;
-
-    function rsEncode(data,eclen){
-      // Generator polynomial
-      let gen=[1];
-      for(let i=0;i<eclen;i++){
-        const f=[1,gfExp[i]];
-        const ng=new Array(gen.length+1).fill(0);
-        for(let a=0;a<gen.length;a++)for(let b=0;b<f.length;b++)ng[a+b]^=gfMul(gen[a],f[b]);
-        gen=ng;
-      }
-      const msg=[...data,...new Array(eclen).fill(0)];
-      for(let i=0;i<data.length;i++){
-        const c=msg[i];
-        if(c)for(let j=1;j<=eclen;j++)msg[i+j]^=gfMul(gen[j],c);
-      }
-      return msg.slice(data.length);
-    }
-
-    // Interleave data + ECC
-    const allData=[],allEcc=[];
-    let off=0;
-    eccParams.dataBlocks.forEach(([count,blockCw])=>{
-      const dataCw=blockCw-eccParams.ecBytes;
-      for(let b=0;b<count;b++){
-        const blk=codewords.slice(off,off+dataCw);
-        allData.push(blk);
-        allEcc.push(rsEncode(blk,eccParams.ecBytes));
-        off+=dataCw;
-      }
-    });
-    const finalCw=[];
-    const maxDLen=Math.max(...allData.map(d=>d.length));
-    for(let i=0;i<maxDLen;i++)allData.forEach(d=>{if(i<d.length)finalCw.push(d[i]);});
-    for(let i=0;i<eccParams.ecBytes;i++)allEcc.forEach(e=>{if(i<e.length)finalCw.push(e[i]);});
-
-    // Build matrix
-    const mat=Array.from({length:size},()=>new Array(size).fill(null));
-    const setMod=(r,c,v)=>{if(r>=0&&r<size&&c>=0&&c<size)mat[r][c]=v;};
-    const isSet=(r,c)=>r>=0&&r<size&&c>=0&&c<size&&mat[r][c]!==null;
-
-    // Finder patterns
-    const drawFinder=(tr,tc)=>{
-      for(let r=-1;r<=7;r++)for(let c=-1;c<=7;c++){
-        const v=(r===-1||r===7||c===-1||c===7)?false:(r===0||r===6||c===0||c===6)?true:(r>=2&&r<=4&&c>=2&&c<=4);
-        setMod(tr+r,tc+c,v);
-      }
-    };
-    drawFinder(0,0);drawFinder(0,size-7);drawFinder(size-7,0);
-
-    // Timing
-    for(let i=8;i<size-8;i++){setMod(6,i,i%2===0);setMod(i,6,i%2===0);}
-
-    // Dark module
-    setMod(4*version+9,8,true);
-
-    // Alignment (V2+)
-    const alignPos={2:[6,18],3:[6,22],4:[6,26]}[version]||[];
-    if(alignPos.length){
-      const [ar,ac]=alignPos;
-      [[ar,ac]].forEach(([ar2,ac2])=>{
-        if(!isSet(ar2,ac2)||mat[ar2][ac2]===null){
-          for(let r=-2;r<=2;r++)for(let c=-2;c<=2;c++){
-            setMod(ar2+r,ac2+c,r===-2||r===2||c===-2||c===2?true:(r===0&&c===0));
-          }
-        }
-      });
-    }
-
-    // Format info (mask pattern 0, ECC M = bits 01)
-    const fmtBits=0b101010000010010; // pre-computed for M,mask0 XOR 101010000010010
-    const fmt=fmtBits^0b101010000010010;
-    // Actually use standard format string for M level, mask 2 (best for sparse)
-    // Format = ECC(2 bits) + mask(3 bits), ECC M=01, mask=010 → 01010
-    const fmtData=0b01010;
-    // BCH(15,5) of format
-    let rem=fmtData<<10;
-    for(let i=14;i>=10;i--){if((rem>>i)&1)rem^=(0x537<<(i-10));}
-    const fmt15=((fmtData<<10)|rem)^0x5412;
-    const fmtSeq=[0,1,2,3,4,5,7,8,size-7,size-6,size-5,size-4,size-3,size-2,size-1];
-    fmtSeq.forEach((pos,i)=>{
-      const bit=(fmt15>>(14-i))&1;
-      setMod(8,pos,!!bit);
-      setMod(pos,8,!!bit);
-    });
-    setMod(size-8,8,true); // dark module
-
-    // Fill remaining with null→false (reserved)
-    for(let r=0;r<size;r++)for(let c=0;c<size;c++)if(mat[r][c]===null)mat[r][c]=false;
-
-    // Place data bits (zigzag, mask pattern 2: (row/2+col/3)%2==0)
-    const dataBits=[];
-    finalCw.forEach(cw=>{for(let i=7;i>=0;i--)dataBits.push((cw>>i)&1);});
-    // Remainder bits
-    const remBits={1:0,2:7,3:7,4:7}[version]||0;
-    for(let i=0;i<remBits;i++)dataBits.push(0);
-
-    let bi=0;
-    const isFunc=(r,c)=>{
-      if(c===6||r===6)return true;
-      if(r<9&&c<9)return true;
-      if(r<9&&c>=size-8)return true;
-      if(r>=size-8&&c<9)return true;
-      if(version>=2){const[ap]=alignPos||[];if(ap&&Math.abs(r-ap)<=2&&Math.abs(c-ap)<=2)return true;}
-      return false;
-    };
-
-    for(let right=size-1;right>=1;right-=2){
-      if(right===6)right=5;
-      for(let vert=0;vert<size;vert++){
-        for(let j=0;j<2;j++){
-          const c=right-j;
-          const r=(right<6?(size-1-vert):vert);
-          if(!isFunc(r,c)&&bi<dataBits.length){
-            const masked=((Math.floor(r/2)+Math.floor(c/3))%2===0);
-            mat[r][c]=dataBits[bi++]^(masked?1:0)?true:false;
-          }
-        }
-      }
-    }
-
-    return mat;
-  }
-
   async function shareResults(){
     try{
       const snap = await get(ref(db,`rooms/${S.roomId}/players`));
@@ -6435,7 +6226,7 @@
       // Build image
       const url = location.origin + location.pathname;
       const refUrl = S_pRefId ? url+'?ref='+S_pRefId : url;
-      const imgDataUrl = buildShareCanvas(sorted, medals, refUrl);
+      const imgDataUrl = await buildShareCanvas(sorted, medals, refUrl);
       const lines = ['🌍 ארץ עיר — תוצאות', ''];
       lines.push(`📋 ${S.cats.map(c=>c.name).join(', ')}`);
       lines.push('');
