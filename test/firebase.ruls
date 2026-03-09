@@ -50,6 +50,14 @@
         "count": {
           ".write": true,
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999"
+        },
+        "name": {
+          ".write": true,
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "emoji": {
+          ".write": true,
+          ".validate": "newData.isString() && newData.val().length <= 20"
         }
       }
     },
@@ -69,7 +77,12 @@
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        "profile": {
+          "name": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous'"
+          }
+        }
       }
     }
   }
