@@ -1783,6 +1783,9 @@
     if (badge) badge.innerHTML = `<span class="sup-b sup-b-${Math.min(S_pSupporterLevel,6)}" style="font-size:.62rem;">Supporter</span>`;
     const grid = document.getElementById('room-theme-grid');
     if (!grid) return;
+    // Prevent duplicate listeners by cloning the grid
+    if (grid.dataset.listenersAttached === '1') return;
+    grid.dataset.listenersAttached = '1';
     grid.querySelectorAll('.room-theme-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         grid.querySelectorAll('.room-theme-btn').forEach(b => b.classList.remove('sel'));
@@ -1829,7 +1832,10 @@
         container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">עדיין אין חבילות. היה הראשון לפרסם! 🎉</div>';
         return;
       }
-      container.innerHTML = arr.map(([pid, pack]) => `
+      container.innerHTML = arr.map(([pid, pack]) => {
+        const isCreator = pack.creator && (pack.creator === (S.pName || S_pName || ''));
+        const canDelete = isCreator || S_pSupporterLevel >= 3;
+        return `
         <div class="pack-card">
           <div class="pack-name">${pack.emoji || '📦'} ${pack.name || 'חבילה ללא שם'}</div>
           <div class="pack-creator">נוצר על ידי ${pack.creator || 'אנונימי'}</div>
@@ -1838,8 +1844,10 @@
             <span>📅 ${new Date(pack.ts||0).toLocaleDateString('he-IL')}</span>
             <span class="pack-uses">▶ ${pack.uses||0} שימושים</span>
             <button class="pack-use-btn" data-pid="${pid}">השתמש ←</button>
+            ${canDelete ? `<button class="pack-delete-btn" data-pid="${pid}" style="background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:4px 10px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">🗑️ מחק</button>` : ''}
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
       container.querySelectorAll('.pack-use-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const pack = packs[btn.dataset.pid];
@@ -1857,6 +1865,25 @@
           lacTrack('pack_used', { pack_name: pack.name, creator: pack.creator });
           document.getElementById('pack-gallery-modal')?.remove();
           toast(`✅ נטענו קטגוריות: ${pack.name}`);
+        });
+      });
+      // Delete handlers
+      container.querySelectorAll('.pack-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const pack = packs[btn.dataset.pid];
+          if (!pack) return;
+          const confirmed = confirm(`למחוק את החבילה "${pack.name || 'חבילה'}"? פעולה זו בלתי הפיכה.`);
+          if (!confirmed) return;
+          try {
+            await remove(ref(db, `publicPacks/${btn.dataset.pid}`));
+            lacTrack('pack_deleted', { pack_name: pack.name });
+            toast('🗑️ החבילה נמחקה');
+            // Reload gallery
+            container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">טוען...</div>';
+            await loadPackGallery(container);
+          } catch(e) {
+            toast('שגיאה במחיקה');
+          }
         });
       });
     } catch(e) {
@@ -1905,12 +1932,26 @@
       return;
     }
     if (status === 'granted') {
-      if (iconEl) iconEl.textContent = '🔔';
-      if (textEl) textEl.textContent = 'התראות מופעלות';
-      btn.style.background = 'rgba(15,186,129,.1)';
-      btn.style.borderColor = 'rgba(15,186,129,.3)';
-      btn.style.color = 'var(--green)';
-      if (statusEl) statusEl.textContent = 'תקבל תזכורת לפני חצות אם לא שיחקת היום';
+      const isDisabled = localStorage.getItem('aretz_notif_disabled') === '1';
+      if (isDisabled) {
+        if (iconEl) iconEl.textContent = '🔕';
+        if (textEl) textEl.textContent = 'הפעל התראות';
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.opacity = '';
+        btn.disabled = false;
+        if (statusEl) statusEl.textContent = 'התראות כבויות — לחץ להפעיל';
+      } else {
+        if (iconEl) iconEl.textContent = '🔔';
+        if (textEl) textEl.textContent = 'כבה התראות';
+        btn.style.background = 'rgba(15,186,129,.1)';
+        btn.style.borderColor = 'rgba(15,186,129,.3)';
+        btn.style.color = 'var(--green)';
+        btn.style.opacity = '';
+        btn.disabled = false;
+        if (statusEl) statusEl.textContent = 'תקבל תזכורת לפני חצות אם לא שיחקת היום';
+      }
     } else if (status === 'denied') {
       if (iconEl) iconEl.textContent = '🚫';
       if (textEl) textEl.textContent = 'התראות חסומות';
@@ -1926,12 +1967,28 @@
   async function requestNotifPermission() {
     if (!('Notification' in window)) return;
     const status = getNotifStatus();
-    if (status === 'granted') { scheduleStreakNotif(); return; }
+    if (status === 'granted') {
+      // Toggle off — store a local "disabled" flag
+      const isDisabled = localStorage.getItem('aretz_notif_disabled') === '1';
+      if (isDisabled) {
+        localStorage.removeItem('aretz_notif_disabled');
+        lacTrack('notif_permission', { result: 'reenabled' });
+        scheduleStreakNotif();
+        toast('🔔 התראות הופעלו מחדש!');
+      } else {
+        localStorage.setItem('aretz_notif_disabled', '1');
+        lacTrack('notif_permission', { result: 'disabled_by_user' });
+        toast('🔕 התראות כובו. אפשר להפעיל מחדש בפרופיל.');
+      }
+      updateNotifButton();
+      return;
+    }
     if (status === 'denied') { return; }
     const perm = await Notification.requestPermission();
     lacTrack('notif_permission', { result: perm });
     updateNotifButton();
     if (perm === 'granted') {
+      localStorage.removeItem('aretz_notif_disabled');
       scheduleStreakNotif();
       setTimeout(() => new Notification('ארץ עיר 🌍', {
         body: 'התראות הופעלו! נזכיר לך לשחק כל יום 🔥',
@@ -1941,6 +1998,7 @@
   }
   function scheduleStreakNotif() {
     if (getNotifStatus() !== 'granted') return;
+    if (localStorage.getItem('aretz_notif_disabled') === '1') return;
     // Find ms until 21:00 today (or tomorrow if past 21)
     const now = new Date();
     const target = new Date(now);
@@ -2137,6 +2195,7 @@
 
     // Streak: show our own or try to get from Firebase if other player
     let streakHtml = '';
+    let richStatsHtml = '';
     const isMyProfile = (player.name === S.pName);
     if (isMyProfile) {
       const sd = getStreakData();
@@ -2153,6 +2212,32 @@
           </div>
         </div>`;
       }
+      // Feature 2: Rich stats for own profile
+      const myStats = computeProfileStats();
+      if (myStats) {
+        const catBarsHtml = myStats.catScores.length ? myStats.catScores.map(c => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <div style="font-size:.78rem;color:var(--muted);width:70px;text-align:right;flex-shrink:0;">${c.name}</div>
+            <div style="flex:1;background:var(--border);border-radius:100px;height:8px;overflow:hidden;">
+              <div style="width:${c.rate}%;background:var(--green);height:100%;border-radius:100px;transition:width .4s;"></div>
+            </div>
+            <div style="font-size:.78rem;font-weight:700;width:32px;flex-shrink:0;">${c.rate}%</div>
+          </div>`).join('') : '';
+        richStatsHtml = `<div class="ppm-section">
+          <div class="ppm-section-title">📊 הסטטיסטיקות שלי</div>
+          <div class="ppm-stat-row" style="margin-bottom:${myStats.catScores.length?'12px':'0'};">
+            <div class="ppm-stat"><div class="ppm-stat-num">${myStats.totalGames}</div><div class="ppm-stat-label">משחקים</div></div>
+            <div class="ppm-stat"><div class="ppm-stat-num">${myStats.winRate}%</div><div class="ppm-stat-label">ניצחונות</div></div>
+            <div class="ppm-stat"><div class="ppm-stat-num">${myStats.avgScore}</div><div class="ppm-stat-label">ממוצע</div></div>
+            <div class="ppm-stat"><div class="ppm-stat-num">${myStats.topThree}</div><div class="ppm-stat-label">פודיום</div></div>
+          </div>
+          ${catBarsHtml ? `<div style="margin-bottom:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">קטגוריות חזקות</div>${catBarsHtml}` : ''}
+          ${myStats.bestWord ? `<div style="background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);border-radius:10px;padding:10px;margin-top:8px;text-align:center;"><div style="font-size:.68rem;color:var(--muted);margin-bottom:3px;">💎 המילה הנדירה ביותר שלך</div><div style="font-weight:900;font-size:1.1rem;color:var(--blue);">${myStats.bestWord}</div></div>` : ''}
+        </div>`;
+      }
+    } else {
+      // For other players, only show room-based streak placeholder
+      streakHtml = '';
     }
 
     const modal = document.createElement('div');
@@ -2168,6 +2253,7 @@
           <div class="ppm-badges">${badgesHtml || '<span style="font-size:.75rem;color:var(--muted);">אין תגים</span>'}</div>
         </div>
         <div class="ppm-body">
+          ${richStatsHtml}
           ${statsHtml}
           ${streakHtml}
           <div class="ppm-section">
@@ -3155,7 +3241,7 @@
   renderMyRooms();
   // FEATURE 6 & 5: Hour letter banner + daily challenge
   renderHourLetterBanner();
-  loadDailyChallenge();
+  // loadDailyChallenge() is called after DCATS is initialized below
   // FEATURE 3: Init notification button state
   updateNotifButton();
   scheduleStreakNotif(); // reschedule if already granted
@@ -3377,6 +3463,8 @@
     });
   }
   initGrid();
+  // FEATURE 5: Load daily challenge now that DCATS is defined
+  loadDailyChallenge();
 
   // Scoreboard mode toggle
   document.getElementById('tog-sb-mode').addEventListener('click',()=>{
@@ -3486,9 +3574,15 @@
       }
     }
     showScreen('create');
-    // FEATURE 8: show room theme picker for supporters
-    initRoomThemePicker();
+    // FEATURE 8: reset theme selection to default each time create screen opens
     S_roomTheme = 'default';
+    const grid = document.getElementById('room-theme-grid');
+    if (grid) {
+      grid.querySelectorAll('.room-theme-btn').forEach(b => b.classList.remove('sel'));
+      const defBtn = grid.querySelector('[data-theme="default"]');
+      if (defBtn) defBtn.classList.add('sel');
+    }
+    initRoomThemePicker();
   }
 
   // ─── CREATE ROOM ──────────────────────────────────────────────────
@@ -3541,6 +3635,7 @@
       set(ref(db,'roomActivity/'+roomId),Date.now()).catch(()=>{});
     }
     saveSession();
+    applyRoomTheme(S_roomTheme||'default'); // FEATURE 8: apply theme for creator too
     enterLobby();
     lacTrack('room_created', { room_id: roomId, cat_count: active.length, round_time: S.rTime, race_mode: S.raceMode, visibility: S.visibility });
     // Track room creation for achievements
