@@ -6285,8 +6285,8 @@
         return `<div class="adm-row">
           <div class="adm-rank">${medals[i] || '#'+(i+1)}</div>
           <div style="flex:1;min-width:0;">
-            <div class="adm-name">${u.emoji||''} ${u.name}</div>
-            ${u.refId ? `<div class="adm-refid">${u.refId}</div>` : ''}
+            <div class="adm-name" style="${u.unknown?'color:var(--muted);':''}">${u.emoji||''} ${u.name}</div>
+            <div class="adm-refid">${u.refId}</div>
           </div>
           <div class="adm-bar-wrap">
             <div class="adm-bar"><div class="adm-bar-fill" style="width:${pct}%"></div></div>
@@ -6301,13 +6301,9 @@
       modal.querySelector('#adm-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);">⏳ טוען הפצות...</div>';
       modal.querySelector('#adm-subtitle').textContent = 'טוען...';
       try {
-        // Step 1: fetch all referrals (public path) + anon stats
-        const [refSnap, anonSnap] = await Promise.all([
-          get(ref(db, 'referrals')),
-          get(ref(db, 'adminData/anonStats'))
-        ]);
-        const referrals = refSnap.val() || {}; // { refId: { count: N } }
-        const anonData = anonSnap.val() || {};
+        // Step 1: fetch all referrals (public path)
+        const refSnap = await get(ref(db, 'referrals'));
+        const referrals = refSnap.val() || {};
 
         // Step 2: fetch adminData/referrals to get uid→refId mapping
         // (each user writes their own entry, so we can read it with auth)
@@ -6327,11 +6323,11 @@
           const count = data.count || 0;
           if (count === 0) return;
           const user = refIdToUser[refId];
-          const name = user?.name || `(${refId})`;
+          const name = user?.name || `👤 לא מזוהה`;
           const emoji = user?.emoji || null;
           const level = getSupporterLevel(count);
           totalRefs += count;
-          allUsers.push({ uid: user?.uid || refId, name, refCount: count, level, refId, emoji });
+          allUsers.push({ uid: user?.uid || refId, name, refCount: count, level, refId, emoji, unknown: !user });
         });
 
         // Also add users with 0 refs but who have accounts (so all users are visible)
@@ -6347,17 +6343,10 @@
         allUsers.sort((a, b) => b.refCount - a.refCount);
         const activeRefs = allUsers.filter(u => u.refCount > 0).length;
 
-        // Anon stats
-        const anonDays = Object.values(anonData);
-        const anonRooms = anonDays.reduce((s, d) => s + (d.rooms||0), 0);
-        const anonPlayers = anonDays.reduce((s, d) => s + (d.players||0), 0);
-
-        modal.querySelector('#adm-stats').innerHTML = `
+        modal.querySelector(`#adm-stats`).innerHTML = `
           <div class="adm-stat"><div class="adm-stat-n">${allUsers.length}</div><div class="adm-stat-l">מחוברים</div></div>
           <div class="adm-stat"><div class="adm-stat-n">${totalRefs}</div><div class="adm-stat-l">סה"כ הפניות</div></div>
-          <div class="adm-stat"><div class="adm-stat-n">${activeRefs}</div><div class="adm-stat-l">מפיצים פעילים</div></div>
-          <div class="adm-stat" style="grid-column:span 2;"><div class="adm-stat-n" style="color:var(--orange);">${anonPlayers.toLocaleString()}</div><div class="adm-stat-l">שחקנים אנונימיים (יצרו חדר)</div></div>
-          <div class="adm-stat"><div class="adm-stat-n" style="color:var(--orange);">${anonRooms.toLocaleString()}</div><div class="adm-stat-l">חדרים אנונימיים</div></div>`;
+          <div class="adm-stat"><div class="adm-stat-n">${activeRefs}</div><div class="adm-stat-l">מפיצים פעילים</div></div>`;
         modal.querySelector('#adm-subtitle').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
         renderList();
       } catch(e) {
