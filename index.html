@@ -1352,13 +1352,17 @@
   // ═══════════════════════════════════════════════════════════════
   function lacTrack(eventName, params = {}) {
     try {
-      if (typeof gtag !== 'function') return;
-      gtag('event', eventName, {
+      const fullParams = {
         ...params,
-        player_name: S?.pName || 'unknown',
-        is_supporter: (S_pSupporterLevel > 0),
+        player_name:     S?.pName || 'unknown',
+        is_supporter:    (S_pSupporterLevel > 0),
         supporter_level: S_pSupporterLevel || 0,
-      });
+        ref_count:       S_pRefCount || 0,
+      };
+      // ── Console log every GA4 event ──────────────────────────────
+      console.log(`[GA4] ${eventName}`, fullParams);
+      if (typeof gtag !== 'function') return;
+      gtag('event', eventName, fullParams);
     } catch(e) {}
   }
 
@@ -1366,16 +1370,84 @@
     try {
       if (typeof gtag !== 'function') return;
       const isSupporter = (S_pSupporterLevel > 0);
-      gtag('set', 'user_properties', {
+      const props = {
         is_supporter:       isSupporter,
         supporter_level:    S_pSupporterLevel || 0,
         player_name:        S?.pName || 'unknown',
         has_streak:         getStreakData ? getStreakData().isActive : false,
         ref_count:          S_pRefCount || 0,
         has_custom_profile: !!(S_pEmoji || S_pFrame || S_pTag),
-      });
+        share_count:        parseInt(localStorage.getItem('aretz_share_count')||'0'),
+      };
+      console.log('[GA4] set user_properties', props);
+      gtag('set', 'user_properties', props);
     } catch(e) {}
   }
+
+  // ── Global JS error → GA4 ────────────────────────────────────────
+  window.addEventListener('error', (ev) => {
+    const msg   = (ev.message || 'unknown error').slice(0, 150);
+    const src   = (ev.filename || '').replace(/.*\//,'').slice(0,60);
+    const loc   = `${src}:${ev.lineno||0}:${ev.colno||0}`;
+    console.error('[GA4 error captured]', msg, loc);
+    try {
+      if (typeof gtag !== 'function') return;
+      gtag('event', 'js_error', {
+        error_message:  msg,
+        error_location: loc,
+        player_name:    S?.pName || 'unknown',
+        supporter_level: S_pSupporterLevel || 0,
+      });
+    } catch(e) {}
+  });
+
+  // ── Unhandled Promise rejection → GA4 ───────────────────────────
+  window.addEventListener('unhandledrejection', (ev) => {
+    const msg = String(ev.reason?.message || ev.reason || 'unhandled rejection').slice(0, 150);
+    console.error('[GA4 unhandledrejection]', msg);
+    try {
+      if (typeof gtag !== 'function') return;
+      gtag('event', 'js_error', {
+        error_message:  msg,
+        error_location: 'unhandled_promise',
+        player_name:    S?.pName || 'unknown',
+        supporter_level: S_pSupporterLevel || 0,
+      });
+    } catch(e) {}
+  });
+
+  // ── Intercept console.error / console.warn → GA4 ────────────────
+  (function(){
+    const _origError = console.error.bind(console);
+    const _origWarn  = console.warn.bind(console);
+    console.error = function(...args) {
+      _origError(...args);
+      try {
+        const msg = args.map(a => (typeof a === 'object' ? (a?.message || JSON.stringify(a)) : String(a))).join(' ').slice(0, 150);
+        if (typeof gtag === 'function') {
+          gtag('event', 'js_error', {
+            error_message:  msg,
+            error_location: 'console_error',
+            player_name:    S?.pName || 'unknown',
+            supporter_level: S_pSupporterLevel || 0,
+          });
+        }
+      } catch(e) {}
+    };
+    console.warn = function(...args) {
+      _origWarn(...args);
+      try {
+        const msg = args.map(a => (typeof a === 'object' ? (a?.message || JSON.stringify(a)) : String(a))).join(' ').slice(0, 150);
+        if (typeof gtag === 'function') {
+          gtag('event', 'js_warning', {
+            warning_message: msg,
+            warning_location: 'console_warn',
+            player_name:     S?.pName || 'unknown',
+          });
+        }
+      } catch(e) {}
+    };
+  })();
 
   // Track session start time for session_duration event
   const _sessionStartTs = Date.now();
@@ -1754,7 +1826,7 @@
         renderStreakCard();
       }
 
-    } catch(e) { console.warn('Firebase sync error:', e); throw e; }
+    } catch(e) { console.warn('Firebase sync error:', e); lacTrack('sync_error', { error_message: (e?.message||String(e)).slice(0,100) }); throw e; }
   }
 
   const LETTERS='אבגדהוזחטיכלמנסעפצקרשת'.split('');
@@ -1815,6 +1887,24 @@
             og.gain.setValueAtTime(.12,ctx.currentTime+i*.14);og.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.14+.22);
             oo.type='triangle';oo.frequency.setValueAtTime(f,ctx.currentTime+i*.14);
             oo.start(ctx.currentTime+i*.14);oo.stop(ctx.currentTime+i*.14+.22);
+          });
+          return;
+        }else if(type==='slotTick'){
+          // Slot machine tick — random pitch, short burst
+          g.gain.setValueAtTime(.04,ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.05);
+          o.type='square';
+          o.frequency.setValueAtTime(180+Math.floor(Math.random()*480),ctx.currentTime);
+          o.start();o.stop(ctx.currentTime+.05);
+        }else if(type==='slotLand'){
+          // Rising chord sting when letter lands
+          [330,440,660,880].forEach((f,i)=>{
+            const og=ctx.createGain();og.connect(ctx.destination);
+            const oo=ctx.createOscillator();oo.connect(og);
+            og.gain.setValueAtTime(.18,ctx.currentTime+i*.06);
+            og.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.06+.35);
+            oo.type='sine';oo.frequency.setValueAtTime(f,ctx.currentTime+i*.06);
+            oo.start(ctx.currentTime+i*.06);oo.stop(ctx.currentTime+i*.06+.35);
           });
           return;
         }
@@ -2143,6 +2233,7 @@
     if(shareBtn && !shareBtn._wired){
       shareBtn._wired=true;
       shareBtn.addEventListener('click',()=>{
+        lacTrack('supporter_share_click', { ref_count: S_pRefCount, supporter_level: S_pSupporterLevel });
         if(navigator.share){
           navigator.share({title:'ארץ עיר אונליין',text:'🌍 בוא לשחק ארץ עיר איתי!',url}).catch(()=>{});
         }else{
@@ -2164,8 +2255,13 @@
     if(count > firebaseCount){
       try{ await set(ref(db,'referrals/'+S_pRefId+'/count'), count); }catch(e){}
     }
+    const prevLevel = S_pSupporterLevel;
     S_pRefCount=count;
     S_pSupporterLevel=getSupporterLevel(count);
+    lacTrack('supporter_card_viewed', { ref_count: count, supporter_level: S_pSupporterLevel });
+    if(S_pSupporterLevel > prevLevel){
+      lacTrack('supporter_level_up', { new_level: S_pSupporterLevel, ref_count: count });
+    }
     renderSupporterCard(S_pRefId, count);
     renderBadgePicker();
     saveProfile();
@@ -2176,11 +2272,13 @@
     const params=new URLSearchParams(window.location.search);
     const refFrom=params.get('ref');
     if(refFrom&&refFrom.length>4){
+      lacTrack('ref_link_visit', { ref_from: refFrom.slice(0,12) });
       // Don't count your own link
       let myId=null;
       try{myId=localStorage.getItem('lac_refid')||S_pRefId;}catch(e){}
       if(refFrom!==myId){
         incrementRef(refFrom);
+        lacTrack('ref_link_converted', { ref_from: refFrom.slice(0,12) });
       }
     }
   })();
@@ -3805,6 +3903,13 @@
     if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
+    // Track daily active players (for social proof on share card)
+    try{
+      const today=new Date().toISOString().slice(0,10).replace(/-/g,'');
+      const dcRef=ref(db,`dailyStats/${today}/players`);
+      const dcSnap=await get(dcRef);
+      await set(dcRef,(dcSnap.val()||0)+activePlayers.length);
+    }catch(e){}
     // 🌟 Legendary round: schedule first legendary
     const legendaryNext = getNextLegendaryRound(0);
     await update(ref(db,`rooms/${S.roomId}`),{
@@ -3875,21 +3980,30 @@
 
       let count=0;
       const total=18;
-      const interval=setInterval(()=>{
+      // Slow down toward end: starts at 55ms, ends at 130ms
+      let tickDelay=55;
+      let tickTimer=null;
+      function doTick(){
         const rndLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
         olLetter.textContent=rndLetter;
+        SFX.play('slotTick');
         count++;
         if(count>=total){
-          clearInterval(interval);
           olLetter.textContent=finalLetter;
           olLetter.className='ol-big land';
+          SFX.play('slotLand');
           setTimeout(()=>{
             overlay.style.display='none';
             olLetter.className='ol-big';
             resolve();
           },1500);
+          return;
         }
-      },80);
+        // Ease out: tick gets ~5ms slower each step after halfway
+        if(count>total/2) tickDelay=Math.min(tickDelay+7,150);
+        tickTimer=setTimeout(doTick, tickDelay);
+      }
+      tickTimer=setTimeout(doTick, tickDelay);
     });
   }
 
@@ -4071,6 +4185,7 @@
       if(S.timeLeft<=10&&S.timeLeft>0){SFX.play(S.timeLeft<=3?'warn':'tick');}
       if(S.timeLeft<=0){
         clearInterval(S.timerInt);
+        lacTrack('timer_expired', { cat_name: S.cats[S.currentCatIndex]?.name||'', round_number: S.rNum, submitted: S.catSubmitted });
         if(!S.isSpectator){
           const inp=document.getElementById('cat-answer');
           const val=inp.value.trim();
@@ -4293,6 +4408,7 @@
       }
     }catch(e){
       console.error('advanceCat error:',e);
+      lacTrack('js_error', { error_message: ('advanceCat: '+(e?.message||e)).slice(0,150), error_location: 'advanceCat' });
       toast('⚠️ שגיאה בהעברת קטגוריה, מנסה שוב...');
     }finally{
       // Always reset guard so future calls can proceed
@@ -4330,6 +4446,7 @@
       toast('חזרת לקטגוריה הקודמת ⬅️');
     }catch(e){
       console.error('backCat error:',e);
+      lacTrack('js_error', { error_message: ('backCat: '+(e?.message||e)).slice(0,150), error_location: 'backCat' });
       toast('שגיאה בחזרה לקטגוריה');
     }finally{
       S.advancing=false;
@@ -4458,7 +4575,7 @@
             await remove(voteRef);
           }else{
             await set(voteRef,vKey);
-            lacTrack('veto_cast', { cat_id: cId, round_number: S.rNum });
+            lacTrack('veto_cast', { cat_id: cId, vetoed_answer: (vKey||'').slice(0,40), round_number: S.rNum });
           }
           touchActivity();
         });
@@ -5112,6 +5229,19 @@
       player_count: sorted.length,
     });
     lacTrack('session_duration', { seconds: sessionSec, rounds_played: S.rNum });
+
+    // ── Track each player's contribution by name (for GA4 Explore) ──
+    sorted.forEach(([pid, p], i) => {
+      lacTrack('player_contribution', {
+        contributor_name:      p.name || 'unknown',
+        contributor_score:     p.score || 0,
+        contributor_place:     i + 1,
+        contributor_is_me:     pid === S.pId,
+        contributor_supporter: p.supporterLevel || 0,
+        total_players:         sorted.length,
+        rounds_played:         S.rNum,
+      });
+    });
     // Increment games played counter for achievements
     const gp = parseInt(localStorage.getItem('aretz_games_played')||'0')+1;
     localStorage.setItem('aretz_games_played', gp);
@@ -5154,6 +5284,7 @@
   }
 
   async function endGame(){
+    lacTrack('end_game_forced', { round_number: S.rNum, is_host: S.isHost, room_id: S.roomId });
     await update(ref(db,`rooms/${S.roomId}`),{status:'ended',lastActivity:Date.now()});
     await showFinal();
   }
@@ -5291,6 +5422,7 @@
   }
 
   function goHome(){
+    lacTrack('go_home', { from_room: S.roomId||'none', rounds_played: S.rNum||0 });
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();detachChat();clearSession();
     S.roomId='';S.isHost=false;S.totScores={};S.isSpectator=false;
     showChatFab(false);
@@ -5298,6 +5430,7 @@
   }
 
   async function exitGame(){
+    lacTrack('exit_game', { from_room: S.roomId||'none', round_number: S.rNum||0, is_host: S.isHost, score: S.totScores?.[S.pId]||0 });
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
     if(S.roomId&&S.pId){
       if(S.isHost)await transferHost();
@@ -5479,7 +5612,7 @@
     onValue(r,fn);
     floatEmojiListener={r,fn};
   }
-  document.getElementById('home-identity').addEventListener('click',()=>{ setupProfileScreen(); showScreen('profile'); });
+  document.getElementById('home-identity').addEventListener('click',()=>{ lacTrack('open_profile_edit', {}); setupProfileScreen(); showScreen('profile'); });
   document.getElementById('player-name').addEventListener('input',()=>{
     if(!roomNameManuallyChanged){
       const rni=document.getElementById('room-name-inp');
@@ -5487,9 +5620,9 @@
       if(rni&&n) rni.value=S_pRoomName||`החדר של ${n}`;
     }
   });
-  document.getElementById('btn-show-create').addEventListener('click',showCreate);
-  document.getElementById('btn-join').addEventListener('click',()=>joinRoom(false));
-  document.getElementById('btn-join-spec').addEventListener('click',()=>joinRoom(true));
+  document.getElementById('btn-show-create').addEventListener('click', () => { lacTrack('tap_create_room', {}); showCreate(); });
+  document.getElementById('btn-join').addEventListener('click',()=>{ lacTrack('tap_join_room', { code: document.getElementById('join-code').value||'' }); joinRoom(false); });
+  document.getElementById('btn-join-spec').addEventListener('click',()=>{ lacTrack('tap_join_spectator', {}); joinRoom(true); });
   document.getElementById('btn-back-home').addEventListener('click',()=>{roomNameManuallyChanged=false;showScreen('home');});
   document.getElementById('btn-add-cc').addEventListener('click',addCC);
   document.getElementById('btn-create-room').addEventListener('click',createRoom);
@@ -5527,6 +5660,7 @@
   }
 
   function showHistoryModal(){
+    lacTrack('open_history', { games_in_history: (() => { try{ return JSON.parse(localStorage.getItem('aretz_history')||'[]').length; }catch(e){ return 0; } })() });
     let hist=[];
     try{hist=JSON.parse(localStorage.getItem('aretz_history')||'[]');}catch(e){}
     let modal=document.getElementById('history-modal');
@@ -5600,6 +5734,7 @@
     toast('✅ תבנית נשמרה!');
   }
   function showTemplatesModal(){
+    lacTrack('open_templates', { template_count: (() => { try{ return JSON.parse(localStorage.getItem('aretz_templates')||'[]').length; }catch(e){ return 0; } })() });
     const tpls=getTemplates();
     let modal=document.getElementById('templates-modal');
     if(modal)modal.remove();
@@ -5844,6 +5979,7 @@
     const done = ALL_ACHIEVEMENTS.filter(a=>{ try{ return a.check(); }catch(e){ return false; } });
     const locked = ALL_ACHIEVEMENTS.filter(a=>{ try{ return !a.check(); }catch(e){ return true; } });
     const pct = Math.round((done.length/ALL_ACHIEVEMENTS.length)*100);
+    lacTrack('open_achievements', { done_count: done.length, total_count: ALL_ACHIEVEMENTS.length, completion_pct: pct });
 
     // Group by section
     const sections = {};
@@ -6003,14 +6139,16 @@
   // ─── UPGRADED SHARE CARD (#1) ──────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
 
-  async function buildShareCanvas(sorted, medals, refUrl) {
+  async function buildShareCanvas(sorted, medals, refUrl, emojiGrid='', bestWord=null, dailyCount=0) {
     const SCALE = 2;
     const W = 540;
     const PAD = 32;
     const HEADER_H = 108;
     const ROW_H = 54;
     const FOOTER_H = 100;
-    const H = HEADER_H + sorted.length * ROW_H + FOOTER_H;
+    const EMOJI_ROW_H = emojiGrid ? 38 : 0;
+    const BEST_ROW_H  = bestWord  ? 30 : 0;
+    const H = HEADER_H + EMOJI_ROW_H + sorted.length * ROW_H + BEST_ROW_H + FOOTER_H;
 
     const canvas = document.createElement('canvas');
     canvas.width  = W * SCALE;
@@ -6076,8 +6214,21 @@
     ctx.textAlign = 'center';
     ctx.fillText(catNames, W/2, PAD + 80);
 
+    // ── Emoji Grid (Wordle-style) ─────────────────────────────────
+    if(emojiGrid){
+      ctx.font      = '18px serif';
+      ctx.fillStyle = WHITE;
+      ctx.textAlign = 'center';
+      ctx.fillText(emojiGrid, W/2, PAD + 98);
+      // Label
+      const greenCount=(emojiGrid.match(/🟩/g)||[]).length;
+      ctx.font      = '10px Arial';
+      ctx.fillStyle = MUTED;
+      ctx.fillText(`${greenCount}/${S.cats.length} ייחודיות`, W/2, PAD + 112);
+    }
+
     // ── Divider ───────────────────────────────────────────────────
-    const divY = HEADER_H + PAD - 4;
+    const divY = HEADER_H + EMOJI_ROW_H + PAD - 4;
     ctx.strokeStyle = BORDER;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(PAD+16, divY); ctx.lineTo(W-PAD-16, divY); ctx.stroke();
@@ -6091,7 +6242,7 @@
     const NAME_RIGHT = PILL_X - 8;                 // right edge of name (text drawn RTL→right-aligned here)
 
     sorted.forEach(([pid, p], i) => {
-      const rowTop = HEADER_H + PAD + i * ROW_H;
+      const rowTop = HEADER_H + EMOJI_ROW_H + PAD + i * ROW_H;
       const rowH2  = ROW_H - 8;
       const midY   = rowTop + ROW_H / 2;
       const isMe   = pid === S.pId;
@@ -6166,6 +6317,22 @@
       ctx.fillText(dName, NAME_RIGHT, midY + 6);
     });
 
+    // ── Best word strip ───────────────────────────────────────────
+    if(bestWord){
+      const bwY = H - FOOTER_H - BEST_ROW_H;
+      ctx.fillStyle = '#1c1228';
+      rr(ctx, PAD+8, bwY+4, W-PAD*2-16, BEST_ROW_H-8, 8);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(168,85,247,.35)';
+      ctx.lineWidth = 1;
+      rr(ctx, PAD+8, bwY+4, W-PAD*2-16, BEST_ROW_H-8, 8);
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 11px Arial';
+      ctx.fillStyle = '#c084fc';
+      ctx.fillText(`המילה הכי נדירה שלי: ${bestWord}`, W/2, bwY + 18);
+    }
+
     // ── Footer with QR code ───────────────────────────────────────
     const fY = H - FOOTER_H + 14;
     ctx.strokeStyle = BORDER;
@@ -6196,6 +6363,12 @@
     ctx.font = '10px Arial';
     ctx.fillStyle = MUTED;
     ctx.fillText('סרקו לכניסה מהירה', qrX - 12, fY + 46);
+    // Social proof: show daily count if > 100
+    if(dailyCount > 100){
+      ctx.font = 'bold 11px Arial';
+      ctx.fillStyle = '#4cc9f0';
+      ctx.fillText(`היום שיחקו ${dailyCount.toLocaleString()} שחקנים`, qrX - 12, fY + 66);
+    }
 
     return canvas.toDataURL('image/png');
   }
@@ -6223,11 +6396,74 @@
         .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
       const medals = ['🥇','🥈','🥉'];
 
+      // ── Fetch catAnswers + disqualified for emoji grid & best word ──
+      const [caSnap, disqSnap] = await Promise.all([
+        get(ref(db,`rooms/${S.roomId}/catAnswers`)),
+        get(ref(db,`rooms/${S.roomId}/disqualified`))
+      ]);
+      const catAnswers = caSnap.val() || {};
+      const disqMap   = disqSnap.val() || {};
+
+      // Helper: get valid answers for a player in a category
+      function getValidAnswers(catData, pId, disqSet){
+        const d = catData[pId];
+        if(!d) return [];
+        const arr = Array.isArray(d.answers)&&d.answers.length ? d.answers : (d.answer?[d.answer]:[]);
+        return arr.filter(a=>{ const al=(a||'').trim(); return al&&!disqSet.has(al.toLowerCase()); });
+      }
+      // Helper: count how many players answered each word
+      function buildCounts(catData, disqSet){
+        const counts={};
+        Object.values(catData).forEach(d=>{
+          const arr=Array.isArray(d.answers)&&d.answers.length?d.answers:(d.answer?[d.answer]:[]);
+          arr.forEach(a=>{ const al=(a||'').trim(); if(al&&!disqSet.has(al.toLowerCase())) counts[al.toLowerCase()]=(counts[al.toLowerCase()]||0)+1; });
+        });
+        return counts;
+      }
+
+      // ── Wordle-style emoji grid ──────────────────────────────────
+      const emojiGrid = S.cats.map(cat=>{
+        const catData = catAnswers[cat.id]||{};
+        const disqSet = new Set((disqMap[cat.id]||[]).map(a=>a.toLowerCase()));
+        const myValid = getValidAnswers(catData, S.pId, disqSet);
+        if(!myValid.length) return '⬛';
+        const counts = buildCounts(catData, disqSet);
+        const hasUniq = myValid.some(a=>counts[(a||'').trim().toLowerCase()]===1);
+        return hasUniq ? '🟩' : '🟨';
+      }).join('');
+
+      // ── Find best (longest unique) word ─────────────────────────
+      let bestWord=null, bestLen=0;
+      S.cats.forEach(cat=>{
+        const catData = catAnswers[cat.id]||{};
+        const disqSet = new Set((disqMap[cat.id]||[]).map(a=>a.toLowerCase()));
+        const counts  = buildCounts(catData, disqSet);
+        getValidAnswers(catData, S.pId, disqSet).forEach(a=>{
+          const al=(a||'').trim();
+          if(counts[al.toLowerCase()]===1 && al.length>bestLen){ bestWord=a; bestLen=al.length; }
+        });
+      });
+
+      // ── Daily player count ───────────────────────────────────────
+      let dailyCount=0;
+      try{
+        const today=new Date().toISOString().slice(0,10).replace(/-/g,'');
+        const dcSnap=await get(ref(db,`dailyStats/${today}/players`));
+        dailyCount=dcSnap.val()||0;
+      }catch(e){}
+
       // Build image
       const url = location.origin + location.pathname;
       const refUrl = S_pRefId ? url+'?ref='+S_pRefId : url;
-      const imgDataUrl = await buildShareCanvas(sorted, medals, refUrl);
-      const lines = ['🌍 ארץ עיר — תוצאות', ''];
+      const imgDataUrl = await buildShareCanvas(sorted, medals, refUrl, emojiGrid, bestWord, dailyCount);
+
+      // ── Build share text (Wordle-style) ──────────────────────────
+      const greenCount=(emojiGrid.match(/🟩/g)||[]).length;
+      const lines = [`🌍 ארץ עיר אונליין — אות ${S.letter||'?'}`, ''];
+      lines.push(emojiGrid);
+      lines.push(`מצאתי ${greenCount}/${S.cats.length} ייחודיות · סיבוב ${S.rNum}`);
+      if(bestWord) lines.push(`💎 המילה הכי נדירה שלי: ${bestWord}`);
+      lines.push('');
       lines.push(`📋 ${S.cats.map(c=>c.name).join(', ')}`);
       lines.push('');
       sorted.forEach(([pid,p],i)=>{
@@ -6821,12 +7057,17 @@
   document.getElementById('auth-tab-signup').addEventListener('click', () => setAuthMode('signup'));
 
   document.getElementById('auth-modal-google').addEventListener('click', async () => {
+    lacTrack('auth_attempt', { method: 'google_modal' });
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
+      lacTrack('auth_success', { method: 'google_modal' });
       closeAuthModal();
     } catch(e) {
       const msg = authErrMsg(e.code);
       if (msg) document.getElementById('auth-error').textContent = msg;
+      if(e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+        lacTrack('auth_error', { method: 'google_modal', error_code: e.code||'unknown' });
+      }
     }
   });
 
@@ -6835,15 +7076,18 @@
     const pass  = document.getElementById('auth-pass-inp').value;
     const errEl = document.getElementById('auth-error');
     if (!email || !pass) { errEl.textContent = 'נא למלא אימייל וסיסמה'; return; }
+    lacTrack('auth_attempt', { method: _authModalMode });
     try {
       if (_authModalMode === 'login') {
         await signInWithEmailAndPassword(auth, email, pass);
       } else {
         await createUserWithEmailAndPassword(auth, email, pass);
       }
+      lacTrack('auth_success', { method: _authModalMode });
       closeAuthModal();
     } catch(e) {
       errEl.textContent = authErrMsg(e.code) || e.message;
+      lacTrack('auth_error', { method: _authModalMode, error_code: e.code||'unknown' });
     }
   });
 
@@ -6861,7 +7105,13 @@
   });
 
   document.getElementById('btn-auth-google').addEventListener('click', async () => {
-    try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) {}
+    lacTrack('auth_attempt', { method: 'google_profile' });
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+      lacTrack('auth_success', { method: 'google_profile' });
+    } catch(e) {
+      if(e.code !== 'auth/popup-closed-by-user') lacTrack('auth_error', { method: 'google_profile', error_code: e.code||'unknown' });
+    }
   });
   document.getElementById('btn-auth-email').addEventListener('click', openAuthModal);
   document.getElementById('btn-sync-cloud').addEventListener('click', async () => {
@@ -6885,6 +7135,7 @@
   });
 
   document.getElementById('btn-auth-logout').addEventListener('click', async () => {
+    lacTrack('auth_logout', {});
     await signOut(auth);
     toast('התנתקת בהצלחה');
   });

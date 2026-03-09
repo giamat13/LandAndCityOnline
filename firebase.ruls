@@ -17,6 +17,15 @@
         ".write": true
       }
     },
+    "dailyStats": {
+      "$day": {
+        ".read": true,
+        "players": {
+          ".write": true,
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999"
+        }
+      }
+    },
     "referrals": {
       "$refId": {
         "count": {
