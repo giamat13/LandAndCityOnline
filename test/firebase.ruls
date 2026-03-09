@@ -26,6 +26,24 @@
         }
       }
     },
+    "dailyChallenge": {
+      "$day": {
+        ".read": true,
+        "scores": {
+          "$playerId": {
+            ".write": true,
+            ".validate": "newData.hasChildren(['name','score','ts']) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 9999"
+          }
+        }
+      }
+    },
+    "publicPacks": {
+      ".read": true,
+      "$packId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['name','cats','creator','ts'])"
+      }
+    },
     "referrals": {
       "$refId": {
         "count": {
