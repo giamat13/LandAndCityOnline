@@ -874,9 +874,9 @@
     <div id="streak-card" class="streak-card" style="display:none;">
       <div class="streak-fire">🔥</div>
       <div class="streak-info">
-        <div class="streak-title">רצף שבועי</div>
-        <div class="streak-count" id="streak-count-text">0 מתוך 5</div>
-        <div class="streak-sub" id="streak-sub-text">שחק 5 ימים השבוע לשמור על הרצף</div>
+        <div class="streak-title">רצף יומי</div>
+        <div class="streak-count" id="streak-count-text">0 ימים</div>
+        <div class="streak-sub" id="streak-sub-text">שחק כל יום לבנות רצף (3 שומרים בשבוע)</div>
         <div class="streak-dots" id="streak-dots"></div>
       </div>
       <button id="btn-open-achievements-streak" title="הישגים שלי" style="background:none;border:none;font-size:1.6rem;cursor:pointer;padding:4px;flex-shrink:0;">🏅</button>
@@ -1496,11 +1496,11 @@
       if (sd.count > 0) {
         const dotsHtml = sd.days.map(d => `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${d.played?'var(--orange)':'var(--border)'};margin:0 2px;"></span>`).join('');
         streakHtml = `<div class="ppm-section">
-          <div class="ppm-section-title">🔥 רצף שבועי</div>
+          <div class="ppm-section-title">🔥 רצף יומי</div>
           <div style="background:var(--s2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
             <div style="font-size:1.8rem;">${sd.isActive?'🏆':'🔥'}</div>
             <div>
-              <div style="font-weight:800;font-size:.95rem;">${sd.count} מתוך 5 ימים ${sd.isActive?'✅':''}</div>
+              <div style="font-weight:800;font-size:.95rem;">${sd.count} יום ברצף ${sd.count>=7?'✅':''}</div>
               <div style="margin-top:6px;">${dotsHtml}</div>
             </div>
           </div>
@@ -2548,7 +2548,8 @@
   const AVC=AVATAR_COLORS;
   function avc(name,playerColor){
     if(playerColor)return playerColor;
-    let h=0;for(const c of name)h=h*31+c.charCodeAt(0);
+    if(!name)return AVC[0];
+    let h=0;for(const c of String(name))h=h*31+c.charCodeAt(0);
     return AVC[Math.abs(h)%AVC.length];
   }
   const INACTIVITY_MS = 15 * 60 * 1000; // 15 minutes
@@ -4918,7 +4919,7 @@
   function renderPodium(players, wrapId){
     wrapId=wrapId||'podium-wrap';
     const sorted=Object.entries(players)
-      .filter(([,p])=>!p.spectator)
+      .filter(([,p])=>!p.spectator && p.name)
       .sort((a,b)=>(b[1].score||0)-(a[1].score||0))
       .slice(0,3);
     const wrap=document.getElementById(wrapId);
@@ -5697,42 +5698,97 @@
   function getStreakData(){
     try{
       const dates = JSON.parse(localStorage.getItem(STREAK_KEY)||'[]');
+      const playedSet = new Set(dates);
       const today = new Date(); today.setHours(0,0,0,0);
-      const last7 = [];
-      for(let i=0; i<7; i++){
+
+      // ── Helper: get ISO week key "YYYY-Www" for a date ─────────
+      function isoWeekKey(d){
+        const tmp = new Date(d);
+        tmp.setHours(0,0,0,0);
+        const day = tmp.getDay() || 7;
+        tmp.setDate(tmp.getDate() + 4 - day);
+        const jan1 = new Date(tmp.getFullYear(), 0, 1);
+        const weekNo = Math.ceil((((tmp - jan1) / 86400000) + 1) / 7);
+        return `${tmp.getFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+      }
+
+      const GUARDS_PER_WEEK = 3;
+
+      // ── Walk backwards from today, tracking guards per calendar week ──
+      // Each calendar week gets exactly 3 guards — always resets to 3.
+      // A missed day costs 1 guard that week; if none left → streak breaks.
+      const MAX_DAYS = 90;
+      let streak = 0;
+      const weekGuardsUsed = {}; // weekKey → guards used
+
+      const recentDays = [];
+      for(let i=0; i<MAX_DAYS; i++){
         const d = new Date(today); d.setDate(today.getDate()-i);
         const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        last7.unshift(s);
+        recentDays.push({str: s, date: new Date(d)});
       }
-      const playedSet = new Set(dates);
+
+      for(let i=0; i<recentDays.length; i++){
+        const {str, date} = recentDays[i];
+        const played = playedSet.has(str);
+        if(played){
+          streak++;
+        } else {
+          const wk = isoWeekKey(date);
+          const used = weekGuardsUsed[wk] || 0;
+          if(used < GUARDS_PER_WEEK){
+            weekGuardsUsed[wk] = used + 1;
+            streak++;
+          } else {
+            break;
+          }
+        }
+      }
+
+      // ── Guards left THIS week (for display) ────────────────────
+      const thisWeekKey = isoWeekKey(today);
+      const guardsUsedThisWeek = weekGuardsUsed[thisWeekKey] || 0;
+      const guardsLeftThisWeek = GUARDS_PER_WEEK - guardsUsedThisWeek;
+
+      // ── Last 7 days for dots display ───────────────────────────
+      const last7 = recentDays.slice(0,7).map(e=>e.str).reverse();
       const days = last7.map(d=>({date:d, played:playedSet.has(d)}));
-      const count = days.filter(d=>d.played).length;
-      return {days, count, isActive: count>=5};
-    }catch(e){ return {days:[], count:0, isActive:false}; }
+
+      return {days, count: streak, isActive: streak>=7, guardsLeft: guardsLeftThisWeek, guardsUsed: guardsUsedThisWeek};
+    }catch(e){ return {days:[], count:0, isActive:false, guardsLeft:3, guardsUsed:0}; }
   }
 
   function renderStreakCard(){
-    const {days, count, isActive} = getStreakData();
+    const data = getStreakData();
+    const {days, count, isActive, guardsLeft} = data;
     const card = document.getElementById('streak-card');
     if(!card) return;
     // Always show if they have played at least 1 day
     if(count === 0){ card.style.display='none'; return; }
     card.style.display = 'flex';
 
-    document.getElementById('streak-count-text').textContent = `${count} מתוך 5 ימים השבוע`;
+    document.getElementById('streak-count-text').textContent = `${count} יום ברצף`;
     const subEl = document.getElementById('streak-sub-text');
-    if(isActive){
-      subEl.textContent = '✅ הרצף שלך מוגן לשבוע הזה!';
+    const gl = guardsLeft !== undefined ? guardsLeft : 3;
+    if(gl === 3){
+      subEl.textContent = '🛡️🛡️🛡️ 3 שומרי רצף זמינים השבוע';
       subEl.style.color = 'var(--green)';
       card.style.borderColor = 'rgba(15,186,129,.3)';
-      document.querySelector('.streak-fire').textContent = '🏆';
+    } else if(gl === 2){
+      subEl.textContent = '🛡️🛡️ 2 שומרי רצף זמינים השבוע';
+      subEl.style.color = 'var(--green)';
+      card.style.borderColor = 'rgba(15,186,129,.3)';
+    } else if(gl === 1){
+      subEl.textContent = '🛡️ שומר רצף אחד נותר השבוע';
+      subEl.style.color = 'var(--orange)';
+      card.style.borderColor = 'rgba(245,166,35,.3)';
     } else {
-      const needed = 5 - count;
-      subEl.textContent = `עוד ${needed} ימים לשמור על הרצף 🔥`;
-      subEl.style.color = '';
+      subEl.textContent = '⚠️ אין שומרים — שחק מחר לשמור על הרצף!';
+      subEl.style.color = 'var(--red)';
       card.style.borderColor = 'rgba(233,69,96,.25)';
-      document.querySelector('.streak-fire').textContent = '🔥';
     }
+    document.querySelector('.streak-fire').textContent = count >= 7 ? '🏆' : '🔥';
+
     const dotsEl = document.getElementById('streak-dots');
     dotsEl.innerHTML = '';
     const todayStr = getTodayStr();
@@ -5748,9 +5804,9 @@
   // ═══════════════════════════════════════════════════════════════
   const ALL_ACHIEVEMENTS = [
     // Streak
-    { id:'streak_1',    section:'🔥 רצף שבועי',   icon:'🔥', name:'ניצוץ ראשון',       desc:'שחקת יום אחד השבוע',              check: ()=>getStreakData().count>=1 },
-    { id:'streak_3',    section:'🔥 רצף שבועי',   icon:'🔥', name:'חצי שבוע',           desc:'שחקת 3 ימים השבוע',               check: ()=>getStreakData().count>=3 },
-    { id:'streak_5',    section:'🔥 רצף שבועי',   icon:'🏆', name:'שחקן שבועי',         desc:'שחקת 5 ימים השבוע — רצף שמור!',  check: ()=>getStreakData().isActive },
+    { id:'streak_1',    section:'🔥 רצף יומי',   icon:'🔥', name:'ניצוץ ראשון',       desc:'יום 1 ברצף',                         check: ()=>getStreakData().count>=1 },
+    { id:'streak_3',    section:'🔥 רצף יומי',   icon:'🔥', name:'שלושה ברצף',        desc:'3 ימים ברצף',                        check: ()=>getStreakData().count>=3 },
+    { id:'streak_5',    section:'🔥 רצף יומי',   icon:'🏆', name:'שבוע שלם',          desc:'7 ימים ברצף — מדהים!',              check: ()=>getStreakData().count>=7 },
     // Profile
     { id:'prof_name',   section:'👤 פרופיל',        icon:'✍️', name:'שם שלי',             desc:'הגדרת שם שחקן',                   check: ()=>!!S.pName },
     { id:'prof_emoji',  section:'👤 פרופיל',        icon:'😎', name:'אמוג\'י אישי',      desc:'בחרת אמוג\'י',                    check: ()=>!!S_pEmoji },
@@ -5858,7 +5914,12 @@
       <div class="ep-achievement">
         <div class="ep-icon">🔥</div>
         <div class="ep-label">הישג חדש</div>
-        <div class="ep-text">הרצף שלך התחיל!<br><span style="font-size:.85rem;color:var(--muted);">יום 1 מתוך 5 השבוע</span></div>
+        <div class="ep-text">הרצף שלך התחיל!<br><span style="font-size:.85rem;color:var(--muted);">יום 1 ברצף — שחק מחר להמשיך!</span></div>
+      </div>
+      <div class="ep-achievement" style="animation-delay:.15s;animation-fill-mode:both;">
+        <div class="ep-icon">🛡️</div>
+        <div class="ep-label">מתנת פתיחה</div>
+        <div class="ep-text">3 שומרי רצף מתנה!<br><span style="font-size:.85rem;color:var(--muted);">ימים שפספסת לא ישברו את הרצף — 3 בכל שבוע</span></div>
       </div>
       <div class="ep-achievement" style="animation-delay:.25s;animation-fill-mode:both;">
         <div class="ep-icon">🎖️</div>
@@ -5942,14 +6003,13 @@
   // ─── UPGRADED SHARE CARD (#1) ──────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
 
-  function buildShareCanvas(sorted, medals, refUrl) {
-    // ── Layout constants ─────────────────────────────────────────
-    const SCALE = 2;               // retina
+  async function buildShareCanvas(sorted, medals, refUrl) {
+    const SCALE = 2;
     const W = 540;
     const PAD = 32;
-    const HEADER_H = 116;          // title + letter + cats strip
-    const ROW_H = 52;
-    const FOOTER_H = 52;
+    const HEADER_H = 108;
+    const ROW_H = 54;
+    const FOOTER_H = 100;
     const H = HEADER_H + sorted.length * ROW_H + FOOTER_H;
 
     const canvas = document.createElement('canvas');
@@ -5957,177 +6017,185 @@
     canvas.height = H * SCALE;
     const ctx = canvas.getContext('2d');
     ctx.scale(SCALE, SCALE);
-    ctx.direction = 'rtl';         // Hebrew RTL support
+    // NO ctx.direction = 'rtl' — causes positioning chaos; handled manually
 
     // ── Palette ──────────────────────────────────────────────────
     const BG      = '#0d0d1c';
     const CARD    = '#161626';
     const BORDER  = '#2a2a42';
-    const WHITE   = '#f0f0f0';
+    const WHITE   = '#efefef';
     const MUTED   = '#6b6b8a';
     const RED     = '#e94560';
     const ORANGE  = '#f5a623';
     const BLUE    = '#4cc9f0';
-    const GOLD_BG = '#3a2e10';
-    const GOLD_TX = '#f5c842';
-    const SLV_BG  = '#252530';
-    const SLV_TX  = '#b8bcc8';
-    const BRZ_BG  = '#2e2018';
-    const BRZ_TX  = '#c8894a';
-    const ME_BG   = '#102030';
-    const ME_TX   = '#4cc9f0';
+    const GOLD_BG = '#2e2208'; const GOLD_TX = '#f0c040';
+    const SLV_BG  = '#1e1e2c'; const SLV_TX  = '#b0b4c0';
+    const BRZ_BG  = '#261808'; const BRZ_TX  = '#c08040';
+    const ME_BG   = '#0c1e2e'; const ME_TX   = '#4cc9f0';
 
-    // ── Background ───────────────────────────────────────────────
+    // ── Background + Card ────────────────────────────────────────
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, W, H);
-
-    // ── Card ─────────────────────────────────────────────────────
     ctx.fillStyle = CARD;
-    rr(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 18);
+    rr(ctx, PAD, PAD, W-PAD*2, H-PAD*2, 16);
     ctx.fill();
     ctx.strokeStyle = BORDER;
     ctx.lineWidth = 1;
-    rr(ctx, PAD, PAD, W - PAD*2, H - PAD*2, 18);
+    rr(ctx, PAD, PAD, W-PAD*2, H-PAD*2, 16);
     ctx.stroke();
 
-    // ── Top accent line ──────────────────────────────────────────
+    // ── Red top bar ───────────────────────────────────────────────
     ctx.fillStyle = RED;
-    rr(ctx, PAD + 18, PAD, W - PAD*2 - 36, 3, 2);
+    rr(ctx, PAD+16, PAD, W-PAD*2-32, 3, 2);
     ctx.fill();
 
-    // ── Title row ────────────────────────────────────────────────
-    const titleY = PAD + 34;
-    ctx.font      = `bold 20px Arial`;
+    // ── Title (no emoji — emojis render inconsistently on canvas) ──
+    ctx.font      = 'bold 19px Arial';
     ctx.fillStyle = WHITE;
     ctx.textAlign = 'center';
-    ctx.fillText('ארץ עיר — תוצאות', W/2, titleY);
+    ctx.fillText('ארץ עיר — תוצאות', W/2, PAD + 32);
 
-    // globe emoji (LTR, draw manually on left of center)
-    ctx.font      = '18px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText('🌍', W/2 - 98, titleY);
-
-    // ── Letter + round badge ─────────────────────────────────────
-    const badgeW = 150, badgeH = 22, badgeX = W/2 - badgeW/2, badgeY = PAD + 44;
-    ctx.fillStyle = '#1e1e30';
-    rr(ctx, badgeX, badgeY, badgeW, badgeH, 11);
+    // ── Round/letter badge ────────────────────────────────────────
+    const bW = 148, bH = 22, bX = W/2 - bW/2, bY = PAD + 42;
+    ctx.fillStyle = '#1c1c2e';
+    rr(ctx, bX, bY, bW, bH, 11);
     ctx.fill();
-    ctx.strokeStyle = '#3a3a58';
+    ctx.strokeStyle = '#383858';
     ctx.lineWidth = 1;
-    rr(ctx, badgeX, badgeY, badgeW, badgeH, 11);
+    rr(ctx, bX, bY, bW, bH, 11);
     ctx.stroke();
-    ctx.font      = 'bold 12px Arial';
+    ctx.font      = 'bold 11px Arial';
     ctx.fillStyle = ORANGE;
     ctx.textAlign = 'center';
-    ctx.fillText(`סיבוב ${S.rNum}   ·   אות: ${S.letter||'?'}`, W/2, badgeY + 15);
+    ctx.fillText(`סיבוב ${S.rNum}   ·   אות: ${S.letter||'?'}`, W/2, bY + 15);
 
-    // ── Categories strip ─────────────────────────────────────────
-    const catsY = PAD + 76;
-    const catsText = S.cats.slice(0,5).map(c=>`${c.emoji||''}${c.name}`).join('  ·  ');
-    ctx.font      = '11px Arial';
+    // ── Categories (names only — no emojis for clean rendering) ───
+    const catNames = S.cats.slice(0,5).map(c=>c.name).join(' · ');
+    ctx.font      = '12px Arial';
     ctx.fillStyle = MUTED;
     ctx.textAlign = 'center';
-    ctx.fillText(catsText, W/2, catsY);
+    ctx.fillText(catNames, W/2, PAD + 80);
 
-    // ── Thin divider ─────────────────────────────────────────────
-    const divY = HEADER_H + PAD - 6;
+    // ── Divider ───────────────────────────────────────────────────
+    const divY = HEADER_H + PAD - 4;
     ctx.strokeStyle = BORDER;
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PAD + 18, divY);
-    ctx.lineTo(W - PAD - 18, divY);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(PAD+16, divY); ctx.lineTo(W-PAD-16, divY); ctx.stroke();
 
-    // ── Player rows ──────────────────────────────────────────────
+    // ── Player rows ───────────────────────────────────────────────
+    // Layout:  [medal 44px] [name → flexible] [pill 64px]
+    const RANK_W = 44;
+    const PILL_W = 64;
+    const RANK_X = PAD + 10;                       // left edge of medal area
+    const PILL_X = W - PAD - 12 - PILL_W;          // left edge of pill
+    const NAME_RIGHT = PILL_X - 8;                 // right edge of name (text drawn RTL→right-aligned here)
+
     sorted.forEach(([pid, p], i) => {
       const rowTop = HEADER_H + PAD + i * ROW_H;
+      const rowH2  = ROW_H - 8;
       const midY   = rowTop + ROW_H / 2;
       const isMe   = pid === S.pId;
-      const isGold = i === 0, isSilv = i === 1, isBronz = i === 2;
+      const isGold = i===0, isSilv = i===1, isBronz = i===2;
 
-      // Row fill
-      const rowBg = isMe     ? ME_BG
-                  : isGold   ? GOLD_BG
-                  : isSilv   ? SLV_BG
-                  : isBronz  ? BRZ_BG
-                  : 'transparent';
-      if(rowBg !== 'transparent'){
-        ctx.fillStyle = rowBg;
-        rr(ctx, PAD + 8, rowTop + 4, W - PAD*2 - 16, ROW_H - 8, 10);
+      // Row background
+      const bgCol = isMe?ME_BG : isGold?GOLD_BG : isSilv?SLV_BG : isBronz?BRZ_BG : null;
+      if(bgCol){
+        ctx.fillStyle = bgCol;
+        rr(ctx, PAD+8, rowTop+4, W-PAD*2-16, rowH2, 9);
         ctx.fill();
       }
-
-      // Row border for top-3 / me
-      const rowBorder = isMe     ? '#1a4060'
-                      : isGold   ? '#5a4010'
-                      : isSilv   ? '#3a3a50'
-                      : isBronz  ? '#4a3010'
-                      : null;
-      if(rowBorder){
-        ctx.strokeStyle = rowBorder;
+      // Row border
+      const bdCol = isMe?'#1a3850' : isGold?'#504010' : isSilv?'#303044' : isBronz?'#402c10' : null;
+      if(bdCol){
+        ctx.strokeStyle = bdCol;
         ctx.lineWidth = 1;
-        rr(ctx, PAD + 8, rowTop + 4, W - PAD*2 - 16, ROW_H - 8, 10);
+        rr(ctx, PAD+8, rowTop+4, W-PAD*2-16, rowH2, 9);
         ctx.stroke();
       }
 
-      // Rank number / medal (LTR side = right since card is RTL — use LTR explicitly)
-      const medal   = medals[i];
-      const rankStr = medal || `${i+1}`;
-      ctx.font      = i < 3 ? 'bold 20px Arial' : 'bold 14px Arial';
-      ctx.fillStyle = isGold ? GOLD_TX : isSilv ? SLV_TX : isBronz ? BRZ_TX : MUTED;
-      ctx.textAlign = 'left';
-      ctx.fillText(rankStr, PAD + 16, midY + 7);
+      // ── Rank: use plain text numbers/symbols, not emoji
+      const rankTx = isGold?GOLD_TX : isSilv?SLV_TX : isBronz?BRZ_TX : MUTED;
+      if(i < 3){
+        // Use bold number with color
+        ctx.font      = 'bold 18px Arial';
+        ctx.fillStyle = rankTx;
+        ctx.textAlign = 'center';
+        ctx.fillText(`${i+1}`, RANK_X + RANK_W/2, midY + 6);
+        // Draw a small medal-colored dot below
+        ctx.beginPath();
+        ctx.arc(RANK_X + RANK_W/2, midY + 12, 3, 0, Math.PI*2);
+        ctx.fillStyle = rankTx;
+        ctx.fill();
+      } else {
+        ctx.font      = 'bold 13px Arial';
+        ctx.fillStyle = MUTED;
+        ctx.textAlign = 'center';
+        ctx.fillText(`${i+1}`, RANK_X + RANK_W/2, midY + 6);
+      }
 
-      // Score pill (right side of card)
-      const score    = p.score || 0;
-      const pillW    = 58, pillH = 24;
-      const pillX    = W - PAD - 18 - pillW;
-      const pillY    = midY - pillH/2;
-      const pillColor = isMe ? '#163040' : isGold ? '#3a2d0a' : isSilv ? '#22222e' : isBronz ? '#2c2010' : '#1a1a28';
-      const pillTx   = isMe ? ME_TX : isGold ? GOLD_TX : isSilv ? SLV_TX : isBronz ? BRZ_TX : MUTED;
-      ctx.fillStyle = pillColor;
-      rr(ctx, pillX, pillY, pillW, pillH, 12);
+      // ── Score pill ─────────────────────────────────────────────
+      const pillTx = isMe?ME_TX : isGold?GOLD_TX : isSilv?SLV_TX : isBronz?BRZ_TX : MUTED;
+      const pillBg = isMe?'#142236' : isGold?'#2c2006' : isSilv?'#1e1e2e' : isBronz?'#281806' : '#1a1a28';
+      const pillH  = 26;
+      const pillY  = midY - pillH/2;
+      ctx.fillStyle = pillBg;
+      rr(ctx, PILL_X, pillY, PILL_W, pillH, 13);
       ctx.fill();
-      ctx.font      = 'bold 13px Arial';
+      ctx.strokeStyle = bdCol || BORDER;
+      ctx.lineWidth = 1;
+      rr(ctx, PILL_X, pillY, PILL_W, pillH, 13);
+      ctx.stroke();
+      // Score as single string centered in pill
+      const scoreStr = `${p.score||0} נק'`;
+      ctx.font      = 'bold 12px Arial';
       ctx.fillStyle = pillTx;
       ctx.textAlign = 'center';
-      ctx.fillText(`${score}`, pillX + pillW/2 - 7, midY + 5);
-      ctx.font      = '10px Arial';
-      ctx.fillStyle = pillTx;
-      ctx.fillText(`נק'`, pillX + pillW/2 + 12, midY + 5);
+      ctx.fillText(scoreStr, PILL_X + PILL_W/2, midY + 5);
 
-      // Player name (center, taking remaining space)
-      const nameX    = PAD + 52;
-      const nameMaxW = pillX - nameX - 8;
-      const nameColor = isMe ? ME_TX : isGold ? GOLD_TX : isSilv ? SLV_TX : isBronz ? BRZ_TX : WHITE;
-      ctx.font      = isMe || i === 0 ? 'bold 15px Arial' : '14px Arial';
-      ctx.fillStyle = nameColor;
+      // ── Player name (Hebrew, right-aligned toward NAME_RIGHT) ──
+      const nameTx = isMe?ME_TX : isGold?GOLD_TX : isSilv?SLV_TX : isBronz?BRZ_TX : WHITE;
+      ctx.font      = (isMe || isGold) ? 'bold 14px Arial' : '14px Arial';
+      ctx.fillStyle = nameTx;
       ctx.textAlign = 'right';
-      // truncate long names
-      let displayName = p.name + (isMe ? ' ← אתה' : '');
-      const maxW = nameMaxW;
-      while(ctx.measureText(displayName).width > maxW && displayName.length > 2){
-        displayName = displayName.slice(0, -2) + '…';
+      const suffix  = isMe ? ' \u2190 \u05D0\u05EA\u05D4' : '';  // ← אתה (avoid RTL mark issues)
+      let dName = p.name + suffix;
+      const maxNameW = NAME_RIGHT - (RANK_X + RANK_W + 8);
+      while(ctx.measureText(dName).width > maxNameW && dName.length > 2){
+        dName = dName.slice(0,-2)+'…';
       }
-      ctx.fillText(displayName, W - PAD - 88, midY + 6);
+      ctx.fillText(dName, NAME_RIGHT, midY + 6);
     });
 
-    // ── Footer ───────────────────────────────────────────────────
-    const footerY = H - FOOTER_H + PAD/2;
+    // ── Footer with QR code ───────────────────────────────────────
+    const fY = H - FOOTER_H + 14;
     ctx.strokeStyle = BORDER;
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PAD + 18, footerY - 6);
-    ctx.lineTo(W - PAD - 18, footerY - 6);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(PAD+16, fY); ctx.lineTo(W-PAD-16, fY); ctx.stroke();
 
-    // Show ref URL or default URL
-    const footerUrl = refUrl || 'giamat13.github.io/homework-easy-times/';
-    const footerLabel = 'שחקו גם אתם ←  ' + footerUrl;
-    ctx.font      = '11px Arial';
-    ctx.fillStyle = '#4a4a6a';
-    ctx.textAlign = 'center';
-    ctx.fillText(footerLabel, W/2, footerY + 14);
+    const qrSize = FOOTER_H - 22;
+    const qrX = W - PAD - 12 - qrSize;
+    const qrY = fY + 8;
+    const qrUrl = refUrl || 'https://giamat13.github.io/homework-easy-times/';
+
+    // Load QR from API
+    try {
+      const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrUrl)}&bgcolor=ffffff&color=111120&margin=2`;
+      await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { ctx.drawImage(img, qrX, qrY, qrSize, qrSize); resolve(); };
+        img.onerror = () => resolve();
+        img.src = apiUrl;
+      });
+    } catch(e) {}
+
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 13px Arial';
+    ctx.fillStyle = '#c0c0d8';
+    ctx.fillText('שחקו גם אתם! 🌍', qrX - 12, fY + 28);
+    ctx.font = '10px Arial';
+    ctx.fillStyle = MUTED;
+    ctx.fillText('סרקו לכניסה מהירה', qrX - 12, fY + 46);
 
     return canvas.toDataURL('image/png');
   }
@@ -6158,7 +6226,7 @@
       // Build image
       const url = location.origin + location.pathname;
       const refUrl = S_pRefId ? url+'?ref='+S_pRefId : url;
-      const imgDataUrl = buildShareCanvas(sorted, medals, refUrl);
+      const imgDataUrl = await buildShareCanvas(sorted, medals, refUrl);
       const lines = ['🌍 ארץ עיר — תוצאות', ''];
       lines.push(`📋 ${S.cats.map(c=>c.name).join(', ')}`);
       lines.push('');
