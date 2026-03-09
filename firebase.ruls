@@ -17,19 +17,72 @@
         ".write": true
       }
     },
+    "dailyStats": {
+      "$day": {
+        ".read": true,
+        "players": {
+          ".write": true,
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999"
+        }
+      }
+    },
+    "dailyChallenge": {
+      "$day": {
+        ".read": true,
+        "scores": {
+          "$playerId": {
+            ".write": true,
+            ".validate": "newData.hasChildren(['name','score','ts']) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 9999"
+          }
+        }
+      }
+    },
+    "publicPacks": {
+      ".read": true,
+      "$packId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['name','cats','creator','ts'])"
+      }
+    },
     "referrals": {
+      ".read": true,
       "$refId": {
         "count": {
-          ".read": true,
           ".write": true,
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999"
+        },
+        "name": {
+          ".write": true,
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "emoji": {
+          ".write": true,
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        }
+      }
+    },
+    "adminData": {
+      ".read": "auth != null",
+      "referrals": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      },
+      "anonStats": {
+        "$day": {
+          ".write": true
         }
       }
     },
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        "profile": {
+          "name": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous'"
+          }
+        }
       }
     }
   }
