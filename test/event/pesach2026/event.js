@@ -5,6 +5,20 @@
    כל הלוגיקה, עיצוב ותוכן האירוע נמצאים כאן ובתיקייה זו בלבד.
    ================================================================= */
 
+/* ── פאץ' מוקדם על console.log לתפיסת timer_expired ── */
+(function() {
+  var _origLog = console.log.bind(console);
+  console.log = function() {
+    if (arguments[0] === '[GA4] timer_expired' &&
+        arguments[1] && arguments[1].submitted === false) {
+      if (typeof window._pesachTriggerPlague === 'function') {
+        setTimeout(window._pesachTriggerPlague, 350);
+      }
+    }
+    return _origLog.apply(console, arguments);
+  };
+})();
+
 (function () {
 
   const EVENT_START = new Date('2026-04-01T00:00:00');
@@ -45,6 +59,95 @@
         document.body.appendChild(el);
         el.addEventListener('animationend', () => el.remove());
       }, i * 80);
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     🌧️ 10 המכות — גלובלי (רץ תמיד, נגיש מהפאץ' ומהסימולציה)
+     ══════════════════════════════════════════════════════════════ */
+
+  var PLAGUES = [
+    { id:'dam',    emoji:'🩸', name:'דם',       color:'#c0392b', bg:'rgba(192,57,43,0.18)',  effect:'blood'   },
+    { id:'tzfard', emoji:'🐸', name:'צפרדע',    color:'#27ae60', bg:'rgba(39,174,96,0.18)',  effect:'frogs'   },
+    { id:'kinim',  emoji:'🦟', name:'כינים',    color:'#8e7434', bg:'rgba(142,116,52,0.18)', effect:'lice'    },
+    { id:'arov',   emoji:'🦁', name:'ערוב',     color:'#d35400', bg:'rgba(211,84,0,0.18)',   effect:'beasts'  },
+    { id:'dever',  emoji:'🐄', name:'דבר',      color:'#6c3483', bg:'rgba(108,52,131,0.18)', effect:'plague'  },
+    { id:'shechin',emoji:'🤒', name:'שחין',     color:'#e67e22', bg:'rgba(230,126,34,0.18)', effect:'boils'   },
+    { id:'barad',  emoji:'🌨️', name:'ברד',      color:'#2980b9', bg:'rgba(41,128,185,0.18)', effect:'hail'    },
+    { id:'arbeh',  emoji:'🦗', name:'ארבה',     color:'#76b041', bg:'rgba(118,176,65,0.18)', effect:'locusts' },
+    { id:'choshech',emoji:'🌑',name:'חושך',     color:'#1a1a2e', bg:'rgba(10,10,20,0.85)',   effect:'dark'    },
+    { id:'bechor', emoji:'⚰️', name:'בכורות',   color:'#7f8c8d', bg:'rgba(80,80,80,0.25)',   effect:'death'   }
+  ];
+
+  var _plagueIdx = 0;
+
+  function triggerPlague() {
+    var plague = PLAGUES[_plagueIdx % PLAGUES.length];
+    _plagueIdx++;
+    showPlagueEffect(plague);
+  }
+  window._pesachTriggerPlague = triggerPlague;
+
+  function showPlagueEffect(plague) {
+    spawnPlagueParticles(plague);
+    var flash = document.createElement('div');
+    flash.style.cssText =
+      'position:fixed;inset:0;z-index:9800;pointer-events:none;' +
+      'background:' + plague.bg + ';' +
+      'animation:pesach-plague-flash 0.6s ease forwards;';
+    document.body.appendChild(flash);
+    flash.addEventListener('animationend', function(){ flash.remove(); });
+    var card = document.createElement('div');
+    card.style.cssText =
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.5);' +
+      'z-index:9900;font-family:Heebo,sans-serif;direction:rtl;text-align:center;' +
+      'background:linear-gradient(160deg,#1a1408,#0f0c00);' +
+      'border:2px solid ' + plague.color + ';' +
+      'border-radius:20px;padding:28px 36px;min-width:240px;' +
+      'box-shadow:0 0 60px ' + plague.color + '66,0 24px 60px rgba(0,0,0,0.8);' +
+      'animation:pesach-plague-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;';
+    card.innerHTML =
+      '<div style="font-size:3.5rem;margin-bottom:10px;animation:pesach-plague-shake 0.5s 0.3s ease both;">' + plague.emoji + '</div>' +
+      '<div style="font-size:.72rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:' + plague.color + ';opacity:.8;margin-bottom:6px;">לקית במכת</div>' +
+      '<div style="font-size:2rem;font-weight:900;color:' + plague.color + ';text-shadow:0 0 20px ' + plague.color + '88;">' + plague.name + '</div>' +
+      '<div style="font-size:.8rem;color:rgba(234,234,234,.5);margin-top:8px;">⏱️ אזל הזמן!</div>';
+    document.body.appendChild(card);
+    setTimeout(function(){
+      card.style.animation = 'pesach-plague-out 0.35s ease forwards';
+      card.addEventListener('animationend', function(){ card.remove(); });
+    }, 2200);
+  }
+
+  function spawnPlagueParticles(plague) {
+    var count = 18;
+    var emojis;
+    switch(plague.effect) {
+      case 'blood':   emojis=['🩸','🩸','💧']; break;
+      case 'frogs':   emojis=['🐸','🐸','🐸','🌿']; break;
+      case 'lice':    emojis=['🦟','🦟','•']; break;
+      case 'beasts':  emojis=['🦁','🐯','🐻']; break;
+      case 'plague':  emojis=['💀','🐄','☠️']; break;
+      case 'boils':   emojis=['🤒','😷','🔥']; break;
+      case 'hail':    emojis=['🌨️','❄️','⚡']; break;
+      case 'locusts': emojis=['🦗','🦗','🌿']; break;
+      case 'dark':    emojis=['🌑','⭐','🌙']; count=8; break;
+      case 'death':   emojis=['⚰️','🕯️','💀']; break;
+      default:        emojis=[plague.emoji];
+    }
+    for (var i=0; i<count; i++) {
+      (function(i){
+        setTimeout(function(){
+          var el = document.createElement('div');
+          el.style.cssText =
+            'position:fixed;font-size:'+(1.2+Math.random()*1.4)+'rem;' +
+            'left:'+Math.random()*100+'vw;top:-30px;' +
+            'z-index:9799;pointer-events:none;' +
+            'animation:pesach-particle-fall '+(1.5+Math.random()*2.5)+'s linear forwards;';
+          el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+          document.body.appendChild(el);
+          el.addEventListener('animationend', function(){ el.remove(); });
+        }, i * 60);
+      })(i);
     }
   }
 
@@ -181,146 +284,24 @@
       }
     }
 
-  /* ══════════════════════════════════════════════════════════════
-     🌧️ 10 המכות — אפקט פוגע כשנגמר זמן בלי תשובה
-     ══════════════════════════════════════════════════════════════ */
 
-  var PLAGUES = [
-    { id:'dam',    emoji:'🩸', name:'דם',       color:'#c0392b', bg:'rgba(192,57,43,0.18)',  effect:'blood'   },
-    { id:'tzfard', emoji:'🐸', name:'צפרדע',    color:'#27ae60', bg:'rgba(39,174,96,0.18)',  effect:'frogs'   },
-    { id:'kinim',  emoji:'🦟', name:'כינים',    color:'#8e7434', bg:'rgba(142,116,52,0.18)', effect:'lice'    },
-    { id:'arov',   emoji:'🦁', name:'ערוב',     color:'#d35400', bg:'rgba(211,84,0,0.18)',   effect:'beasts'  },
-    { id:'dever',  emoji:'🐄', name:'דבר',      color:'#6c3483', bg:'rgba(108,52,131,0.18)', effect:'plague'  },
-    { id:'shechin',emoji:'🤒', name:'שחין',     color:'#e67e22', bg:'rgba(230,126,34,0.18)', effect:'boils'   },
-    { id:'barad',  emoji:'🌨️', name:'ברד',      color:'#2980b9', bg:'rgba(41,128,185,0.18)', effect:'hail'    },
-    { id:'arbeh',  emoji:'🦗', name:'ארבה',     color:'#76b041', bg:'rgba(118,176,65,0.18)', effect:'locusts' },
-    { id:'choshech',emoji:'🌑',name:'חושך',     color:'#1a1a2e', bg:'rgba(10,10,20,0.85)',   effect:'dark'    },
-    { id:'bechor', emoji:'⚰️', name:'בכורות',   color:'#7f8c8d', bg:'rgba(80,80,80,0.25)',   effect:'death'   }
-  ];
+  /* ══ סוף ACTIVE EVENT ══ */
 
-  var _plagueIdx = 0; // נסדר בסדר, מכה אחר מכה
-
-  function triggerPlague() {
-    var plague = PLAGUES[_plagueIdx % PLAGUES.length];
-    _plagueIdx++;
-    showPlagueEffect(plague);
-  }
-
-  function showPlagueEffect(plague) {
-    // מניע חלקיקים ייחודיים לפי המכה
-    spawnPlagueParticles(plague);
-
-    // overlay flash
-    var flash = document.createElement('div');
-    flash.style.cssText =
-      'position:fixed;inset:0;z-index:9800;pointer-events:none;' +
-      'background:' + plague.bg + ';' +
-      'animation:pesach-plague-flash 0.6s ease forwards;';
-    document.body.appendChild(flash);
-    flash.addEventListener('animationend', function(){ flash.remove(); });
-
-    // כרטיס מכה
-    var card = document.createElement('div');
-    card.style.cssText =
-      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.5);' +
-      'z-index:9900;font-family:Heebo,sans-serif;direction:rtl;text-align:center;' +
-      'background:linear-gradient(160deg,#1a1408,#0f0c00);' +
-      'border:2px solid ' + plague.color + ';' +
-      'border-radius:20px;padding:28px 36px;min-width:240px;' +
-      'box-shadow:0 0 60px ' + plague.color + '66,0 24px 60px rgba(0,0,0,0.8);' +
-      'animation:pesach-plague-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;';
-
-    card.innerHTML =
-      '<div style="font-size:3.5rem;margin-bottom:10px;animation:pesach-plague-shake 0.5s 0.3s ease both;">' + plague.emoji + '</div>' +
-      '<div style="font-size:.72rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:' + plague.color + ';opacity:.8;margin-bottom:6px;">לקית במכת</div>' +
-      '<div style="font-size:2rem;font-weight:900;color:' + plague.color + ';text-shadow:0 0 20px ' + plague.color + '88;">' + plague.name + '</div>' +
-      '<div style="font-size:.8rem;color:rgba(234,234,234,.5);margin-top:8px;">⏱️ אזל הזמן!</div>';
-
-    document.body.appendChild(card);
-
-    // סגור אחרי 2.2 שניות
-    setTimeout(function(){
-      card.style.animation = 'pesach-plague-out 0.35s ease forwards';
-      card.addEventListener('animationend', function(){ card.remove(); });
-    }, 2200);
-  }
-
-  function spawnPlagueParticles(plague) {
-    var count = 18;
-    var emojis;
-    switch(plague.effect) {
-      case 'blood':   emojis=['🩸','🩸','💧']; break;
-      case 'frogs':   emojis=['🐸','🐸','🐸','🌿']; break;
-      case 'lice':    emojis=['🦟','🦟','•']; break;
-      case 'beasts':  emojis=['🦁','🐯','🐻']; break;
-      case 'plague':  emojis=['💀','🐄','☠️']; break;
-      case 'boils':   emojis=['🤒','😷','🔥']; break;
-      case 'hail':    emojis=['🌨️','❄️','⚡']; break;
-      case 'locusts': emojis=['🦗','🦗','🌿']; break;
-      case 'dark':    emojis=['🌑','⭐','🌙']; count=8; break;
-      case 'death':   emojis=['⚰️','🕯️','💀']; break;
-      default:        emojis=[plague.emoji];
-    }
-    for (var i=0; i<count; i++) {
-      (function(i){
-        setTimeout(function(){
-          var el = document.createElement('div');
-          el.style.cssText =
-            'position:fixed;font-size:'+(1.2+Math.random()*1.4)+'rem;' +
-            'left:'+Math.random()*100+'vw;top:-30px;' +
-            'z-index:9799;pointer-events:none;' +
-            'animation:pesach-particle-fall '+(1.5+Math.random()*2.5)+'s linear forwards;';
-          el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
-          document.body.appendChild(el);
-          el.addEventListener('animationend', function(){ el.remove(); });
-        }, i * 60);
-      })(i);
-    }
-  }
-
-  /* חיבור לטיימר — MutationObserver על edit-bar + בדיקת cc-tags ריק */
-  function hookPlagueToTimer() {
-    window.addEventListener('pesach:timeup', triggerPlague);
-
-    function watchForSubmit() {
-      var answerArea = document.getElementById('answer-area');
-      if (!answerArea) { setTimeout(watchForSubmit, 500); return; }
-
-      var _lastCatIndex = -1;
-
-      new MutationObserver(function() {
-        var editBar = document.getElementById('edit-bar');
-        if (!editBar || editBar.style.display === 'none') return;
-
-        // לא לירות פעמיים על אותה קטגוריה
-        var catIdx = (typeof S !== 'undefined') ? S.currentCatIndex : -1;
-        if (catIdx === _lastCatIndex) return;
-        _lastCatIndex = catIdx;
-
-        // cc-tags ריק = 0 תשובות = מכה
-        var tags = document.querySelectorAll('#cc-tags .cc-tag');
-        if (tags.length === 0) {
-          setTimeout(triggerPlague, 300);
-        }
-      }).observe(answerArea, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', watchForSubmit);
-    } else {
-      watchForSubmit();
-    }
-  }
+    // ── מכות מחוברות דרך pesach:timeup שנזרק מלמעלה ──
 
     function watchScreens() {
       var lastActive = '';
+
       new MutationObserver(function() {
         var active = document.querySelector('.screen.active');
         var id = active ? active.id : '';
-        if (id===lastActive) return;
+        if (id === lastActive) return;
         lastActive = id;
-        if (id==='screen-results') setTimeout(spawnAfikoman, 1500+Math.random()*2000);
-      }).observe(document.getElementById('app')||document.body, {subtree:true,attributes:true,attributeFilter:['class']});
+
+        if (id === 'screen-results') {
+          setTimeout(spawnAfikoman, 1500 + Math.random() * 2000);
+        }
+      }).observe(document.getElementById('app') || document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
     }
 
     function injectActiveBanner() {
@@ -335,9 +316,9 @@
     }
 
     if (document.readyState==='loading') {
-      document.addEventListener('DOMContentLoaded', function(){ injectActiveBanner(); watchScreens(); hookPlagueToTimer(); });
+      document.addEventListener('DOMContentLoaded', function(){ injectActiveBanner(); watchScreens(); });
     } else {
-      injectActiveBanner(); watchScreens(); hookPlagueToTimer();
+      injectActiveBanner(); watchScreens();
     }
   }
 
@@ -353,6 +334,7 @@
 
   function addBtn() {
     if (document.getElementById('pesach-dev-sim-btn')) return;
+    if (new Date() >= new Date('2026-04-09T00:00:00')) return;
     var wrap = document.getElementById('admin-panel-btn-wrap');
     if (!wrap) return;
 
