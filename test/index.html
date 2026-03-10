@@ -299,10 +299,27 @@
     display:inline-block;
     background:linear-gradient(270deg,#e94560,#f5a623,#0fba81,#4cc9f0,#a855f7,#e94560);
     background-size:400% 400%;
-    animation:devBg 4s ease infinite, devGlow 4s ease infinite;
-    color:#fff;border:none;
+    animation:devBg 3s ease infinite, devGlow 3s ease infinite;
+    color:transparent;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    -webkit-background-clip:text;
+    text-shadow:0 0 12px rgba(255,255,255,0.8);
+    border:1px solid rgba(255,255,255,0.3);
     padding:2px 10px;border-radius:100px;font-size:.7rem;font-weight:800;
     cursor:default;
+    position:relative;
+  }
+  .main-dev-b::before{
+    content:'';
+    position:absolute;
+    inset:-2px;
+    border-radius:102px;
+    background:linear-gradient(270deg,#e94560,#f5a623,#0fba81,#4cc9f0,#a855f7,#e94560);
+    background-size:400% 400%;
+    animation:devBg 3s ease infinite;
+    z-index:-1;
+    opacity:0.6;
   }
   @keyframes supporterSpin{
     0%{transform:rotate(0deg) scale(1)}
@@ -379,12 +396,24 @@
   }
   .dev-b{
     display:inline-block;
-    background:rgba(76,201,240,.12);
+    background:linear-gradient(135deg, rgba(76,201,240,.12), rgba(168,85,247,.08));
     color:var(--blue);
     border:1.5px solid rgba(76,201,240,.5);
     padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;
     animation:devPulse 2.5s ease-in-out infinite, devFlicker 5s ease-in-out infinite;
     cursor:default;
+    text-shadow:0 0 6px rgba(76,201,240,0.5);
+    position:relative;
+  }
+  .dev-b::before{
+    content:'';
+    position:absolute;
+    inset:-1px;
+    border-radius:101px;
+    background:linear-gradient(135deg, rgba(76,201,240,0.3), rgba(168,85,247,0.2));
+    z-index:-1;
+    opacity:0.5;
+    animation:devPulse 2.5s ease-in-out infinite;
   }
   .disq{color:var(--red);text-decoration:line-through;opacity:.6}
   /* rare answer badge */
@@ -2748,6 +2777,7 @@
     expiryInt:null,
     warnedExpiry:false,
     isPermanent:false,
+    pendingAdvance:null,
     vetoThresholdType:'percent',
     vetoThresholdValue:50,
     raceMode:false,
@@ -4957,7 +4987,10 @@
         // Host: advance immediately after a short delay (let submit propagate)
         if(S.isHost){
           clearInterval(S.timerInt);
-          setTimeout(async()=>{ await advanceCat(); },600);
+          S.pendingAdvance = setTimeout(async()=>{
+            S.pendingAdvance = null;
+            await advanceCat();
+          },600);
         }
       });
     }
@@ -5055,7 +5088,8 @@
         }
         // Host: grace period then force-advance (skip in infinity mode)
         if(S.isHost&&S.rTime!==0){
-          setTimeout(async()=>{
+          S.pendingAdvance = setTimeout(async()=>{
+            S.pendingAdvance = null;
             const snap=await get(ref(db,`rooms/${S.roomId}/currentCatIndex`));
             if((snap.val()||0)===S.currentCatIndex)await advanceCat();
           },1500);
@@ -5245,6 +5279,11 @@
 
   // ─── ADVANCE CATEGORY (host only) ────────────────────────────────
   async function advanceCat(){
+    // Clear any pending advance
+    if(S.pendingAdvance){
+      clearTimeout(S.pendingAdvance);
+      S.pendingAdvance = null;
+    }
     // Guard against double-advance (local + remote)
     if(S.advancing)return;
     S.advancing=true;
