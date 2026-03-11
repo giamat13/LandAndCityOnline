@@ -11,6 +11,7 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content='ארץ עיר אונליין – משחק לממ"ד 🚨'>
   <meta name="twitter:description" content="משחק ארץ עיר מרובה משתתפים לממ"ד — חינמי, מיידי, בלי הורדה">
+  <script type="module" src="firebase-ls-proxy.js"></script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-SN0STQDDYT"></script>
   <script>
     window.dataLayer=window.dataLayer||[];
@@ -414,6 +415,35 @@
     z-index:-1;
     opacity:0.5;
     animation:devPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes debuggerPulse{
+    0%{box-shadow:0 0 4px 0px rgba(249,115,22,.4);border-color:rgba(249,115,22,.4)}
+    50%{box-shadow:0 0 10px 2px rgba(249,115,22,.7);border-color:rgba(249,115,22,.9)}
+    100%{box-shadow:0 0 4px 0px rgba(249,115,22,.4);border-color:rgba(249,115,22,.4)}
+  }
+  @keyframes debuggerFlicker{
+    0%,100%{opacity:1} 30%{opacity:.8} 35%{opacity:1} 65%{opacity:.75} 70%{opacity:1}
+  }
+  .debugger-b{
+    display:inline-block;
+    background:linear-gradient(135deg, rgba(249,115,22,.12), rgba(234,88,12,.08));
+    color:#f97316;
+    border:1.5px solid rgba(249,115,22,.5);
+    padding:2px 9px;border-radius:100px;font-size:.7rem;font-weight:700;
+    animation:debuggerPulse 2.5s ease-in-out infinite, debuggerFlicker 5s ease-in-out infinite;
+    cursor:default;
+    text-shadow:0 0 6px rgba(249,115,22,0.5);
+    position:relative;
+  }
+  .debugger-b::before{
+    content:'';
+    position:absolute;
+    inset:-1px;
+    border-radius:101px;
+    background:linear-gradient(135deg, rgba(249,115,22,0.3), rgba(234,88,12,0.2));
+    z-index:-1;
+    opacity:0.5;
+    animation:debuggerPulse 2.5s ease-in-out infinite;
   }
   .disq{color:var(--red);text-decoration:line-through;opacity:.6}
   /* rare answer badge */
@@ -2291,6 +2321,7 @@
     // Dev role
     if (role === 'main-dev') achievements.push({ icon:'⚡', name:'מפתח ראשי', desc:'בנה את ארץ עיר' });
     else if (role === 'dev') achievements.push({ icon:'🔧', name:'מפתח', desc:'חלק מצוות הפיתוח' });
+    else if (role === 'debugger') achievements.push({ icon:'🐛', name:'דיבאגר', desc:'ציד הבאגים של הצוות' });
     else if (role === 'supporter') achievements.push({ icon:'💚', name:'תומך', desc:'תמך בפיתוח' });
 
     // Perm leaderboard stats
@@ -2795,11 +2826,11 @@
   let S_pEntry='none'; // 'none'/'bounce'/'spin'/'flash'/'shake'
   let S_pRoomName='';  // default room name
   let S_pDevRoles=[]; // array: ['main-dev', 'dev', 'supporter']
-  function getPrimaryDevRole(){ return S_pDevRoles.includes('main-dev')?'main-dev':S_pDevRoles.includes('dev')?'dev':S_pDevRoles.includes('supporter')?'supporter':null; }
+  function getPrimaryDevRole(){ return S_pDevRoles.includes('main-dev')?'main-dev':S_pDevRoles.includes('dev')?'dev':S_pDevRoles.includes('debugger')?'debugger':S_pDevRoles.includes('supporter')?'supporter':null; }
   let S_pRefId=null;   // unique referral ID (persistent)
   let S_pRefCount=0;   // actual referral count (saved so progress is preserved)
   let S_pSupporterLevel=0; // 0=none, 1-6
-  let S_pActiveBadge='auto'; // 'auto'=show all / 'none' / 'main-dev' / 'dev' / 'supporter' / 'sup-1'..'sup-6'
+  let S_pActiveBadge='auto'; // 'auto'=show all / 'none' / 'main-dev' / 'dev' / 'debugger' / 'supporter' / 'sup-1'..'sup-6'
 
   const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
   const PROF_FRAMES=[
@@ -3248,7 +3279,7 @@
     updateNotifButton();
     // Show admin panel button for main-dev only
     const adminWrap = document.getElementById('admin-panel-btn-wrap');
-    if (adminWrap) adminWrap.style.display = S_pDevRoles.includes('main-dev') ? 'block' : 'none';
+    if (adminWrap) adminWrap.style.display = (S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev')) ? 'block' : 'none';
   }
 
   // Wire input listener once
@@ -3280,6 +3311,7 @@
     const parts=[];
     if(S_pDevRoles.includes('main-dev')) parts.push('<span style="color:#f5a623;">👑 מפתח ראשי</span>');
     if(S_pDevRoles.includes('dev'))      parts.push('<span style="color:var(--blue);">🔧 מפתח</span>');
+    if(S_pDevRoles.includes('debugger')) parts.push('<span style="color:#f97316;">🐛 דיבאגר</span>');
     if(S_pDevRoles.includes('supporter'))parts.push('<span style="color:var(--green);">💚 תומך</span>');
     devStatus.innerHTML=parts.length?parts.join(' · '):'';
   }
@@ -3290,6 +3322,7 @@
     let redeemed=null;
     if(code==='main-dev=giamat13') redeemed='main-dev';
     else if(code==='dev=giamat13')  redeemed='dev';
+    else if(code==='debugger=giamat13') redeemed='debugger';
     else if(code==='supporter')     redeemed='supporter';
     // Supporter[N] or Supporter-[N] — add/subtract from existing count
     const supMatch=code.match(/^[Ss]upporter(-?\d+)$/);
@@ -3314,7 +3347,8 @@
     if(redeemed){
       if(!S_pDevRoles.includes(redeemed)) S_pDevRoles.push(redeemed);
       if(redeemed==='main-dev' && !S_pDevRoles.includes('dev')) S_pDevRoles.push('dev');
-      const labels={'main-dev':'<span style="color:#f5a623;">👑 קוד מומש! ברוך הבא, מפתח ראשי</span>','dev':'<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>','supporter':'<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️</span>'};
+      if((redeemed==='main-dev'||redeemed==='dev') && !S_pDevRoles.includes('debugger')) S_pDevRoles.push('debugger');
+      const labels={'main-dev':'<span style="color:#f5a623;">👑 קוד מומש! ברוך הבא, מפתח ראשי</span>','dev':'<span style="color:var(--blue);">🔧 קוד מומש! ברוך הבא, מפתח</span>','debugger':'<span style="color:#f97316;">🐛 קוד מומש! ברוך הבא, דיבאגר</span>','supporter':'<span style="color:var(--green);">💚 קוד מומש! תודה על התמיכה ❤️</span>'};
       status.innerHTML=labels[redeemed];
       document.getElementById('prof-dev-code').value='';
       saveProfile();
@@ -4324,7 +4358,7 @@
     if(_settingsBtn) _settingsBtn.style.display=S.isHost?'inline-flex':'none';
     if(_inviteBtn) _inviteBtn.style.display=(S.isHost&&S.isPermanent)?'flex':'none';
     const _simBtn=document.getElementById('btn-sim-players');
-    const _isDev=S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev');
+    const _isDev=S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev')||S_pDevRoles.includes('debugger');
     if(_simBtn) _simBtn.style.display=(S.isHost&&_isDev)?'flex':'none';
     if(_upBtn) _upBtn.style.display=S.isSpectator?'block':'none';
     const _becomeSpecBtn=document.getElementById('btn-become-spectator');
@@ -4943,7 +4977,7 @@
     // Show bot button for dev hosts
     const _simIngame=document.getElementById('btn-sim-ingame');
     if(_simIngame){
-      const _isDev=S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev');
+      const _isDev=S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev')||S_pDevRoles.includes('debugger');
       _simIngame.style.display=(S.isHost&&_isDev)?'flex':'none';
     }
     // Trigger game tutorial on first cat of first game
@@ -5866,7 +5900,7 @@
           // Dev button: show if host has any dev role
           const devBtn=document.getElementById('btn-force-legendary');
           if(devBtn){
-            const isDev=S_pDevRoles&&(S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev'));
+            const isDev=S_pDevRoles&&(S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev')||S_pDevRoles.includes('debugger'));
             devBtn.style.display=(isDev&&!endWins)?'block':'none';
           }
         }else{
@@ -6417,6 +6451,7 @@
     const available=[];
     if(role==='main-dev') available.push({key:'main-dev', html:'<span class="main-dev-b">⚡ מפתח ראשי</span>'});
     if(role==='dev')      available.push({key:'dev',      html:'<span class="dev-b">🔧 מפתח</span>'});
+    if(role==='debugger') available.push({key:'debugger', html:'<span class="debugger-b">🐛 דיבאגר</span>'});
     if(role==='supporter')available.push({key:'supporter',html:'<span class="supporter-b">💚 תומך</span>'});
     const sLevel=parseInt(supporterLevel)||0;
     for(let i=1;i<=sLevel;i++){
@@ -6427,6 +6462,7 @@
       // Show highest single badge: prefer dev role first, then highest sup level
       if(role==='main-dev') return '<span class="main-dev-b">⚡ מפתח ראשי</span>';
       if(role==='dev')      return '<span class="dev-b">🔧 מפתח</span>';
+      if(role==='debugger') return '<span class="debugger-b">🐛 דיבאגר</span>';
       if(role==='supporter')return '<span class="supporter-b">💚 תומך</span>';
       if(sLevel>0) return supBadgeHtml(sLevel);
       return '';
@@ -6450,6 +6486,7 @@
     // Dev role badges
     if(S_pDevRoles.includes('main-dev')) options.push({key:'main-dev', html:'<span class="main-dev-b" style="font-size:.7rem;padding:1px 7px;">⚡ מפתח ראשי</span>'});
     if(S_pDevRoles.includes('dev'))       options.push({key:'dev',       html:'<span class="dev-b" style="font-size:.7rem;padding:1px 7px;">🔧 מפתח</span>'});
+    if(S_pDevRoles.includes('debugger'))  options.push({key:'debugger',  html:'<span class="debugger-b" style="font-size:.7rem;padding:1px 7px;">🐛 דיבאגר</span>'});
     if(S_pDevRoles.includes('supporter')) options.push({key:'supporter', html:'<span class="supporter-b" style="font-size:.7rem;padding:1px 7px;">💚 תומך</span>'});
 
     // Supporter level badges (all unlocked ones)
