@@ -811,6 +811,33 @@
   .dc-lb-name{flex:1;font-weight:700;font-size:.9rem;}
   .dc-lb-score{font-weight:900;color:var(--orange);font-size:.95rem;}
   .dc-lb-you{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);}
+  /* Daily Challenge Card */
+  #daily-challenge-card{display:none;border-radius:16px;padding:15px 16px;margin-bottom:12px;position:relative;overflow:hidden;cursor:pointer;transition:transform .18s,box-shadow .18s;background:linear-gradient(135deg,rgba(99,102,241,.13),rgba(168,85,247,.10));border:1.5px solid rgba(99,102,241,.45);}
+  #daily-challenge-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(99,102,241,.25);}
+  #daily-challenge-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 15% 50%,rgba(168,85,247,.1),transparent 65%);pointer-events:none;}
+  #daily-challenge-card.done{background:linear-gradient(135deg,rgba(15,186,129,.1),rgba(15,186,129,.06));border-color:rgba(15,186,129,.4);cursor:default;}
+  #daily-challenge-card.done:hover{transform:none;box-shadow:none;}
+  .dcc-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .dcc-icon{font-size:1.6rem;flex-shrink:0;}
+  .dcc-head{flex:1;}
+  .dcc-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#a855f7;margin-bottom:2px;}
+  .dcc-label.done{color:var(--green);}
+  .dcc-title{font-size:.96rem;font-weight:900;color:var(--text);}
+  .dcc-badge{font-size:.66rem;font-weight:800;padding:3px 10px;border-radius:100px;white-space:nowrap;flex-shrink:0;}
+  .dcc-badge-xp{background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.35);color:#a855f7;}
+  .dcc-badge-done{background:rgba(15,186,129,.12);border:1px solid rgba(15,186,129,.35);color:var(--green);}
+  .dcc-body{display:flex;align-items:center;gap:12px;}
+  .dcc-letter-box{text-align:center;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.22);border-radius:14px;padding:8px 16px;flex-shrink:0;}
+  .dcc-letter-label{font-size:.56rem;color:rgba(168,85,247,.7);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+  .dcc-letter{font-size:2.6rem;font-weight:900;line-height:1;background:linear-gradient(135deg,#a855f7,#c084fc,#e9d5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  #daily-challenge-card.done .dcc-letter{background:linear-gradient(135deg,#0fba81,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .dcc-cats{flex:1;min-width:0;}
+  .dcc-cats-label{font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:5px;}
+  .dcc-cats-tags{display:flex;flex-wrap:wrap;gap:4px;}
+  .dcc-cat-tag{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);border-radius:100px;padding:2px 9px;font-size:.7rem;color:#c084fc;}
+  #daily-challenge-card.done .dcc-cat-tag{background:rgba(15,186,129,.1);border-color:rgba(15,186,129,.25);color:#34d399;}
+  .dcc-btn{width:100%;margin-top:12px;padding:10px 16px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:11px;color:#fff;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;box-shadow:0 4px 18px rgba(168,85,247,.35);transition:all .2s;}
+  .dcc-btn:hover{transform:translateY(-1px);box-shadow:0 7px 22px rgba(168,85,247,.5);}
   /* Feature 8: Room themes */
   .room-theme-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
   .room-theme-btn{width:52px;height:52px;border-radius:12px;border:2.5px solid transparent;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-direction:column;gap:2px;}
@@ -1034,6 +1061,28 @@
         </div>
         <div class="hlb-badge">×2 🔥</div>
       </div>
+    </div>
+    <!-- Daily Challenge Card -->
+    <div id="daily-challenge-card">
+      <div class="dcc-top">
+        <div class="dcc-icon">🎯</div>
+        <div class="dcc-head">
+          <div class="dcc-label" id="dcc-label">אתגר יומי</div>
+          <div class="dcc-title" id="dcc-title">אתגר היום</div>
+        </div>
+        <div class="dcc-badge dcc-badge-xp" id="dcc-badge">⭐ XP ×2</div>
+      </div>
+      <div class="dcc-body">
+        <div class="dcc-letter-box">
+          <div class="dcc-letter-label">האות</div>
+          <div class="dcc-letter" id="dcc-letter">א</div>
+        </div>
+        <div class="dcc-cats">
+          <div class="dcc-cats-label">קטגוריות</div>
+          <div class="dcc-cats-tags" id="dcc-cats-tags"></div>
+        </div>
+      </div>
+      <button class="dcc-btn" id="dcc-start-btn">🎯 שחק את אתגר היום — XP ×2</button>
     </div>
     <!-- Streak Card -->
     <div id="streak-card" class="streak-card" style="display:none;">
@@ -1665,6 +1714,145 @@
   }, 60000);
   // Check if room letter matches hour letter → double points flag
   function isHourLetterActive(letter) { return letter === getHourLetter(); }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ─── FEATURE 9: DAILY CHALLENGE ─────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // Daily challenge: fixed letter + categories per day of week (repeating weekly).
+  // Playing a room with the exact same letter + ≥1 matching category → ×2 XP.
+  const DAILY_CHALLENGES = [
+    { day: 0, letter: 'א', cats: ['ארץ','עיר','חי','אוכל','שם פרטי'],    tip: 'ראשון — א בהתחלה!' },
+    { day: 1, letter: 'ב', cats: ['ארץ','עיר','חי','דומם','שם פרטי'],    tip: 'שני — ב כמו ברצינות' },
+    { day: 2, letter: 'מ', cats: ['ארץ','עיר','מקצוע','אוכל','שם פרטי'], tip: 'שלישי — מגניב' },
+    { day: 3, letter: 'ר', cats: ['ארץ','עיר','חי','צומח','שם פרטי'],    tip: 'רביעי — רץ קדימה' },
+    { day: 4, letter: 'ש', cats: ['ארץ','עיר','חי','דומם','שם פרטי'],    tip: 'חמישי — שחק!' },
+    { day: 5, letter: 'ס', cats: ['ארץ','עיר','מקצוע','אוכל','שם פרטי'], tip: 'שישי — ס-בבה!' },
+    { day: 6, letter: 'ח', cats: ['ארץ','עיר','חי','צומח','שם פרטי'],    tip: 'שבת — חי וקיים' },
+  ];
+
+  function getDailyChallenge() {
+    const day = new Date().getDay(); // 0=Sun … 6=Sat
+    return DAILY_CHALLENGES[day];
+  }
+
+  function _getDailyChallengeKey() {
+    const d = new Date();
+    return `lac_daily_done_${d.getFullYear()}_${d.getMonth()+1}_${d.getDate()}`;
+  }
+  function isDailyChallengeDone() {
+    try { return !!localStorage.getItem(_getDailyChallengeKey()); } catch(e) { return false; }
+  }
+  function markDailyChallengeDone() {
+    try { localStorage.setItem(_getDailyChallengeKey(), Date.now().toString()); } catch(e) {}
+  }
+
+  // Returns true if a given room's letter + cats qualify for daily ×2
+  function isDailyChallengeRound(roomLetter, roomCats) {
+    const dc = getDailyChallenge();
+    if (!dc || !roomLetter) return false;
+    if (roomLetter !== dc.letter) return false;
+    // At least ONE room category name matches a daily category
+    const dcLower = dc.cats.map(c => c.trim().toLowerCase());
+    const matches = (roomCats || []).some(cat => dcLower.includes((cat.name || cat || '').trim().toLowerCase()));
+    return matches;
+  }
+
+  function renderDailyChallengeCard() {
+    const card = document.getElementById('daily-challenge-card');
+    if (!card) return;
+    const dc = getDailyChallenge();
+    if (!dc) return;
+
+    const done = isDailyChallengeDone();
+
+    // Update content
+    document.getElementById('dcc-label').textContent = done ? '✅ אתגר יומי' : '🎯 אתגר יומי';
+    document.getElementById('dcc-label').className = 'dcc-label' + (done ? ' done' : '');
+    document.getElementById('dcc-title').textContent = done ? 'השלמת את האתגר היום!' : dc.tip;
+    document.getElementById('dcc-letter').textContent = dc.letter;
+    document.getElementById('dcc-badge').textContent = done ? '✅ הושלם' : '⭐ XP ×2';
+    document.getElementById('dcc-badge').className = 'dcc-badge ' + (done ? 'dcc-badge-done' : 'dcc-badge-xp');
+
+    const tagsEl = document.getElementById('dcc-cats-tags');
+    tagsEl.innerHTML = dc.cats.map(c => `<span class="dcc-cat-tag">${c}</span>`).join('');
+
+    const btn = document.getElementById('dcc-start-btn');
+    if (done) {
+      btn.style.display = 'none';
+      card.classList.add('done');
+    } else {
+      btn.style.display = 'block';
+      card.classList.remove('done');
+      btn.onclick = () => _launchDailyChallenge(dc);
+    }
+
+    card.style.display = 'block';
+    lacTrack('daily_challenge_card_shown', { letter: dc.letter, done });
+  }
+
+  async function _launchDailyChallenge(dc) {
+    const n = document.getElementById('player-name').value.trim();
+    if (!n) { toast('נא להזין שם שחקן קודם'); return; }
+
+    lacTrack('daily_challenge_start', { letter: dc.letter });
+
+    // Build categories from DCATS only (no invented categories)
+    const dcLower = dc.cats.map(c => c.trim().toLowerCase());
+    const active = DCATS.filter(c => dcLower.includes(c.name.trim().toLowerCase()))
+                        .map(c => ({ id: c.id, name: c.name, emoji: c.emoji }));
+    // Fallback: if none matched (shouldn't happen), use all defaults
+    if (!active.length) DCATS.filter(c => c.on).forEach(c => active.push({ id: c.id, name: c.name, emoji: c.emoji }));
+
+    S.pName = n;
+    S.pId = gid(10);
+    S.isHost = true;
+    S.totScores = {};
+    S.currentCatIndex = 0;
+    S.cats = active;
+    S.isDailyChallenge = true;
+
+    let roomId, t = 0;
+    do { roomId = gid(6); const s = await get(ref(db, 'rooms/' + roomId)); if (!s.exists()) break; } while (++t < 5);
+    S.roomId = roomId;
+
+    const roomName = `אתגר יומי — ${dc.letter}`;
+    await set(ref(db, 'rooms/' + roomId), {
+      host: S.pId, originalHost: S.pId, status: 'lobby',
+      roundTime: S.rTime || 30,
+      categories: active,
+      showVoters: S.showVoters || false,
+      raceMode: false,
+      creativeVoteEnabled: S.creativeVoteEnabled || false,
+      legendaryEnabled: true,
+      uniqueLetters: S.uniqueLetters || false,
+      cumulativeSB: S.cumulativeSB !== false,
+      visibility: S.visibility || 'private',
+      roomTheme: S_roomTheme || 'default',
+      totalRounds: S.totalRounds || 0,
+      roomName,
+      vetoThresholdType: S.vetoThresholdType || 'percent',
+      vetoThresholdValue: S.vetoThresholdValue || 50,
+      round: 0, letter: '', createdAt: Date.now(), lastActivity: Date.now(), currentCatIndex: 0,
+      isDailyChallenge: true, dailyLetter: dc.letter,
+      players: {
+        [S.pId]: {
+          name: S.pName, score: 0, joinedAt: Date.now(), isHost: true,
+          color: S_pColor, devRole: getPrimaryDevRole(),
+          emoji: S_pEmoji || null, frame: S_pFrame || null, tag: S_pTag || null,
+          entryEffect: S_pEntry || 'none', supporterLevel: S_pSupporterLevel || 0,
+          activeBadge: S_pActiveBadge || 'auto'
+        }
+      }
+    });
+
+    set(ref(db, 'roomActivity/' + roomId), Date.now()).catch(() => {});
+    saveSession();
+    applyRoomTheme(S_roomTheme || 'default');
+    enterLobby();
+    toast(`🎯 אתגר יומי — ${dc.letter} — XP ×2!`);
+    lacTrack('room_created', { room_id: roomId, cat_count: active.length, daily_challenge: true });
+  }
+
 
   // ═══════════════════════════════════════════════════════════════
   // ═══════════════════════════════════════════════════════════════
@@ -3361,6 +3549,8 @@
   renderMyRooms();
   // FEATURE 6: Hour letter banner
   renderHourLetterBanner();
+  // FEATURE 9: Daily challenge card
+  renderDailyChallengeCard();
   // FEATURE 3: Init notification button state
   updateNotifButton();
   scheduleStreakNotif(); // reschedule if already granted
@@ -3861,7 +4051,7 @@
       room.status='lobby';
     }
     S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
-    S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;
+    S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;S.isDailyChallenge=room.isDailyChallenge||false;
     applyRoomTheme(room.roomTheme||'default'); // FEATURE 8
     S.currentCatIndex=room.currentCatIndex||0;
     S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
@@ -4333,7 +4523,7 @@
     const _settingsBtn=document.getElementById('btn-room-settings');
     const _inviteBtn=document.getElementById('btn-invite-tmp');
     const _upBtn=document.getElementById('btn-spectator-upgrade');
-    if(_settingsBtn) _settingsBtn.style.display=S.isHost?'inline-flex':'none';
+    if(_settingsBtn) _settingsBtn.style.display=(S.isHost && !S.isDailyChallenge)?'inline-flex':'none';
     if(_inviteBtn) _inviteBtn.style.display=(S.isHost&&S.isPermanent)?'flex':'none';
     const _simBtn=document.getElementById('btn-sim-players');
     const _isDev=S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev')||S_pDevRoles.includes('debugger');
@@ -4791,7 +4981,7 @@
     const allPs=s.val()||{};
     const activePlayers=Object.entries(getEligible(allPs));
     if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
-    const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    const letter=S.isDailyChallenge ? getDailyChallenge().letter : LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
     // 🌟 Legendary round: 25% chance even on first round
     const legendaryEnabled = S.legendaryEnabled !== false;
@@ -4821,6 +5011,7 @@
     S.uniqueLetters=r.uniqueLetters||false;
     S.raceMode=r.raceMode||false;
     S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
+    S.isDailyChallenge=r.isDailyChallenge||false;
     S.catSubmitted=false;
 
     // 🌟 Legendary round: always inject cat (not just on first cat)
@@ -4948,7 +5139,7 @@
 
     // Play letter animation on first cat OR when letter changes (uniqueLetters mode)
     const isFirstCat=(S.currentCatIndex===0);
-    const showLetterAnim=isFirstCat||(S.uniqueLetters&&S.currentCatIndex>0);
+    const showLetterAnim=(isFirstCat||(S.uniqueLetters&&S.currentCatIndex>0)) && !S.isDailyChallenge;
     await animateLetter(S.letter, showLetterAnim);
     if(isFirstCat)SFX.play('start');
     else if(S.uniqueLetters&&S.currentCatIndex>0)SFX.play('start');
@@ -5644,6 +5835,8 @@
     if (isHourLetterRound) {
       setTimeout(() => toast('🔥 אות השעה! כל הניקוד ×2 בסיבוב הזה!'), 500);
     }
+    // FEATURE 9: Daily challenge — ×2 if letter + ≥1 category match today's challenge
+    const isDailyRound = isDailyChallengeRound(room.letter||'', cats);
     // Creative winner
     const creativeWinner=room.creativeWinner||null;
 
@@ -5735,6 +5928,19 @@
     // FEATURE 6: Apply ×2 if hour letter round
     if (isHourLetterRound) {
       Object.keys(rScores).forEach(pid => { rScores[pid] = (rScores[pid]||0) * 2; });
+    }
+    // FEATURE 9: Apply ×2 if daily challenge round (stacks with hour letter if both active)
+    if (isDailyRound && !isHourLetterRound) {
+      Object.keys(rScores).forEach(pid => { rScores[pid] = (rScores[pid]||0) * 2; });
+      setTimeout(() => toast('🎯 אתגר יומי! כל הניקוד ×2!'), 500);
+      // Mark daily challenge done for local player
+      if (S.pId) markDailyChallengeDone();
+      renderDailyChallengeCard();
+    } else if (isDailyRound && isHourLetterRound) {
+      // Both active — note it in the toast only (hour letter already doubled above)
+      setTimeout(() => toast('🔥🎯 אות השעה + אתגר יומי! ×2!'), 800);
+      if (S.pId) markDailyChallengeDone();
+      renderDailyChallengeCard();
     }
     Object.entries(rScores).forEach(([pid,pts])=>{
       S.totScores[pid]=(S.totScores[pid]||0)+pts;
