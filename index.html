@@ -3586,9 +3586,13 @@
     window.history.replaceState({},'',window.location.pathname);
     if(rc&&!inv){
       // כניסה ישירה לחדר דרך קישור
-      const tryAutoJoin=()=>{
+      const tryAutoJoin=async()=>{
         const n=document.getElementById('player-name');
         if(!n||!n.value.trim()){setTimeout(tryAutoJoin,300);return;}
+        // אם כבר בחדר — צא קודם
+        if(S.roomId && S.roomId !== rc.toUpperCase()){
+          await doLeaveRoom(false);
+        }
         document.getElementById('join-code').value=rc.toUpperCase();
         joinRoom(false);
       };
@@ -3606,9 +3610,13 @@
         // Increment use count
         await update(tokRef,{uses:(t.uses||0)+1});
         // Auto join once profile loads
-        const tryJoin=()=>{
+        const tryJoin=async()=>{
           const n=document.getElementById('player-name').value.trim();
           if(!n){setTimeout(tryJoin,300);return;}
+          // אם כבר בחדר — צא קודם
+          if(S.roomId && S.roomId !== rc.toUpperCase()){
+            await doLeaveRoom(false);
+          }
           document.getElementById('join-code').value=rc.toUpperCase();
           joinRoom(false);
         };
