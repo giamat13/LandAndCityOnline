@@ -1810,6 +1810,7 @@
     S.legendaryEnabled = dc.legendaryEnabled !== false;
     S.isDailyChallenge = true;
     S.dailyChallengeKey = dc.dateKey;
+    clearSession(); // אל תשחזר לחדר הזה בטעינה הבאה
     await set(ref(db, `rooms/${roomId}`), {
       host: S.pId, status: 'lobby', roundTime: S.rTime,
       raceMode: S.raceMode,
@@ -3659,6 +3660,7 @@
   // ─── SESSION PERSISTENCE ──────────────────────────────────────────
   function saveSession(){
     try{
+      if(S.isDailyChallenge)return; // אל תשמור session לאתגר יומי
       localStorage.setItem('lac_s',JSON.stringify({
         roomId:S.roomId,pId:S.pId,pName:S.pName,
         isHost:S.isHost,rNum:S.rNum,totScores:S.totScores,
@@ -3670,10 +3672,12 @@
 
   async function restoreSession(){
     try{
+      if(S.isDailyChallenge)return; // אתגר יומי — אל תשחזר חדר ישן
       const raw=localStorage.getItem('lac_s');
       if(!raw)return;
       const sess=JSON.parse(raw);
       if(!sess.roomId||!sess.pId)return;
+      if(sess.roomId.startsWith('dc_'))return; // אל תשחזר חדרי אתגר יומי ישנים
       const snap=await get(ref(db,'rooms/'+sess.roomId));
       if(!snap.exists()){clearSession();return;}
       const room=snap.val();
