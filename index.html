@@ -733,9 +733,9 @@
   .ep-text{font-size:1rem;font-weight:900;color:var(--orange);}
   /* ── Player Profile Modal ────────────────────────────────────── */
   .ppm-overlay{position:fixed;inset:0;z-index:3200;background:rgba(7,7,18,.88);backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center;}
-  .ppm-inner{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:0 0 32px 0;animation:slideUpModal .35s cubic-bezier(.34,1.56,.64,1);overflow:hidden;}
+  .ppm-inner{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:0 0 32px 0;animation:slideUpModal .35s cubic-bezier(.34,1.56,.64,1);overflow-y:auto;overflow-x:hidden;max-height:88vh;display:flex;flex-direction:column;}
   .ppm-hero{position:relative;padding:28px 24px 20px;background:linear-gradient(160deg,var(--s2),var(--bg));text-align:center;border-bottom:1px solid var(--border);}
-  .ppm-close{position:absolute;top:14px;left:14px;background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:5px 12px;font-family:Heebo,sans-serif;font-size:.85rem;cursor:pointer;}
+  .ppm-close{position:sticky;top:14px;left:14px;z-index:10;background:var(--surface);border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:5px 12px;font-family:Heebo,sans-serif;font-size:.85rem;cursor:pointer;}
   .ppm-avatar{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:2rem;margin:0 auto 10px;box-shadow:0 0 32px rgba(0,0,0,.4);}
   .ppm-name{font-size:1.3rem;font-weight:900;margin-bottom:4px;}
   .ppm-tag{font-size:.8rem;color:var(--muted);margin-bottom:10px;}
@@ -2478,8 +2478,10 @@
     modal.className = 'ppm-overlay';
     modal.innerHTML = `
       <div class="ppm-inner">
+        <div style="position:sticky;top:0;z-index:10;background:var(--surface);padding:10px 14px 6px;display:flex;justify-content:flex-start;border-bottom:1px solid var(--border);">
+          <button class="ppm-close" id="ppm-close-btn" style="position:static;">✕ סגור</button>
+        </div>
         <div class="ppm-hero">
-          <button class="ppm-close" id="ppm-close-btn">✕ סגור</button>
           <div class="ppm-avatar ${frameClass}" style="background:${c}22;color:${c};">${avatarContent}</div>
           <div class="ppm-name">${player.name || '?'}</div>
           ${player.tag ? `<div class="ppm-tag">${player.tag}</div>` : ''}
