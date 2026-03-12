@@ -2579,18 +2579,26 @@
     if (activeScreen === 'screen-profile') {
       // Onboarding continue
   document.getElementById('btn-onboard-continue').addEventListener('click', ()=>{
+    console.log('[Onboarding] button clicked');
     const n = document.getElementById('onboard-name').value.trim();
-    if(!n){ const el=document.getElementById('onboard-name'); el.style.borderColor='var(--red)'; el.focus(); return; }
+    console.log('[Onboarding] name entered:', n);
+    if(!n){ const el=document.getElementById('onboard-name'); el.style.borderColor='var(--red)'; el.focus(); console.log('[Onboarding] no name, aborting'); return; }
+    _initResolved = true; // מנע onboarding כפול
     S.pName = n;
     document.getElementById('player-name').value = n;
+    console.log('[Onboarding] calling setupProfileScreen');
     setupProfileScreen();
+    console.log('[Onboarding] calling saveProfile');
     saveProfile();
     setAnalyticsUserProps();
     updateHomeIdentity();
+    console.log('[Onboarding] calling showScreen home');
     showScreen('home');
+    console.log('[Onboarding] calling renderStreakCard');
     renderStreakCard();
     lacTrack('onboarding_complete', { name_length: n.length });
     setTimeout(showEndowedProgress, 400);
+    console.log('[Onboarding] done!');
   });
   document.getElementById('onboard-name').addEventListener('keydown', e=>{
     if(e.key==='Enter') document.getElementById('btn-onboard-continue').click();
@@ -3451,12 +3459,15 @@
   }
 
   // ניסיון מיידי
+  console.log('[Init] trying profile immediately');
   _tryInitProfile();
+  console.log('[Init] after immediate try, resolved:', _initResolved);
 
   if (!_initResolved) {
     // האזן לשינוי ב-storage (WARP Proxy מפעיל את זה כשהוא טוען)
     window.addEventListener('storage', function _onStorageInit(e) {
       if (e.key === 'lac_profile' && !_initResolved) {
+        console.log('[Init] storage event fired for lac_profile');
         _tryInitProfile();
         if (_initResolved) window.removeEventListener('storage', _onStorageInit);
       }
@@ -3467,9 +3478,13 @@
     const _initPoll = setInterval(() => {
       _initAttempts++;
       _tryInitProfile();
+      console.log('[Init] poll attempt', _initAttempts, '| resolved:', _initResolved, '| lac_profile:', !!localStorage.getItem('lac_profile'));
       if (_initResolved || _initAttempts >= 13) {
         clearInterval(_initPoll);
-        if (!_initResolved) _doShowOnboarding();
+        if (!_initResolved) {
+          console.log('[Init] no profile after 2s — showing onboarding');
+          _doShowOnboarding();
+        }
       }
     }, 150);
   }
