@@ -851,8 +851,24 @@
   <body>
   <div id="app">
 
+  <!-- ONBOARDING – first time only -->
+  <div id="screen-onboarding" class="screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="font-size:3.5rem;margin-bottom:10px;">🌍</div>
+      <h1 style="font-size:1.8rem;font-weight:900;margin-bottom:6px;">ארץ עיר</h1>
+      <p style="color:var(--muted);font-size:.95rem;">משחק מרובה שחקנים אונליין</p>
+    </div>
+    <div class="card" style="width:100%;text-align:center;">
+      <h3 style="margin-bottom:16px;">👋 איך קוראים לך?</h3>
+      <input type="text" id="onboard-name" placeholder="הכנס שם..." maxlength="20"
+        style="text-align:center;font-size:1.3rem;font-weight:700;margin-bottom:20px;">
+      <button class="btn btn-p" id="btn-onboard-continue">בואו נשחק! ←</button>
+    </div>
+  </div>
+
+
   <!-- PROFILE -->
-  <div id="screen-profile" class="screen active">
+  <div id="screen-profile" class="screen">
     <div class="logo" style="margin-bottom:28px;"><h1>🌍 ארץ עיר</h1><p>משחק מרובה שחקנים אונליין</p></div>
     <div class="card" style="text-align:center;">
       <div class="profile-avatar-preview" id="prof-av-preview">א</div>
@@ -2561,7 +2577,26 @@
 
     // Safety 4: only re-render pickers if profile screen is currently visible
     if (activeScreen === 'screen-profile') {
-      initAvPicker();
+      // Onboarding continue
+  document.getElementById('btn-onboard-continue').addEventListener('click', ()=>{
+    const n = document.getElementById('onboard-name').value.trim();
+    if(!n){ const el=document.getElementById('onboard-name'); el.style.borderColor='var(--red)'; el.focus(); return; }
+    S.pName = n;
+    document.getElementById('player-name').value = n;
+    setupProfileScreen();
+    saveProfile();
+    setAnalyticsUserProps();
+    updateHomeIdentity();
+    showScreen('home');
+    renderStreakCard();
+    lacTrack('onboarding_complete', { name_length: n.length });
+    setTimeout(showEndowedProgress, 400);
+  });
+  document.getElementById('onboard-name').addEventListener('keydown', e=>{
+    if(e.key==='Enter') document.getElementById('btn-onboard-continue').click();
+  });
+
+  initAvPicker();
       initEmojiPicker();
       initFramePicker();
       initTagInput();
@@ -3401,7 +3436,12 @@
     // Initialize refId if missing after loading profile
     if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
   } else {
-    setupProfileScreen();
+    // First time — show simple onboarding
+    showScreen('onboarding');
+    setTimeout(()=>{
+      const inp = document.getElementById('onboard-name');
+      if(inp) inp.focus();
+    }, 300);
   }
 
   // ─── VISIBILITY SELECTOR ──────────────────────────────────────────
