@@ -3428,32 +3428,53 @@
   initAvPicker();
 
   // On load: check if profile exists
+  // מחכים קצת כי WARP Proxy עשוי לטעון localStorage באיחור
+  function _initWithProfile() {
+    if(loadProfile()){
+      setupProfileScreen();
+      showScreen('home');
+      updateHomeIdentity();
+      renderStreakCard();
+      if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
+    } else {
+      // פעם ראשונה באמת — הצג מסך onboarding
+      showScreen('onboarding');
+      setTimeout(()=>{ const inp=document.getElementById('onboard-name'); if(inp)inp.focus(); },200);
+    }
+  }
+  // ניסיון ראשון מיידי
   if(loadProfile()){
     setupProfileScreen();
     showScreen('home');
     updateHomeIdentity();
     renderStreakCard();
-    // Initialize refId if missing after loading profile
     if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
   } else {
-    // בדוק אם יש שם שמור בכל מקרה (למשל אחרי proxy)
-    const _rawProf = (() => { try { return localStorage.getItem('lac_profile'); } catch(e){ return null; } })();
-    const _hasName = (() => { try { const p = JSON.parse(_rawProf||'{}'); return !!(p && p.name); } catch(e){ return false; } })();
-    if (_hasName) {
-      // יש פרופיל — loadProfile לא עבד מסיבה כלשהי, ננסה שוב
-      loadProfile();
-      setupProfileScreen();
-      showScreen('home');
-      updateHomeIdentity();
-      renderStreakCard();
-    } else {
-      // פעם ראשונה באמת — הצג מסך onboarding
-      showScreen('onboarding');
-      setTimeout(()=>{
-        const inp = document.getElementById('onboard-name');
-        if(inp) inp.focus();
-      }, 300);
-    }
+    // המתן לפרוקסי — אם תוך 800ms הגיע פרופיל, נשתמש בו; אחרת onboarding
+    let _profileResolved = false;
+    const _checkProfile = () => {
+      if(_profileResolved) return;
+      if(loadProfile()){
+        _profileResolved = true;
+        setupProfileScreen();
+        showScreen('home');
+        updateHomeIdentity();
+        renderStreakCard();
+        if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
+      }
+    };
+    // בדיקות תכופות ב-800ms הראשונות
+    const _pi1 = setTimeout(_checkProfile, 200);
+    const _pi2 = setTimeout(_checkProfile, 500);
+    setTimeout(()=>{
+      if(!_profileResolved){
+        _profileResolved = true;
+        clearTimeout(_pi1); clearTimeout(_pi2);
+        // עדיין אין פרופיל — זו באמת פעם ראשונה
+        showScreen('onboarding');
+        setTimeout(()=>{ const inp=document.getElementById('onboard-name'); if(inp)inp.focus(); },200);
+      }
+    }, 800);
   }
 
   // ─── VISIBILITY SELECTOR ──────────────────────────────────────────
