@@ -3508,9 +3508,15 @@
     const rc=params.get('room');
     const inv=params.get('inv');
     window.history.replaceState({},'',window.location.pathname);
-    if(rc){
-      const inp=document.getElementById('join-code');
-      if(inp)inp.value=rc.toUpperCase();
+    if(rc&&!inv){
+      // כניסה ישירה לחדר דרך קישור
+      const tryAutoJoin=()=>{
+        const n=document.getElementById('player-name');
+        if(!n||!n.value.trim()){setTimeout(tryAutoJoin,300);return;}
+        document.getElementById('join-code').value=rc.toUpperCase();
+        joinRoom(false);
+      };
+      setTimeout(tryAutoJoin,400);
     }
     if(inv&&rc){
       // Validate invite token then auto-join
