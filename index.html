@@ -3493,7 +3493,7 @@
   let pubRoomsListener=null;
   function initPublicRooms(){
     cleanupStaleRooms();
-    if(pubRoomsListener){off(pubRoomsListener.r,'value',pubRoomsListener.fn);pubRoomsListener=null;}
+    if(pubRoomsListener){try{pubRoomsListener.unsub();}catch(e){}pubRoomsListener=null;}
     const r=ref(db,'publicRooms');
     const fn=snap=>{
       clearTimeout(fallbackTimer);
@@ -3537,12 +3537,12 @@
       const el=document.getElementById('pub-rooms-list');
       if(el&&el.innerHTML.includes('טוען'))el.innerHTML='<div class="pub-empty">אין חדרים פתוחים כרגע</div>';
     },5000);
-    onValue(r,fn,err=>{
+    const _pubUnsub=onValue(r,fn,err=>{
       clearTimeout(fallbackTimer);
       const el=document.getElementById('pub-rooms-list');
       if(el)el.innerHTML='<div class="pub-empty">אין חדרים פתוחים כרגע</div>';
     });
-    pubRoomsListener={r,fn};
+    pubRoomsListener={r,fn,unsub:_pubUnsub};
   }
   document.getElementById('btn-refresh-pub').addEventListener('click',initPublicRooms);
   initPublicRooms();
@@ -3733,10 +3733,10 @@
     while(s.length<n)s+=Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g,'');
     return s.slice(0,n);
   }
-  function addL(r,fn){onValue(r,fn);S.listeners.push({r,fn});}
-  function detach(){S.listeners.forEach(({r,fn})=>off(r,'value',fn));S.listeners=[];}
+  function addL(r,fn){const unsub=onValue(r,fn);S.listeners.push(unsub);}
+  function detach(){S.listeners.forEach(unsub=>{ try{ unsub(); }catch(e){} });S.listeners=[];}
   function detachChat(){
-    if(S.chatListener){off(S.chatListener.r,'value',S.chatListener.fn);S.chatListener=null;}
+    if(S.chatListener){try{S.chatListener.unsub();}catch(e){}S.chatListener=null;}
     if(floatEmojiListener){off(floatEmojiListener.r,'value',floatEmojiListener.fn);floatEmojiListener=null;}
   }
 
@@ -6740,8 +6740,8 @@
         }
       }
     };
-    onValue(chatRef,fn);
-    S.chatListener={r:chatRef,fn};
+    const _chatUnsub=onValue(chatRef,fn);
+    S.chatListener={r:chatRef,fn,unsub:_chatUnsub};
   }
 
   async function sendChat(){
@@ -6817,7 +6817,7 @@
 
   function initFloatEmojis(){
     if(floatEmojiListener){
-      off(floatEmojiListener.r,'value',floatEmojiListener.fn);
+      try{floatEmojiListener.unsub();}catch(e){}
       floatEmojiListener=null;
     }
     seenFloatIds=new Set();
@@ -6831,8 +6831,8 @@
         if(Date.now()-d.ts<4000) spawnFloatEmoji(d.em,d.x,d.by);
       });
     };
-    onValue(r,fn);
-    floatEmojiListener={r,fn};
+    const _floatUnsub2=onValue(r,fn);
+    floatEmojiListener={r,fn,unsub:_floatUnsub2};
   }
   document.getElementById('home-identity').addEventListener('click',()=>{ lacTrack('open_profile_edit', {}); setupProfileScreen(); showScreen('profile'); });
   document.getElementById('player-name').addEventListener('input',()=>{
