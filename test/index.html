@@ -4148,6 +4148,33 @@
     initFloatEmojis();
     startExpiryWatcher();
     setupPresence();
+    startUndefinedPlayerWatcher();
+  }
+
+  // undefined player watcher - kicks players with undefined/empty names every second
+  function startUndefinedPlayerWatcher(){
+    clearInterval(S._undefinedWatcherInt);
+    S._undefinedWatcherInt = setInterval(async()=>{
+      if(!S.roomId) return clearInterval(S._undefinedWatcherInt);
+      try {
+        const snap = await get(ref(db,'rooms/'+S.roomId+'/players'));
+        if(!snap.exists()) return;
+        const players = snap.val();
+        const toKick = Object.entries(players).filter(([,p])=>{
+          const name = p && p.name;
+          return (
+            name === undefined ||
+            name === null ||
+            name === 'undefined' ||
+            (typeof name === 'string' && name.trim() === '')
+          );
+        });
+        for(const [pid] of toKick){
+          await remove(ref(db,'rooms/'+S.roomId+'/players/'+pid)).catch(()=>{});
+          console.log('[LAC] removed undefined player:', pid);
+        }
+      } catch(e){}
+    }, 1000);
   }
 
 
@@ -4410,7 +4437,7 @@
     // Detect being kicked by host
     addL(ref(db,'rooms/'+S.roomId+'/players/'+S.pId),snap=>{
       if(!snap.exists()&&S.roomId){
-        clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();detachChat();clearSession();
+        clearInterval(S.timerInt);clearInterval(S.expiryInt);clearInterval(S._undefinedWatcherInt);detach();detachChat();clearSession();
         S.roomId='';S.isHost=false;S.isSpectator=false;S.isPermanent=false;
         showChatFab(false);
         showScreen('home');
@@ -4593,7 +4620,7 @@
 
   async function doLeaveRoom(removeFromMyRooms){
     const roomId=S.roomId;
-    clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
+    clearInterval(S.timerInt);clearInterval(S.expiryInt);clearInterval(S._undefinedWatcherInt);detach();
     if(roomId&&S.pId){
       if(S.isHost){
         await transferHost();
