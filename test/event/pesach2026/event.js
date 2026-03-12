@@ -91,6 +91,106 @@
   function showPlagueEffect(plague) {
     spawnPlagueParticles(plague);
 
+    // מכת דם: נטיפות דם מלמעלה למטה + גוון אדום
+    if (plague.effect === 'blood') {
+      var bloodOverlay = document.createElement('div');
+      bloodOverlay.style.cssText = 'position:fixed;inset:0;z-index:9790;pointer-events:none;background:rgba(150,0,0,0.35);opacity:0;transition:opacity 0.5s ease;';
+      document.body.appendChild(bloodOverlay);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ bloodOverlay.style.opacity='1'; }); });
+      for (var bd=0; bd<18; bd++) {
+        (function(bd) {
+          var drip = document.createElement('div');
+          var dleft = Math.random()*100;
+          var ddelay = Math.random()*1.5;
+          var dh = 40 + Math.random()*80;
+          drip.style.cssText = 'position:fixed;top:-10px;left:'+dleft+'vw;width:'+(6+Math.random()*8)+'px;height:'+dh+'px;z-index:9791;pointer-events:none;background:linear-gradient(to bottom,#8b0000,#cc0000,rgba(180,0,0,0));border-radius:0 0 50% 50%;animation:pesach-drip '+(1.2+Math.random()*1.5)+'s '+ddelay+'s ease-in forwards;';
+          document.body.appendChild(drip);
+          drip.addEventListener('animationend', function(){ drip.remove(); });
+        })(bd);
+      }
+      setTimeout(function(){ bloodOverlay.style.transition='opacity 1s ease'; bloodOverlay.style.opacity='0'; bloodOverlay.addEventListener('transitionend',function(){bloodOverlay.remove();}); }, 2500);
+    }
+
+    // מכת צפרדע: המסך קופץ בצורה עצבנית
+    if (plague.effect === 'frogs') {
+      var jitterEl = document.documentElement;
+      var jitters = [[-8,5],[10,-7],[-6,10],[12,-4],[-10,8],[7,-12],[0,0]];
+      var ji = 0;
+      var origTransform = jitterEl.style.transform || '';
+      var jitterInt = setInterval(function(){
+        if (ji >= jitters.length) { clearInterval(jitterInt); jitterEl.style.transform = origTransform; return; }
+        jitterEl.style.transform = 'translate('+jitters[ji][0]+'px,'+jitters[ji][1]+'px)';
+        ji++;
+      }, 80);
+      setTimeout(function(){ clearInterval(jitterInt); jitterEl.style.transform = origTransform; }, 700);
+    }
+
+    // מכת כינים: נקודות קטנות שזזות בכאוס
+    if (plague.effect === 'lice') {
+      for (var li=0; li<60; li++) {
+        (function(li) {
+          var dot = document.createElement('div');
+          var lx = Math.random()*100, ly = Math.random()*100;
+          var ldx = (Math.random()-0.5)*200, ldy = (Math.random()-0.5)*200;
+          dot.style.cssText = 'position:fixed;left:'+lx+'vw;top:'+ly+'vh;width:'+(3+Math.random()*4)+'px;height:'+(3+Math.random()*4)+'px;border-radius:50%;background:rgba(100,80,20,0.75);z-index:9791;pointer-events:none;transition:transform '+(0.8+Math.random()*1.2)+'s ease, opacity 0.5s ease '+(1.5+Math.random()*0.8)+'s;';
+          document.body.appendChild(dot);
+          requestAnimationFrame(function(){ requestAnimationFrame(function(){
+            dot.style.transform = 'translate('+ldx+'px,'+ldy+'px)';
+            dot.style.opacity = '0';
+          }); });
+          setTimeout(function(){ dot.remove(); }, 2500);
+        })(li);
+      }
+    }
+
+    // מכת שחין: בועות פורצות על המסך
+    if (plague.effect === 'boils') {
+      for (var bi=0; bi<20; bi++) {
+        (function(bi) {
+          setTimeout(function(){
+            var boil = document.createElement('div');
+            var bx = 5+Math.random()*90, by = 5+Math.random()*90;
+            var bsize = 20+Math.random()*40;
+            boil.style.cssText = 'position:fixed;left:'+bx+'vw;top:'+by+'vh;width:'+bsize+'px;height:'+bsize+'px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe066,#e67e22,#922b21);z-index:9791;pointer-events:none;transform:scale(0);animation:pesach-boil-pop 0.6s ease forwards;';
+            document.body.appendChild(boil);
+            boil.addEventListener('animationend', function(){
+              boil.style.transition = 'opacity 0.4s ease';
+              boil.style.opacity = '0';
+              setTimeout(function(){ boil.remove(); }, 400);
+            });
+          }, bi * 120);
+        })(bi);
+      }
+    }
+
+    // מכת ברד: הבזקי ברק + רעידת מסך
+    if (plague.effect === 'hail') {
+      var lightningCount = 0;
+      var lightningInt = setInterval(function(){
+        if (lightningCount >= 5) { clearInterval(lightningInt); return; }
+        lightningCount++;
+        var lightning = document.createElement('div');
+        lightning.style.cssText = 'position:fixed;inset:0;z-index:9792;pointer-events:none;background:rgba(255,255,255,'+(0.3+Math.random()*0.5)+');animation:pesach-lightning 0.12s ease forwards;';
+        document.body.appendChild(lightning);
+        lightning.addEventListener('animationend', function(){ lightning.remove(); });
+        var shakeEl = document.documentElement;
+        var sc = 0;
+        var shakeInt2 = setInterval(function(){
+          shakeEl.style.transform = 'translate('+(Math.random()*14-7)+'px,'+(Math.random()*14-7)+'px)';
+          if(++sc>4){ clearInterval(shakeInt2); shakeEl.style.transform=''; }
+        }, 50);
+      }, 350);
+    }
+
+    // מכת ארבה: המסך הולך לירוק כהה
+    if (plague.effect === 'locusts') {
+      var locustOverlay = document.createElement('div');
+      locustOverlay.style.cssText = 'position:fixed;inset:0;z-index:9790;pointer-events:none;background:rgba(30,80,10,0.55);opacity:0;transition:opacity 0.6s ease;';
+      document.body.appendChild(locustOverlay);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ locustOverlay.style.opacity='1'; }); });
+      setTimeout(function(){ locustOverlay.style.transition='opacity 1.2s ease'; locustOverlay.style.opacity='0'; locustOverlay.addEventListener('transitionend',function(){locustOverlay.remove();}); }, 2500);
+    }
+
     // מכת חושך: אם המסך בהיר – מעבר לחושך מוחלט לרגע
     if (plague.effect === 'dark') {
       var bodyBg = window.getComputedStyle(document.body).backgroundColor;
@@ -540,40 +640,8 @@
         var _devPlagueIdx = (window._devPlagueIdx || 0);
         window._devPlagueIdx = (_devPlagueIdx + 1) % 10;
         var p = PLAGUES_SIM[_devPlagueIdx];
-        // מכת חושך: אם המסך בהיר – כהה לרגע
-        if (p.effect === 'dark') {
-          var bodyBg2 = window.getComputedStyle(document.body).backgroundColor;
-          var rgb2 = bodyBg2.match(/\d+/g);
-          var isLight2 = rgb2 && (parseInt(rgb2[0]) + parseInt(rgb2[1]) + parseInt(rgb2[2])) / 3 > 100;
-          if (isLight2) {
-            var darkOverlay2 = document.createElement('div');
-            darkOverlay2.style.cssText = 'position:fixed;inset:0;z-index:9790;pointer-events:none;background:#000;opacity:0;transition:opacity 0.6s ease;';
-            document.body.appendChild(darkOverlay2);
-            requestAnimationFrame(function(){ requestAnimationFrame(function(){ darkOverlay2.style.opacity='1'; }); });
-            setTimeout(function(){ darkOverlay2.style.transition='opacity 1.2s ease'; darkOverlay2.style.opacity='0'; darkOverlay2.addEventListener('transitionend',function(){darkOverlay2.remove();}); }, 3000);
-          }
-        }
-        // Flash
-        var flash = document.createElement('div');
-        flash.style.cssText = 'position:fixed;inset:0;z-index:9800;pointer-events:none;background:'+p.bg+';animation:pesach-plague-flash 0.6s ease forwards;';
-        document.body.appendChild(flash);
-        flash.addEventListener('animationend',function(){flash.remove();});
-        // Particles
-        var emojisMap={blood:['🩸','💧'],frogs:['🐸','🌿'],lice:['🦟','•'],beasts:['🦁','🐯'],plague:['💀','🐄'],boils:['🤒','🔥'],hail:['🌨️','❄️','⚡'],locusts:['🦗','🌿'],dark:['🌑','⭐'],death:['⚰️','🕯️']};
-        var ems = emojisMap[p.effect]||[p.emoji];
-        for(var i=0;i<16;i++){(function(i){setTimeout(function(){
-          var el=document.createElement('div');
-          el.style.cssText='position:fixed;font-size:'+(1.1+Math.random()*1.3)+'rem;left:'+Math.random()*100+'vw;top:-30px;z-index:9799;pointer-events:none;animation:pesach-particle-fall '+(1.5+Math.random()*2.5)+'s linear forwards;';
-          el.textContent=ems[Math.floor(Math.random()*ems.length)];
-          document.body.appendChild(el);
-          el.addEventListener('animationend',function(){el.remove();});
-        },i*55);})(i);}
-        // Card
-        var card=document.createElement('div');
-        card.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.5);z-index:9900;font-family:Heebo,sans-serif;direction:rtl;text-align:center;background:linear-gradient(160deg,#1a1408,#0f0c00);border:2px solid '+p.color+';border-radius:20px;padding:28px 36px;min-width:240px;box-shadow:0 0 60px '+p.color+'66,0 24px 60px rgba(0,0,0,0.8);animation:pesach-plague-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;';
-        card.innerHTML='<div style="font-size:3.5rem;margin-bottom:10px;animation:pesach-plague-shake 0.5s 0.3s ease both;">'+p.emoji+'</div><div style="font-size:.72rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:'+p.color+';opacity:.8;margin-bottom:6px;">פרעה לקה במכה</div><div style="font-size:2rem;font-weight:900;color:'+p.color+';text-shadow:0 0 20px '+p.color+'88;">'+p.name+'</div><div style="font-size:.8rem;color:rgba(234,234,234,.5);margin-top:8px;">⏱️ אזל הזמן!</div>';
-        document.body.appendChild(card);
-        setTimeout(function(){card.style.animation='pesach-plague-out 0.35s ease forwards';card.addEventListener('animationend',function(){card.remove();});},2200);
+        // קריאה לפונקציה המרכזית שמכילה את כל האפקטים
+        showPlagueEffect(p);
         plagueTestBtn.textContent='🌧️ מכת '+p.name+' ('+((_devPlagueIdx)+1)+'/10)';
       });
       var devBtn = document.getElementById('pesach-dev-sim-btn');
