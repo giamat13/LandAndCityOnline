@@ -460,9 +460,18 @@
   var GOLD  = '#d4af37';
   var GOLD2 = '#ffd700';
 
+  function _hasDevRole() {
+    try {
+      var p = JSON.parse(localStorage.getItem('lac_profile') || '{}');
+      var roles = p.devRoles || (p.devRole ? [p.devRole] : []);
+      return roles.some(function(r){ return r && r.length > 0; });
+    } catch(e) { return false; }
+  }
+
   function addBtn() {
     if (document.getElementById('pesach-dev-sim-btn')) return;
     if (new Date() >= new Date('2026-04-09T00:00:00')) return;
+    if (!_hasDevRole()) return;
     var wrap = document.getElementById('admin-panel-btn-wrap');
     if (!wrap) return;
 
