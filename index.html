@@ -4919,7 +4919,7 @@
     const allPs=s.val()||{};
     const activePlayers=Object.entries(getEligible(allPs));
     if(!S.isDailyChallenge && activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
-    const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    const letter=S.isDailyChallenge ? S.letter : LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
     // Track daily active players (for social proof on share card)
     try{
