@@ -3565,6 +3565,27 @@
   }
 
   // ─── URL SHARE / AUTO-JOIN ────────────────────────────────────────
+  function showLeaveConfirm(){
+    return new Promise(resolve=>{
+      const modal=document.createElement('div');
+      modal.style.cssText='position:fixed;inset:0;z-index:9950;background:rgba(10,10,25,.88);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px;';
+      modal.innerHTML=`
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.6);text-align:center;">
+          <div style="font-size:2rem;margin-bottom:10px;">🚪</div>
+          <div style="font-size:1.1rem;font-weight:900;margin-bottom:8px;">יציאה מהחדר הנוכחי</div>
+          <div style="font-size:.85rem;color:var(--muted);margin-bottom:22px;line-height:1.6;">קיבלת קישור לחדר חדש.<br>האם לצאת מהחדר הנוכחי ולהצטרף?</div>
+          <div style="display:flex;gap:10px;">
+            <button id="lc-cancel" class="btn btn-s" style="flex:1;opacity:.7;">ביטול</button>
+            <button id="lc-confirm" class="btn btn-p" style="flex:1;">כן, עבור לחדר</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('#lc-confirm').addEventListener('click',()=>{ modal.remove(); resolve(true); });
+      modal.querySelector('#lc-cancel').addEventListener('click',()=>{ modal.remove(); resolve(false); });
+    });
+  }
+
+
   (function checkUrlRoom(){
     const params=new URLSearchParams(window.location.search);
     const rc=params.get('room');
@@ -3575,8 +3596,10 @@
       const tryAutoJoin=async()=>{
         const n=document.getElementById('player-name');
         if(!n||!n.value.trim()){setTimeout(tryAutoJoin,300);return;}
-        // אם כבר בחדר — צא קודם
+        // אם כבר בחדר — שאל לפני יציאה
         if(S.roomId && S.roomId !== rc.toUpperCase()){
+          const confirmed = await showLeaveConfirm();
+          if(!confirmed) return;
           await doLeaveRoom(false);
         }
         document.getElementById('join-code').value=rc.toUpperCase();
@@ -3599,8 +3622,10 @@
         const tryJoin=async()=>{
           const n=document.getElementById('player-name').value.trim();
           if(!n){setTimeout(tryJoin,300);return;}
-          // אם כבר בחדר — צא קודם
+          // אם כבר בחדר — שאל לפני יציאה
           if(S.roomId && S.roomId !== rc.toUpperCase()){
+            const confirmed = await showLeaveConfirm();
+            if(!confirmed) return;
             await doLeaveRoom(false);
           }
           document.getElementById('join-code').value=rc.toUpperCase();
