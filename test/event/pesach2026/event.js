@@ -114,7 +114,7 @@
           darkOverlay.style.transition = 'opacity 1.2s ease';
           darkOverlay.style.opacity = '0';
           darkOverlay.addEventListener('transitionend', function(){ darkOverlay.remove(); });
-        }, 2000);
+        }, 3000);
       }
     }
 
@@ -136,7 +136,7 @@
       'animation:pesach-plague-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;';
     card.innerHTML =
       '<div style="font-size:3.5rem;margin-bottom:10px;animation:pesach-plague-shake 0.5s 0.3s ease both;">' + plague.emoji + '</div>' +
-      '<div style="font-size:.72rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:' + plague.color + ';opacity:.8;margin-bottom:6px;">לקה במכה</div>' +
+      '<div style="font-size:.72rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:' + plague.color + ';opacity:.8;margin-bottom:6px;">פרעה לקה במכה</div>' +
       '<div style="font-size:2rem;font-weight:900;color:' + plague.color + ';text-shadow:0 0 20px ' + plague.color + '88;">' + plague.name + '</div>' +
       '<div style="font-size:.8rem;color:rgba(234,234,234,.5);margin-top:8px;">⏱️ אזל הזמן!</div>';
     document.body.appendChild(card);
@@ -550,7 +550,7 @@
             darkOverlay2.style.cssText = 'position:fixed;inset:0;z-index:9790;pointer-events:none;background:#000;opacity:0;transition:opacity 0.6s ease;';
             document.body.appendChild(darkOverlay2);
             requestAnimationFrame(function(){ requestAnimationFrame(function(){ darkOverlay2.style.opacity='1'; }); });
-            setTimeout(function(){ darkOverlay2.style.transition='opacity 1.2s ease'; darkOverlay2.style.opacity='0'; darkOverlay2.addEventListener('transitionend',function(){darkOverlay2.remove();}); }, 2000);
+            setTimeout(function(){ darkOverlay2.style.transition='opacity 1.2s ease'; darkOverlay2.style.opacity='0'; darkOverlay2.addEventListener('transitionend',function(){darkOverlay2.remove();}); }, 3000);
           }
         }
         // Flash
@@ -571,7 +571,7 @@
         // Card
         var card=document.createElement('div');
         card.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.5);z-index:9900;font-family:Heebo,sans-serif;direction:rtl;text-align:center;background:linear-gradient(160deg,#1a1408,#0f0c00);border:2px solid '+p.color+';border-radius:20px;padding:28px 36px;min-width:240px;box-shadow:0 0 60px '+p.color+'66,0 24px 60px rgba(0,0,0,0.8);animation:pesach-plague-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;';
-        card.innerHTML='<div style="font-size:3.5rem;margin-bottom:10px;animation:pesach-plague-shake 0.5s 0.3s ease both;">'+p.emoji+'</div><div style="font-size:.72rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:'+p.color+';opacity:.8;margin-bottom:6px;">לקה במכה</div><div style="font-size:2rem;font-weight:900;color:'+p.color+';text-shadow:0 0 20px '+p.color+'88;">'+p.name+'</div><div style="font-size:.8rem;color:rgba(234,234,234,.5);margin-top:8px;">⏱️ אזל הזמן!</div>';
+        card.innerHTML='<div style="font-size:3.5rem;margin-bottom:10px;animation:pesach-plague-shake 0.5s 0.3s ease both;">'+p.emoji+'</div><div style="font-size:.72rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:'+p.color+';opacity:.8;margin-bottom:6px;">פרעה לקה במכה</div><div style="font-size:2rem;font-weight:900;color:'+p.color+';text-shadow:0 0 20px '+p.color+'88;">'+p.name+'</div><div style="font-size:.8rem;color:rgba(234,234,234,.5);margin-top:8px;">⏱️ אזל הזמן!</div>';
         document.body.appendChild(card);
         setTimeout(function(){card.style.animation='pesach-plague-out 0.35s ease forwards';card.addEventListener('animationend',function(){card.remove();});},2200);
         plagueTestBtn.textContent='🌧️ מכת '+p.name+' ('+((_devPlagueIdx)+1)+'/10)';
