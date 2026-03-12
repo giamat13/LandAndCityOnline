@@ -614,10 +614,6 @@
   .race-banner{position:fixed;top:0;left:0;right:0;z-index:1200;background:linear-gradient(135deg,var(--orange),#c97d10);color:#fff;text-align:center;font-weight:900;font-size:1rem;padding:10px 16px;box-shadow:0 4px 20px rgba(245,166,35,.5);animation:slideDown .4s cubic-bezier(.34,1.56,.64,1);}
   @keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
   /* ── Bonus Answer ───────────────────────────────────────────── */
-  .bonus-star-btn{background:rgba(245,166,35,.12);color:var(--orange);border:1.5px solid rgba(245,166,35,.3);border-radius:8px;padding:5px 10px;font-size:.85rem;cursor:pointer;transition:all .2s;flex-shrink:0;}
-  .bonus-star-btn:hover{background:rgba(245,166,35,.25);}
-  .bonus-star-btn.active{background:rgba(245,166,35,.35);border-color:var(--orange);color:#fff;}
-  .ans-tag.bonus{background:rgba(245,166,35,.2);border-color:rgba(245,166,35,.5);color:var(--orange);}
   /* ── Creative Vote Screen ───────────────────────────────────── */
   .creative-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px;box-shadow:var(--sh);cursor:pointer;transition:all .2s;}
   .creative-card:hover{border-color:var(--orange);transform:translateY(-1px);}
@@ -1212,10 +1208,7 @@
         <div class="tog" id="tog-race-el"></div>
         <span class="tog-label">🏎️ מצב מרוץ – מי שמגיש ראשון עוצר את הטיימר לכולם</span>
       </div>
-      <div class="tog-wrap" id="tog-bonus-ans" style="margin-bottom:14px;">
-        <div class="tog on" id="tog-bonus-el"></div>
-        <span class="tog-label">⭐ תשובת בונוס – כל שחקן יכול לסמן תשובה אחת ב×2 נקודות</span>
-      </div>
+
       <div class="tog-wrap" id="tog-creative-vote" style="margin-bottom:16px;">
         <div class="tog on" id="tog-creative-el"></div>
         <span class="tog-label">🌟 הצבעת יצירתיות אחרי פסילות (+10 נק' לזוכה)</span>
@@ -1712,11 +1705,10 @@
     const rTimes = [30, 45, 60];
     const rTime = rTimes[rng(rTimes.length)];
     const raceMode = rng(100) < 30;       // 30% chance
-    const bonusAnswer = rng(100) < 65;    // 65% chance
     const creativeVote = rng(100) < 70;   // 70% chance
     const uniqueLetters = rng(100) < 20;  // 20% chance
     const legendaryEnabled = rng(100) < 40; // 40% chance
-    return { letter, cats, dateKey, rTime, raceMode, bonusAnswer, creativeVote, uniqueLetters, legendaryEnabled };
+    return { letter, cats, dateKey, rTime, raceMode, creativeVote, uniqueLetters, legendaryEnabled };
   }
   async function loadDailyChallenge() {
     const key = getDailyKey();
@@ -1778,7 +1770,7 @@
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
         <span style="background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.25);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:var(--blue);">⏱️ ${dc.rTime===0?'ללא הגבלה':dc.rTime+' שנ\''}</span>
         ${dc.raceMode?'<span style="background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:var(--orange);">🏎️ מצב מרוץ</span>':''}
-        ${dc.bonusAnswer?'<span style="background:rgba(15,186,129,.1);border:1px solid rgba(15,186,129,.25);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:var(--green);">⭐ תשובת בונוס</span>':''}
+        ''
         ${dc.creativeVote?'<span style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.25);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:#a855f7;">🌟 הצבעת יצירתיות</span>':''}
         ${dc.uniqueLetters?'<span style="background:rgba(233,69,96,.1);border:1px solid rgba(233,69,96,.25);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:var(--red);">🔤 אות לכל קטגוריה</span>':''}
         ${dc.legendaryEnabled?'<span style="background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:var(--orange);">✨ סיבוב אגדי</span>':''}
@@ -1813,7 +1805,6 @@
     S.totScores = {};
     S.rTime = dc.rTime || 45;
     S.raceMode = dc.raceMode || false;
-    S.bonusAnswer = dc.bonusAnswer !== false;
     S.creativeVoteEnabled = dc.creativeVote !== false;
     S.uniqueLetters = dc.uniqueLetters || false;
     S.legendaryEnabled = dc.legendaryEnabled !== false;
@@ -1821,7 +1812,7 @@
     S.dailyChallengeKey = dc.dateKey;
     await set(ref(db, `rooms/${roomId}`), {
       host: S.pId, status: 'lobby', roundTime: S.rTime,
-      raceMode: S.raceMode, bonusAnswer: S.bonusAnswer,
+      raceMode: S.raceMode,
       creativeVoteEnabled: S.creativeVoteEnabled,
       uniqueLetters: S.uniqueLetters, legendaryEnabled: S.legendaryEnabled,
       categories: S.cats, round: 0, letter: dc.letter,
@@ -1917,7 +1908,6 @@
     return {
       cats, cCats, rTime,
       raceMode: document.getElementById('tog-race-el').classList.contains('on'),
-      bonusAnswer: document.getElementById('tog-bonus-el').classList.contains('on'),
       creativeVote: document.getElementById('tog-creative-el').classList.contains('on'),
       legendaryEnabled: document.getElementById('tog-legendary-el').classList.contains('on'),
       uniqueLetters: document.getElementById('tog-ul-el').classList.contains('on'),
@@ -1929,7 +1919,6 @@
     const tags = [
       t.rTime != null ? `⏱️${t.rTime===0?'∞':t.rTime+'שנ'}` : null,
       t.raceMode ? '🏎️מרוץ' : null,
-      t.bonusAnswer ? '⭐בונוס' : null,
       t.creativeVote ? '🌟יצירתיות' : null,
       t.uniqueLetters ? '🔤אות לכל' : null,
       t.legendaryEnabled ? '✨אגדי' : null,
@@ -1954,7 +1943,6 @@
     if (t.rTime != null) S.rTime = t.rTime;
     // Toggles
     if (t.raceMode != null) document.getElementById('tog-race-el').classList.toggle('on', !!t.raceMode);
-    if (t.bonusAnswer != null) document.getElementById('tog-bonus-el').classList.toggle('on', !!t.bonusAnswer);
     if (t.creativeVote != null) document.getElementById('tog-creative-el').classList.toggle('on', t.creativeVote !== false);
     if (t.legendaryEnabled != null) document.getElementById('tog-legendary-el').classList.toggle('on', t.legendaryEnabled !== false);
     if (t.uniqueLetters != null) document.getElementById('tog-ul-el').classList.toggle('on', !!t.uniqueLetters);
@@ -2047,7 +2035,7 @@
           await set(ref(db, `publicPacks/${packId}`), {
             name: packName.trim(), emoji: t.emoji || '📦',
             cats: t.cats || [], cCats: t.cCats || [],
-            rTime: t.rTime, raceMode: t.raceMode, bonusAnswer: t.bonusAnswer,
+            rTime: t.rTime, raceMode: t.raceMode,
             creativeVote: t.creativeVote, legendaryEnabled: t.legendaryEnabled, uniqueLetters: t.uniqueLetters,
             creator: S.pName || S_pName || 'אנונימי', ts: Date.now(), uses: 0
           });
@@ -2130,7 +2118,7 @@
       name: packName.trim(), emoji: packEmoji.trim() || '📦',
       cats: settings.cats, cCats: settings.cCats,
       rTime: settings.rTime, raceMode: settings.raceMode,
-      bonusAnswer: settings.bonusAnswer, creativeVote: settings.creativeVote,
+      creativeVote: settings.creativeVote,
       legendaryEnabled: settings.legendaryEnabled, uniqueLetters: settings.uniqueLetters,
       creator: S.pName || S_pName || 'אנונימי', ts: Date.now(), uses: 0
     });
@@ -2829,10 +2817,7 @@
     vetoThresholdType:'percent',
     vetoThresholdValue:50,
     raceMode:false,
-    bonusAnswer:true,
     creativeVoteEnabled:true,
-    bonusAnswerIndex:-1,
-    bonusUsedThisRound:false,
     tournamentMode:false,
     tournamentBracket:null
   };
@@ -3936,7 +3921,6 @@
     S.vetoThresholdType=crVetoType;S.vetoThresholdValue=crVetoValue;
     S.raceMode=document.getElementById('tog-race-el').classList.contains('on');
 
-    S.bonusAnswer=document.getElementById('tog-bonus-el').classList.contains('on');
     S.creativeVoteEnabled=document.getElementById('tog-creative-el').classList.contains('on');
     S.legendaryEnabled=document.getElementById('tog-legendary-el')?.classList.contains('on')!==false;
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
@@ -3944,7 +3928,7 @@
     do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
     S.roomId=roomId;
     await set(ref(db,'rooms/'+roomId),{
-      host:S.pId,originalHost:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,bonusAnswer:S.bonusAnswer,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,
+      host:S.pId,originalHost:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,
       uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
@@ -4937,8 +4921,6 @@
     S.totalRounds=r.totalRounds||0;
     S.uniqueLetters=r.uniqueLetters||false;
     S.raceMode=r.raceMode||false;
-    S.bonusAnswer=r.bonusAnswer||false;
-    S.bonusUsedThisRound=false;
     S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
     S.catSubmitted=false;
 
@@ -5107,7 +5089,6 @@
       });
     }
     // Bonus answer: reset index (only if not yet used this round)
-    if(!S.bonusUsedThisRound) S.bonusAnswerIndex=-1;
     if(!S.catSubmitted){
       setTimeout(()=>inp.focus(),80);
       if(S.rTime===0){
@@ -5258,44 +5239,14 @@
     container.innerHTML='';
     S.currentAnswers.forEach((ans,i)=>{
       const tag=document.createElement('span');
-      const isBonus=S.bonusAnswer&&S.bonusAnswerIndex===i;
-      tag.className='ans-tag'+(isBonus?' bonus':'');
-      tag.innerHTML=`${isBonus?'⭐ ':''}${ans}<button class="rm" title="הסר">×</button>`;
+      tag.className='ans-tag';
+      tag.innerHTML=`${ans}<button class="rm" title="הסר">×</button>`;
       tag.querySelector('.rm').addEventListener('click',()=>{
-        if(S.bonusAnswerIndex===i)S.bonusAnswerIndex=-1;
-        else if(S.bonusAnswerIndex>i)S.bonusAnswerIndex--;
         S.currentAnswers.splice(i,1);
         renderAnsTags();
       });
-      if(S.bonusAnswer){
-        const alreadyUsed=S.bonusUsedThisRound&&S.bonusAnswerIndex===-1;
-        const starBtn=document.createElement('button');
-        starBtn.className='bonus-star-btn'+(isBonus?' active':'')+(alreadyUsed?' disabled':'');
-        starBtn.title=alreadyUsed?"כבר השתמשת בבונוס הסיבוב":"סמן כתשובת בונוס (×2 נק'ות)";
-        starBtn.textContent=isBonus?'⭐ בונוס':'☆ בונוס';
-        starBtn.disabled=alreadyUsed;
-        if(!alreadyUsed) starBtn.addEventListener('click',()=>{
-          S.bonusAnswerIndex=isBonus?-1:i;
-          renderAnsTags();
-        });
-        container.insertBefore(starBtn, container.firstChild);
-        tag.style.display='block';
-      }
       container.appendChild(tag);
     });
-    // Show hint if bonus mode and no bonus selected
-    if(S.bonusAnswer&&S.currentAnswers.length>0&&S.bonusAnswerIndex===-1){
-      const hint=document.createElement('div');
-      hint.style='font-size:.72rem;margin-top:6px;';
-      if(S.bonusUsedThisRound){
-        hint.style.color='var(--muted)';
-        hint.textContent='🔒 השתמשת כבר בבונוס הסיבוב הזה';
-      } else {
-        hint.style.color='var(--orange)';
-        hint.textContent='⭐ לחץ "☆ בונוס" על תשובה אחת לקבל ×2 נקודות עליה';
-      }
-      container.appendChild(hint);
-    }
   }
 
   function addAnswerTag(val){
@@ -5321,11 +5272,8 @@
     SFX.play('submit');
     const cat=S.cats[S.currentCatIndex];
     const ansArr=Array.isArray(answers)?answers:(answers?[answers]:[]);
-    const bonusIdx=S.bonusAnswerIndex>=0&&S.bonusAnswerIndex<ansArr.length?S.bonusAnswerIndex:-1;
-    if(bonusIdx>=0) S.bonusUsedThisRound=true;
     await set(ref(db,`rooms/${S.roomId}/catAnswers/${cat.id}/${S.pId}`),{
       name:S.pName,answers:ansArr,answer:ansArr[0]||'',submittedAt:Date.now(),timeLeft:S.timeLeft,
-      bonusIndex:bonusIdx
     });
     // Race mode: first submission triggers advance for everyone
     if(S.raceMode){
@@ -5336,7 +5284,7 @@
     }
     showEditMode(ansArr);
     touchActivity();saveSession();
-    lacTrack('answer_submitted', { cat_name: cat?.name, answer_count: ansArr.length, has_bonus: bonusIdx >= 0, time_left: S.timeLeft, round_number: S.rNum });
+    lacTrack('answer_submitted', { cat_name: cat?.name, answer_count: ansArr.length, time_left: S.timeLeft, round_number: S.rNum });
   }
 
   function showEditMode(submittedAnswers){
@@ -5831,9 +5779,7 @@
           const isUniq=counts[al.toLowerCase()]===1;
           const base=isUniq?10:5;
           const rareBonus=isUniq?2:0;
-          const isThisBonus=room.bonusAnswer&&d.bonusIndex===ansArr.indexOf(a)&&d.bonusIndex>=0;
-          const mult=isThisBonus?2:1;
-          rScores[pid]=(rScores[pid]||0)+(base+rareBonus)*mult;
+          rScores[pid]=(rScores[pid]||0)+(base+rareBonus);
         });
         // Time bonus only once per player (on first valid answer)
         const firstValid=ansArr.find(a=>{const al=(a||'').trim();return al&&!disqSet.has(al.toLowerCase());});
@@ -5863,8 +5809,6 @@
           if(!isDisq&&al)firstValidDone=true;
           const disqLabel=isDisq?'<span style="color:var(--red);font-size:.72rem;margin-right:4px;">❌ נפסל</span>':'';
           const rareLbl=u?'<span class="rare-badge">💎 נדיר +2</span>':'';
-          const isBonusAns=room.bonusAnswer&&d&&d.bonusIndex===ai&&d.bonusIndex>=0&&!isDisq&&al;
-          const bonusLbl=isBonusAns?'<span style="background:rgba(245,166,35,.18);color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;font-size:.68rem;font-weight:800;padding:1px 7px;margin-right:4px;white-space:nowrap;">⭐ ×2 בונוס</span>':'';
           const isCreativeWin=creativeWinner&&creativeWinner.pid===pid&&creativeWinner.answer===a;
           const creativeLbl=isCreativeWin?'<span style="background:rgba(245,166,35,.18);color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;font-size:.68rem;font-weight:800;padding:1px 7px;margin-right:4px;white-space:nowrap;">🌟 הכי יצירתי</span>':'';
           const nameCell=ai===0?`${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}`
@@ -5872,7 +5816,7 @@
           const totalPts=base+rareBonus;
           rowsArr.push(`<tr>
             <td>${nameCell}</td>
-            <td class="${cls}">${disqLabel}${rareLbl}${bonusLbl}${creativeLbl}${al||'—'}</td>
+            <td class="${cls}">${disqLabel}${rareLbl}${creativeLbl}${al||'—'}</td>
             <td style="text-align:center;font-weight:700;color:${isDisq?'var(--red)':totalPts>=12?'#a855f7':totalPts>=10?'var(--green)':totalPts>=5?'var(--orange)':'var(--muted)'}">
               ${isDisq?'<span style="text-decoration:line-through;opacity:.5">0</span>':'+'+totalPts+(tb>0?`<span style="color:var(--blue);font-size:.75rem;"> +${tb}⚡</span>`:'')}</td>
           </tr>`);
@@ -6295,7 +6239,7 @@
       await endGame();return;
     }
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
-    S.rNum++;S.letter=letter;S.currentCatIndex=0;S.bonusUsedThisRound=false;
+    S.rNum++;S.letter=letter;S.currentCatIndex=0;
 
     // 🌟 Legendary: 25% chance, or forced by dev button
     const roomSnap = await get(ref(db,`rooms/${S.roomId}`));
@@ -7714,10 +7658,6 @@
   // Race mode toggle
   document.getElementById('tog-race-mode').addEventListener('click',()=>{
     document.getElementById('tog-race-el').classList.toggle('on');
-  });
-  // Bonus answer toggle
-  document.getElementById('tog-bonus-ans').addEventListener('click',()=>{
-    document.getElementById('tog-bonus-el').classList.toggle('on');
   });
   // Creative vote toggle
   document.getElementById('tog-creative-vote').addEventListener('click',()=>{
