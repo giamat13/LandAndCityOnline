@@ -1823,6 +1823,8 @@
         emoji: S_pEmoji || null, frame: S_pFrame || null
       }}
     });
+    // Register in roomActivity so expiry watcher doesn't trigger
+    set(ref(db,'roomActivity/'+roomId), Date.now()).catch(()=>{});
     showScreen('lobby');
     enterRoom();
     setTimeout(() => startGame(), 500);
@@ -4312,6 +4314,7 @@
     clearInterval(S.expiryInt);
     S.warnedExpiry=false;
     if(S.isPermanent)return; // permanent rooms never expire
+    if(S.isDailyChallenge)return; // daily challenge rooms never expire
     S.expiryInt=setInterval(async()=>{
       if(!S.roomId)return clearInterval(S.expiryInt);
       try{
