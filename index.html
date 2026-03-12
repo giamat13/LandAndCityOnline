@@ -281,7 +281,6 @@
   /* spectator / host badges */
   .spec-b{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   .host-b{background:rgba(245,166,35,.12);color:var(--orange);border:1px solid rgba(245,166,35,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
-  .backup-b{background:rgba(15,186,129,.12);color:var(--green);border:1px solid rgba(15,186,129,.25);padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:700}
   @keyframes devBg{
     0%{background-position:0% 50%;transform:scale(1) rotate(-1deg)}
     25%{background-position:50% 50%;transform:scale(1.08) rotate(1deg)}
@@ -3945,7 +3944,7 @@
     do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
     S.roomId=roomId;
     await set(ref(db,'rooms/'+roomId),{
-      host:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,bonusAnswer:S.bonusAnswer,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,
+      host:S.pId,originalHost:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,bonusAnswer:S.bonusAnswer,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,
       uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
@@ -4503,8 +4502,6 @@
       list.innerHTML='';
       const hostSnap=await get(ref(db,`rooms/${S.roomId}/host`));
       const currentHost=hostSnap.val();
-      const backupsSnap=await get(ref(db,`rooms/${S.roomId}/backups`));
-      const backups=backupsSnap.val()||[];
       Object.entries(ps).sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).forEach(([pid,p])=>{
         const c=avc(p.name,p.color);
         const el=document.createElement('div');
@@ -4515,7 +4512,6 @@
         if(pid===S.pId)badges.push('<span class="you-b">אתה</span>');
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
-        const backupIdx=(backups||[]).indexOf(pid);
         if(p.devRole||p.supporterLevel)badges.push(devBadge(p.devRole,p.supporterLevel,p.activeBadge));
         el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
@@ -4525,7 +4521,6 @@
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
             ${badges.join('')}
             ${S.isHost&&pid!==S.pId?`<button class="kick-btn" data-pid="${pid}" data-name="${p.name}" title="הוצא מהחדר" style="background:none;border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;margin-right:2px;">✕</button>`:''}
-            ${S.isHost&&pid!==S.pId?(backupIdx>=0?`<button class="remove-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הסר מגיבויים" style="background:rgba(15,186,129,.15);border:1px solid rgba(15,186,129,.4);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️ ✓</button>`:`<button class="add-backup-btn" data-pid="${pid}" data-name="${p.name}" title="הוסף לגיבויים" style="background:none;border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:3px 8px;font-size:.72rem;cursor:pointer;">🛡️+</button>`):''}
           </div>`;
         list.appendChild(el);
         // 👤 Click to show player profile (not self, not for buttons)
@@ -4544,31 +4539,7 @@
           toast(name+' הוצא מהחדר');
         });
       });
-      // Add backup button handler
-      list.querySelectorAll('.add-backup-btn').forEach(btn=>{
-        btn.addEventListener('click',async()=>{
-          const pid=btn.dataset.pid;
-          const name=btn.dataset.name;
-          const bSnap=await get(ref(db,'rooms/'+S.roomId+'/backups'));
-          const bList=bSnap.val()||[];
-          if(bList.includes(pid))return;
-          bList.push(pid);
-          await set(ref(db,'rooms/'+S.roomId+'/backups'),bList);
-          toast('🛡️ '+name+' נוסף לרשימת הגיבויים');
-        });
-      });
-      // Remove backup button handler
-      list.querySelectorAll('.remove-backup-btn').forEach(btn=>{
-        btn.addEventListener('click',async()=>{
-          const pid=btn.dataset.pid;
-          const name=btn.dataset.name;
-          const bSnap=await get(ref(db,'rooms/'+S.roomId+'/backups'));
-          const bList=(bSnap.val()||[]).filter(id=>id!==pid);
-          await set(ref(db,'rooms/'+S.roomId+'/backups'),bList);
-          toast('🛡️ '+name+' הוסר מרשימת הגיבויים');
-        });
-      });
-      const btn=document.getElementById('start-btn');
+            const btn=document.getElementById('start-btn');
       if(btn)btn.disabled=Object.keys(getEligible(ps)).length<2;
       if(S.isHost&&S.visibility!=='private'){
         update(ref(db,'publicRooms/'+S.roomId),{playerCount:activePlayers.length}).catch(()=>{});
@@ -4625,12 +4596,27 @@
         S.isHost=true;
         document.getElementById('host-ctrl').style.display='block';
         document.getElementById('guest-wait').style.display='none';
-        document.getElementById('backup-claim-btn')?.remove();
         toast('👑 אתה עכשיו המארח!');
       }
     });
 
-    // Backup transfer is automatic via transferHost()
+    // כשהמארח המקורי חוזר — החזר לו את האירוח
+    addL(ref(db,`rooms/${S.roomId}/players`),async snap=>{
+      if(S.isHost)return; // כבר מארח
+      const roomSnap=await get(ref(db,`rooms/${S.roomId}`));
+      const rd=roomSnap.val()||{};
+      if(rd.originalHost!==S.pId)return; // לא המארח המקורי
+      const currentHost=rd.host;
+      if(currentHost===S.pId)return; // כבר מארח
+      // המארח המקורי חוזר — תפוס בחזרה
+      await update(ref(db,`rooms/${S.roomId}`),{host:S.pId});
+      await set(ref(db,`rooms/${S.roomId}/players/${S.pId}/isHost`),true);
+      // הסר isHost מהמארח הזמני
+      if(currentHost){
+        await set(ref(db,`rooms/${S.roomId}/players/${currentHost}/isHost`),false).catch(()=>{});
+      }
+    });
+
 
     addL(ref(db,`rooms/${S.roomId}/status`),async snap=>{
       const st=snap.val();
@@ -6611,31 +6597,16 @@
     if(!S.isHost||!S.roomId)return;
     const snap=await get(ref(db,`rooms/${S.roomId}/players`));
     const ps=snap.val()||{};
-    const bSnap=await get(ref(db,`rooms/${S.roomId}/backups`));
-    const backups=bSnap.val()||[];
-    // Pick randomly from available backups, then fall back to random active player
-    let nextId=null, nextName=null;
-    const availableBackups=backups.filter(bid=>bid!==S.pId&&ps[bid]&&!ps[bid].spectator);
-    if(availableBackups.length>0){
-      // Random backup from pool
-      const pick=availableBackups[Math.floor(Math.random()*availableBackups.length)];
-      nextId=pick; nextName=ps[pick].name;
-    }
-    if(!nextId){
-      const others=Object.entries(ps).filter(([pid,p])=>pid!==S.pId&&!p.spectator);
-      if(others.length>0){
-        const pick=others[Math.floor(Math.random()*others.length)];
-        nextId=pick[0]; nextName=pick[1].name;
-      }
-    }
-    if(nextId){
-      // Keep the rest of the backup pool (minus the new host)
-      const newBackups=backups.filter(id=>id!==nextId);
-      await update(ref(db,`rooms/${S.roomId}`),{host:nextId,backups:newBackups});
+    // העבר לשחקן הוותיק ביותר (לפי joinedAt), למעט המארח הנוכחי
+    const others=Object.entries(ps)
+      .filter(([pid,p])=>pid!==S.pId&&!p.spectator)
+      .sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0));
+    if(others.length>0){
+      const [nextId,nextPlayer]=others[0];
+      await update(ref(db,`rooms/${S.roomId}`),{host:nextId});
       await set(ref(db,`rooms/${S.roomId}/players/${nextId}/isHost`),true);
-      toast(`👑 הבעלות עברה ל-${nextName}`);
+      toast(`👑 הבעלות עברה ל-${nextPlayer.name}`);
     }else{
-      // No other active players — delete the room for everyone (permanent or not)
       await Promise.all([
         remove(ref(db,`rooms/${S.roomId}`)).catch(()=>{}),
         remove(ref(db,`publicRooms/${S.roomId}`)).catch(()=>{}),
@@ -6644,7 +6615,7 @@
     }
   }
 
-  function goHome(){
+    function goHome(){
     resetRoomTheme(); // FEATURE 8
     lacTrack('go_home', { from_room: S.roomId||'none', rounds_played: S.rNum||0 });
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();detachChat();clearSession();
