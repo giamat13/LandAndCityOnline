@@ -2577,25 +2577,7 @@
 
     // Safety 4: only re-render pickers if profile screen is currently visible
     if (activeScreen === 'screen-profile') {
-      // Onboarding continue
-  document.getElementById('btn-onboard-continue').addEventListener('click', ()=>{
-    const n = document.getElementById('onboard-name').value.trim();
-    if(!n){ const el=document.getElementById('onboard-name'); el.style.borderColor='var(--red)'; el.focus(); return; }
-    S.pName = n;
-    if(!S_pColor) S_pColor = '#4cc9f0';
-    document.getElementById('player-name').value = n;
-    saveProfile();
-    updateHomeIdentity();
-    showScreen('home');
-    renderStreakCard();
-    lacTrack('onboarding_complete', { name_length: n.length });
-    setTimeout(showEndowedProgress, 400);
-  });
-  document.getElementById('onboard-name').addEventListener('keydown', e=>{
-    if(e.key==='Enter') document.getElementById('btn-onboard-continue').click();
-  });
-
-  initAvPicker();
+      initAvPicker();
       initEmojiPicker();
       initFramePicker();
       initTagInput();
@@ -3425,6 +3407,24 @@
   });
 
   initAvPicker();
+
+  // Onboarding continue button
+  document.getElementById('btn-onboard-continue').addEventListener('click', ()=>{
+    const n = document.getElementById('onboard-name').value.trim();
+    if(!n){ const el=document.getElementById('onboard-name'); el.style.borderColor='var(--red)'; el.focus(); return; }
+    S.pName = n;
+    if(!S_pColor) S_pColor = AVATAR_COLORS[0];
+    document.getElementById('player-name').value = n;
+    saveProfile();
+    updateHomeIdentity();
+    showScreen('home');
+    renderStreakCard();
+    lacTrack('onboarding_complete', { name_length: n.length });
+    setTimeout(showEndowedProgress, 400);
+  });
+  document.getElementById('onboard-name').addEventListener('keydown', e=>{
+    if(e.key==='Enter') document.getElementById('btn-onboard-continue').click();
+  });
 
   // On load: check if profile exists
   // WARP Proxy מחליף localStorage אחרי שהקוד רץ — מאזינים לשינויים
