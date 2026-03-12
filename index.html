@@ -4897,17 +4897,20 @@
       const dcSnap=await get(dcRef);
       await set(dcRef,(dcSnap.val()||0)+activePlayers.length);
     }catch(e){}
-    // 🌟 Legendary round: schedule first legendary
-    const legendaryNext = getNextLegendaryRound(0);
+    // 🌟 Legendary round: 25% chance even on first round
+    const legendaryEnabled = S.legendaryEnabled !== false;
+    const isLegendaryR1 = legendaryEnabled && (Math.random() < 0.25);
+    const legendaryCatR1 = isLegendaryR1 ? pickLegendaryCat() : null;
     await update(ref(db,`rooms/${S.roomId}`),{
       status:'playing',round:1,letter,uniqueLetters:S.uniqueLetters,
       catStartedAt:Date.now(),currentCatIndex:0,
       catAnswers:null,lastActivity:Date.now(),
-      legendaryNext, legendaryCat:null, isLegendary:false
+      legendaryNext:999, legendaryCat:legendaryCatR1||null, isLegendary:isLegendaryR1
     });
     // Remove from public listing once game starts
     if(S.visibility!=='private') remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});
-    lacTrack('round_start', { round_number: 1, letter: letter, is_legendary: false });
+    lacTrack('round_start', { round_number: 1, letter: letter, is_legendary: isLegendaryR1 });
+    if(isLegendaryR1) lacTrack('legendary_round', { round_number: 1, cat_name: legendaryCatR1?.name });
   };
 
   // ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
