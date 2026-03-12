@@ -852,7 +852,7 @@
   <div id="app">
 
   <!-- ONBOARDING – first time only -->
-  <div id="screen-onboarding" class="screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:24px;">
+  <div id="screen-onboarding" class="screen" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow:hidden;">
     <div style="text-align:center;margin-bottom:32px;">
       <div style="font-size:3.5rem;margin-bottom:10px;">🌍</div>
       <h1 style="font-size:1.8rem;font-weight:900;margin-bottom:6px;">ארץ עיר</h1>
@@ -3275,7 +3275,7 @@
     if(av){
       av.style.background=S_pColor+'33';
       av.style.color=S_pColor;
-      av.textContent=S_pEmoji||S.pName.charAt(0);
+      av.textContent=S_pEmoji||(S.pName||'?').charAt(0);
       av.style.cssText+=';width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;';
       // clear old frame classes
       av.className='';
@@ -3436,12 +3436,24 @@
     // Initialize refId if missing after loading profile
     if(!S_pRefId){S_pRefId=getOrCreateRefId();saveProfile();}
   } else {
-    // First time — show simple onboarding
-    showScreen('onboarding');
-    setTimeout(()=>{
-      const inp = document.getElementById('onboard-name');
-      if(inp) inp.focus();
-    }, 300);
+    // בדוק אם יש שם שמור בכל מקרה (למשל אחרי proxy)
+    const _rawProf = (() => { try { return localStorage.getItem('lac_profile'); } catch(e){ return null; } })();
+    const _hasName = (() => { try { const p = JSON.parse(_rawProf||'{}'); return !!(p && p.name); } catch(e){ return false; } })();
+    if (_hasName) {
+      // יש פרופיל — loadProfile לא עבד מסיבה כלשהי, ננסה שוב
+      loadProfile();
+      setupProfileScreen();
+      showScreen('home');
+      updateHomeIdentity();
+      renderStreakCard();
+    } else {
+      // פעם ראשונה באמת — הצג מסך onboarding
+      showScreen('onboarding');
+      setTimeout(()=>{
+        const inp = document.getElementById('onboard-name');
+        if(inp) inp.focus();
+      }, 300);
+    }
   }
 
   // ─── VISIBILITY SELECTOR ──────────────────────────────────────────
@@ -4330,7 +4342,7 @@
   function showEntryEffect(player, pid){
     const effect=player.entryEffect||'none';
     const c=avc(player.name,player.color);
-    const avatarContent=player.emoji||player.name.charAt(0);
+    const avatarContent=player.emoji||(player.name||'?').charAt(0);
     const isMainDev=player.devRole==='main-dev';
     const frameClass=isMainDev?'av-frame-main-dev':(player.frame?'av-frame-'+player.frame:'');
 
@@ -4463,7 +4475,7 @@
         const c=avc(p.name,p.color);
         const el=document.createElement('div');
         el.className='pl-item';
-        const avatarContent=p.emoji||p.name.charAt(0);
+        const avatarContent=p.emoji||(p.name||'?').charAt(0);
         const frameClass=(p.devRole==='main-dev')?'av-frame-main-dev':(p.frame?'av-frame-'+p.frame:'');
         const badges=[];
         if(pid===S.pId)badges.push('<span class="you-b">אתה</span>');
@@ -4557,7 +4569,7 @@
           const item=document.createElement('div');
           item.className='req-item';
           item.innerHTML=`
-            <div class="pl-av" style="width:32px;height:32px;background:${c}22;color:${c};border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;">${r.name.charAt(0)}</div>
+            <div class="pl-av" style="width:32px;height:32px;background:${c}22;color:${c};border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;">${(r.name||'?').charAt(0)}</div>
             <span class="req-name">${r.name}</span>
             <button class="btn-approve">✓ אשר</button>
             <button class="btn-reject">✕</button>`;
@@ -5204,7 +5216,7 @@
         const typing=!d; // hasn't submitted yet
         const tagsHtml=ansArr.map(a=>`<span style="background:rgba(15,186,129,.15);border:1px solid rgba(15,186,129,.35);color:var(--green);padding:3px 10px;border-radius:100px;font-size:.82rem;font-weight:700;">${a}</span>`).join('');
         return `<div style="display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px 14px;margin-bottom:7px;">
-          <div style="width:30px;height:30px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;">${p.name.charAt(0)}</div>
+          <div style="width:30px;height:30px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;">${(p.name||'?').charAt(0)}</div>
           <div style="flex:1;">
             <div style="font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:4px;">${p.name}</div>
             <div style="display:flex;flex-wrap:wrap;gap:5px;min-height:22px;">
@@ -6053,7 +6065,7 @@
           ${(p.devRole||p.supporterLevel)?devBadge(p.devRole,p.supporterLevel,p.activeBadge):''}
           ${p.tag?`<span class="player-tag" style="font-size:.58rem;">${p.tag}</span>`:''}
         </div>
-        <div class="pod-av" style="width:${ri===1?52:ri===0?42:36}px;height:${ri===1?52:ri===0?42:36}px;background:${c}22;color:${c};font-size:${ri===1?'1.4rem':ri===0?'1.1rem':'.9rem'}">${p.name.charAt(0)}</div>
+        <div class="pod-av" style="width:${ri===1?52:ri===0?42:36}px;height:${ri===1?52:ri===0?42:36}px;background:${c}22;color:${c};font-size:${ri===1?'1.4rem':ri===0?'1.1rem':'.9rem'}">${(p.name||'?').charAt(0)}</div>
         <div class="pod-block" style="height:${heights[ri]}px;background:linear-gradient(180deg,${c}33,${c}11);border:1px solid ${c}44;">${medals[ri]}</div>
         <div class="pod-pts">${p.score||0} נק'</div>`;
       wrap.appendChild(div);
@@ -6159,7 +6171,7 @@
         const avg=p.games>0?Math.round(p.total/p.games):0;
         return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
           <div style="width:24px;text-align:center;font-size:1rem;">${medals[i]||'#'+(i+1)}</div>
-          <div style="width:34px;height:34px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">${p.emoji||p.name.charAt(0)}</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">${p.emoji||(p.name||'?').charAt(0)}</div>
           <div style="flex:1;">
             <div style="font-weight:800;font-size:.9rem;">${p.name}</div>
             <div style="font-size:.72rem;color:var(--muted);">${p.games} משחקים · ממוצע ${avg} נק'</div>
