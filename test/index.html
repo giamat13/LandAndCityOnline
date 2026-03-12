@@ -1826,9 +1826,8 @@
     });
     // Register in roomActivity so expiry watcher doesn't trigger
     set(ref(db,'roomActivity/'+roomId), Date.now()).catch(()=>{});
-    showScreen('lobby');
-    enterRoom();
-    setTimeout(() => startGame(), 500);
+    // דלג על הלובי — עבור ישר למשחק
+    await startGame();
   }
   async function saveDailyChallengeScore(score) {
     if (!S.isDailyChallenge || !S.dailyChallengeKey) return;
@@ -4919,7 +4918,7 @@
     const s=await get(ref(db,`rooms/${S.roomId}/players`));
     const allPs=s.val()||{};
     const activePlayers=Object.entries(getEligible(allPs));
-    if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
+    if(!S.isDailyChallenge && activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
     const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
     // Track daily active players (for social proof on share card)
@@ -4943,6 +4942,7 @@
     if(S.visibility!=='private') remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});
     lacTrack('round_start', { round_number: 1, letter: letter, is_legendary: isLegendaryR1 });
     if(isLegendaryR1) lacTrack('legendary_round', { round_number: 1, cat_name: legendaryCatR1?.name });
+    if(S.isDailyChallenge) await loadRound();
   };
 
   // ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
