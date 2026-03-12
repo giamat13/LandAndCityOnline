@@ -2579,26 +2579,17 @@
     if (activeScreen === 'screen-profile') {
       // Onboarding continue
   document.getElementById('btn-onboard-continue').addEventListener('click', ()=>{
-    console.log('[Onboarding] button clicked');
     const n = document.getElementById('onboard-name').value.trim();
-    console.log('[Onboarding] name entered:', n);
-    if(!n){ const el=document.getElementById('onboard-name'); el.style.borderColor='var(--red)'; el.focus(); console.log('[Onboarding] no name, aborting'); return; }
-    _initResolved = true; // מנע onboarding כפול
+    if(!n){ const el=document.getElementById('onboard-name'); el.style.borderColor='var(--red)'; el.focus(); return; }
     S.pName = n;
+    if(!S_pColor) S_pColor = '#4cc9f0';
     document.getElementById('player-name').value = n;
-    console.log('[Onboarding] calling setupProfileScreen');
-    setupProfileScreen();
-    console.log('[Onboarding] calling saveProfile');
     saveProfile();
-    setAnalyticsUserProps();
     updateHomeIdentity();
-    console.log('[Onboarding] calling showScreen home');
     showScreen('home');
-    console.log('[Onboarding] calling renderStreakCard');
     renderStreakCard();
     lacTrack('onboarding_complete', { name_length: n.length });
     setTimeout(showEndowedProgress, 400);
-    console.log('[Onboarding] done!');
   });
   document.getElementById('onboard-name').addEventListener('keydown', e=>{
     if(e.key==='Enter') document.getElementById('btn-onboard-continue').click();
