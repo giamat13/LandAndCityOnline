@@ -799,9 +799,6 @@
   .hlb-desc{font-size:.78rem;color:rgba(255,255,255,.7);margin-top:2px;}
   .hlb-timer{font-size:.68rem;color:var(--muted);margin-top:4px;}
   .hlb-badge{background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.4);border-radius:100px;font-size:.7rem;font-weight:800;color:var(--orange);padding:3px 10px;white-space:nowrap;flex-shrink:0;}
-  /* Feature 5: Daily challenge */
-  #daily-challenge-banner{display:none;background:linear-gradient(135deg,#0d2b1a,#1a0d2b);border:1.5px solid rgba(15,186,129,.4);border-radius:14px;padding:13px 16px;margin-bottom:12px;cursor:pointer;transition:transform .15s;}
-  #daily-challenge-banner:hover{transform:translateY(-1px);}
   .dcb-inner{display:flex;align-items:center;gap:12px;}
   .dcb-icon{font-size:1.8rem;flex-shrink:0;}
   .dcb-text{flex:1;}
@@ -1036,18 +1033,6 @@
           <div class="hlb-timer" id="hlb-timer">מתחדש בעוד ...</div>
         </div>
         <div class="hlb-badge">×2 🔥</div>
-      </div>
-    </div>
-    <!-- FEATURE 5: Daily challenge banner -->
-    <div id="daily-challenge-banner">
-      <div class="dcb-inner">
-        <div class="dcb-icon">🗓️</div>
-        <div class="dcb-text">
-          <div class="dcb-title">אתגר יומי</div>
-          <div class="dcb-name" id="dc-banner-name">אתגר היום</div>
-          <div class="dcb-sub" id="dc-banner-sub">לחץ לפרטים ולוח המובילים</div>
-        </div>
-        <div class="dcb-arrow">←</div>
       </div>
     </div>
     <!-- Streak Card -->
@@ -1682,167 +1667,6 @@
   function isHourLetterActive(letter) { return letter === getHourLetter(); }
 
   // ═══════════════════════════════════════════════════════════════
-  // ─── FEATURE 5: DAILY CHALLENGE ─────────────────────────────────
-  // ═══════════════════════════════════════════════════════════════
-  function getDailyKey() {
-    const d = new Date();
-    return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-  }
-  // Generate a deterministic daily challenge from a date seed (no admin needed)
-  function generateDailyChallenge(dateKey) {
-    // Simple deterministic seed from date string
-    let seed = Array.from(dateKey).reduce((a, c) => a + c.charCodeAt(0), 0);
-    const rng = (n) => { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return Math.abs(seed) % n; };
-    const letter = LETTERS_ARR[rng(LETTERS_ARR.length)];
-    // Pick 5 categories from DCATS deterministically
-    const dcatsCopy = [...DCATS];
-    const cats = [];
-    while (cats.length < 5 && dcatsCopy.length) {
-      const idx = rng(dcatsCopy.length);
-      cats.push(dcatsCopy.splice(idx, 1)[0]);
-    }
-    // Random game settings (deterministic from seed)
-    const rTimes = [30, 45, 60];
-    const rTime = rTimes[rng(rTimes.length)];
-    const raceMode = rng(100) < 30;       // 30% chance
-    const creativeVote = rng(100) < 70;   // 70% chance
-    const uniqueLetters = rng(100) < 20;  // 20% chance
-    const legendaryEnabled = rng(100) < 40; // 40% chance
-    return { letter, cats, dateKey, rTime, raceMode, creativeVote, uniqueLetters, legendaryEnabled };
-  }
-  async function loadDailyChallenge() {
-    const key = getDailyKey();
-    const banner = document.getElementById('daily-challenge-banner');
-    if (!banner) return;
-    // Check if already played today
-    const played = (() => { try { return JSON.parse(localStorage.getItem('aretz_dc_played') || '{}'); } catch(e) { return {}; } })();
-    const dc = generateDailyChallenge(key);
-    const nameEl = document.getElementById('dc-banner-name');
-    const subEl = document.getElementById('dc-banner-sub');
-    if (nameEl) nameEl.textContent = `אות ${dc.letter}' — ${dc.cats.map(c=>c.emoji).join('')}`;
-    if (subEl) {
-      const settingsTags = [
-        `⏱️${dc.rTime===0?'∞':dc.rTime+'שנ'}`,
-        dc.raceMode ? '🏎️מרוץ' : null,
-        dc.uniqueLetters ? '🔤אות לכל' : null,
-      ].filter(Boolean).join(' · ');
-      if (played[key]) {
-        subEl.textContent = `שיחקת היום ✅ — לחץ לראות לוח מובילים`;
-      } else {
-        subEl.textContent = `5 קטגוריות · אות ${dc.letter}' · ${settingsTags}`;
-      }
-    }
-    banner.style.display = 'block';
-    banner.onclick = () => openDailyChallengeModal(dc, played[key]);
-  }
-  async function openDailyChallengeModal(dc, alreadyPlayed) {
-    lacTrack('daily_challenge_open', { date_key: dc.dateKey, already_played: !!alreadyPlayed });
-    // Fetch leaderboard
-    let lb = {};
-    try {
-      const snap = await get(ref(db, `dailyChallenge/${dc.dateKey}/scores`));
-      lb = snap.val() || {};
-    } catch(e) {}
-    const lbArr = Object.entries(lb).sort((a,b) => b[1].score - a[1].score).slice(0, 10);
-    const medals = ['🥇','🥈','🥉'];
-    const lbHtml = lbArr.length ? lbArr.map(([pid, d], i) => {
-      const isMe = pid === S.pId || d.name === S.pName;
-      return `<div class="dc-lb-row${isMe?' dc-lb-you':''}">
-        <div class="dc-lb-place">${medals[i] || `#${i+1}`}</div>
-        <div class="dc-lb-name">${d.name}${isMe?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</div>
-        <div class="dc-lb-score">${d.score} נק'</div>
-      </div>`;
-    }).join('') : '<div style="color:var(--muted);font-size:.82rem;padding:8px 0;text-align:center;">עדיין אף אחד לא שיחק היום. היה הראשון! 🏆</div>';
-
-    const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center;';
-    modal.innerHTML = `<div style="background:var(--surface);border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:82vh;overflow-y:auto;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div>
-          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:3px;">🗓️ אתגר יומי</div>
-          <div style="font-size:1.2rem;font-weight:900;">אות <span style="color:var(--green);">${dc.letter}'</span></div>
-        </div>
-        <button id="dc-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;">✕ סגור</button>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-        ${dc.cats.map(c=>`<span style="background:var(--s2);border:1px solid var(--border);border-radius:100px;padding:4px 12px;font-size:.8rem;font-weight:700;">${c.emoji} ${c.name}</span>`).join('')}
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
-        <span style="background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.25);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:var(--blue);">⏱️ ${dc.rTime===0?'ללא הגבלה':dc.rTime+' שנ\''}</span>
-        ${dc.raceMode?'<span style="background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:var(--orange);">🏎️ מצב מרוץ</span>':''}
-        ''
-        ${dc.creativeVote?'<span style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.25);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:#a855f7;">🌟 הצבעת יצירתיות</span>':''}
-        ${dc.uniqueLetters?'<span style="background:rgba(233,69,96,.1);border:1px solid rgba(233,69,96,.25);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:var(--red);">🔤 אות לכל קטגוריה</span>':''}
-        ${dc.legendaryEnabled?'<span style="background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:100px;padding:3px 10px;font-size:.75rem;font-weight:700;color:var(--orange);">✨ סיבוב אגדי</span>':''}
-      </div>
-      ${alreadyPlayed ? `<div style="background:rgba(15,186,129,.1);border:1px solid rgba(15,186,129,.3);border-radius:12px;padding:12px;text-align:center;margin-bottom:16px;font-weight:700;color:var(--green);">✅ שיחקת היום! הניקוד שלך: ${alreadyPlayed.score} נק'</div>` : `<button id="dc-play-btn" class="btn btn-p" style="margin-bottom:16px;">🎮 שחק אתגר היום</button>`}
-      <h3 style="margin-bottom:10px;">🏆 לוח מובילים יומי</h3>
-      ${lbHtml}
-    </div>`;
-    document.body.appendChild(modal);
-    modal.querySelector('#dc-close').addEventListener('click', () => modal.remove());
-    const playBtn = modal.querySelector('#dc-play-btn');
-    if (playBtn) {
-      playBtn.addEventListener('click', () => {
-        modal.remove();
-        startDailyChallenge(dc);
-      });
-    }
-    // Close on outside click
-    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  }
-  async function startDailyChallenge(dc) {
-    if (!S.pName) { toast('נא להזין שם שחקן קודם'); return; }
-    lacTrack('daily_challenge_start', { date_key: dc.dateKey, letter: dc.letter });
-    // Always create a fresh room (avoids bugs if old room was deleted)
-    S.pId = S.pId || gid(10);
-    const roomId = 'dc_' + gid(10); // fresh ID each play
-    S.roomId = roomId;
-    S.isHost = true;
-    S.cats = dc.cats.map(c => ({id: c.id, name: c.name, emoji: c.emoji}));
-    S.letter = dc.letter;
-    S.rNum = 1;
-    S.totScores = {};
-    S.rTime = dc.rTime || 45;
-    S.raceMode = dc.raceMode || false;
-    S.creativeVoteEnabled = dc.creativeVote !== false;
-    S.uniqueLetters = dc.uniqueLetters || false;
-    S.legendaryEnabled = dc.legendaryEnabled !== false;
-    S.isDailyChallenge = true;
-    S.dailyChallengeKey = dc.dateKey;
-    clearSession(); // אל תשחזר לחדר הזה בטעינה הבאה
-    await set(ref(db, `rooms/${roomId}`), {
-      host: S.pId, status: 'lobby', roundTime: S.rTime,
-      raceMode: S.raceMode,
-      creativeVoteEnabled: S.creativeVoteEnabled,
-      uniqueLetters: S.uniqueLetters, legendaryEnabled: S.legendaryEnabled,
-      categories: S.cats, round: 0, letter: dc.letter,
-      createdAt: Date.now(), lastActivity: Date.now(), currentCatIndex: 0,
-      isDailyChallenge: true, dailyKey: dc.dateKey,
-      players: { [S.pId]: { name: S.pName, score: 0, joinedAt: Date.now(), isHost: true,
-        color: S_pColor, devRole: getPrimaryDevRole(), supporterLevel: S_pSupporterLevel || 0,
-        emoji: S_pEmoji || null, frame: S_pFrame || null
-      }}
-    });
-    // Register in roomActivity so expiry watcher doesn't trigger
-    set(ref(db,'roomActivity/'+roomId), Date.now()).catch(()=>{});
-    // דלג על הלובי — עבור ישר למשחק
-    await startGame();
-  }
-  async function saveDailyChallengeScore(score) {
-    if (!S.isDailyChallenge || !S.dailyChallengeKey) return;
-    const key = S.dailyChallengeKey;
-    const played = (() => { try { return JSON.parse(localStorage.getItem('aretz_dc_played') || '{}'); } catch(e) { return {}; } })();
-    if (played[key]) return; // don't overwrite
-    played[key] = { score, ts: Date.now() };
-    try { localStorage.setItem('aretz_dc_played', JSON.stringify(played)); } catch(e) {}
-    // Save to Firebase leaderboard
-    try {
-      await set(ref(db, `dailyChallenge/${key}/scores/${S.pId}`), { name: S.pName, score, ts: Date.now() });
-    } catch(e) {}
-    lacTrack('daily_challenge_complete', { date_key: key, score });
-  }
-
   // ═══════════════════════════════════════════════════════════════
   // ─── FEATURE 8: ROOM THEME ──────────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
@@ -3535,9 +3359,8 @@
   document.getElementById('btn-refresh-pub').addEventListener('click',initPublicRooms);
   initPublicRooms();
   renderMyRooms();
-  // FEATURE 6 & 5: Hour letter banner + daily challenge
+  // FEATURE 6: Hour letter banner
   renderHourLetterBanner();
-  // loadDailyChallenge() is called after DCATS is initialized below
   // FEATURE 3: Init notification button state
   updateNotifButton();
   scheduleStreakNotif(); // reschedule if already granted
@@ -3659,8 +3482,7 @@
   // ─── SESSION PERSISTENCE ──────────────────────────────────────────
   function saveSession(){
     try{
-      if(S.isDailyChallenge)return; // אל תשמור session לאתגר יומי
-      localStorage.setItem('lac_s',JSON.stringify({
+        localStorage.setItem('lac_s',JSON.stringify({
         roomId:S.roomId,pId:S.pId,pName:S.pName,
         isHost:S.isHost,rNum:S.rNum,totScores:S.totScores,
         isSpectator:S.isSpectator,totalRounds:S.totalRounds
@@ -3671,12 +3493,10 @@
 
   async function restoreSession(){
     try{
-      if(S.isDailyChallenge)return; // אתגר יומי — אל תשחזר חדר ישן
       const raw=localStorage.getItem('lac_s');
       if(!raw)return;
       const sess=JSON.parse(raw);
       if(!sess.roomId||!sess.pId)return;
-      if(sess.roomId.startsWith('dc_'))return; // אל תשחזר חדרי אתגר יומי ישנים
       const snap=await get(ref(db,'rooms/'+sess.roomId));
       if(!snap.exists()){clearSession();return;}
       const room=snap.val();
@@ -3801,9 +3621,6 @@
     });
   }
   initGrid();
-  // FEATURE 5: Load daily challenge now that DCATS is defined
-  loadDailyChallenge();
-
   // Scoreboard mode toggle
   document.getElementById('tog-sb-mode').addEventListener('click',()=>{
     S.cumulativeSB=!S.cumulativeSB;
@@ -4317,7 +4134,6 @@
     clearInterval(S.expiryInt);
     S.warnedExpiry=false;
     if(S.isPermanent)return; // permanent rooms never expire
-    if(S.isDailyChallenge)return; // daily challenge rooms never expire
     S.expiryInt=setInterval(async()=>{
       if(!S.roomId)return clearInterval(S.expiryInt);
       try{
@@ -4918,16 +4734,9 @@
     const s=await get(ref(db,`rooms/${S.roomId}/players`));
     const allPs=s.val()||{};
     const activePlayers=Object.entries(getEligible(allPs));
-    if(!S.isDailyChallenge && activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
-    const letter=S.isDailyChallenge ? S.letter : LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
+    const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
-    // Track daily active players (for social proof on share card)
-    try{
-      const today=new Date().toISOString().slice(0,10).replace(/-/g,'');
-      const dcRef=ref(db,`dailyStats/${today}/players`);
-      const dcSnap=await get(dcRef);
-      await set(dcRef,(dcSnap.val()||0)+activePlayers.length);
-    }catch(e){}
     // 🌟 Legendary round: 25% chance even on first round
     const legendaryEnabled = S.legendaryEnabled !== false;
     const isLegendaryR1 = legendaryEnabled && (Math.random() < 0.25);
@@ -4942,7 +4751,6 @@
     if(S.visibility!=='private') remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});
     lacTrack('round_start', { round_number: 1, letter: letter, is_legendary: isLegendaryR1 });
     if(isLegendaryR1) lacTrack('legendary_round', { round_number: 1, cat_name: legendaryCatR1?.name });
-    if(S.isDailyChallenge) await loadRound();
   };
 
   // ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
@@ -6249,12 +6057,6 @@
     if(myPlace === 1){ const w=parseInt(localStorage.getItem('aretz_wins')||'0')+1; localStorage.setItem('aretz_wins',w); }
     // Track top-3 finishes
     if(myPlace <= 3){ const t3=parseInt(localStorage.getItem('aretz_top3')||'0')+1; localStorage.setItem('aretz_top3',t3); }
-    // FEATURE 5: Save daily challenge score
-    if (S.isDailyChallenge) {
-      await saveDailyChallengeScore(players[S.pId]?.score || 0);
-      // Refresh banner after game
-      setTimeout(() => loadDailyChallenge(), 1000);
-    }
     // FEATURE 2: Save best unique word from this game (tracked in shareResults/earlier)
     try {
       const pending = localStorage.getItem('aretz_pending_best_word');
@@ -7552,14 +7354,6 @@
       if (bestWord) {
         try { localStorage.setItem('aretz_pending_best_word', bestWord); } catch(e) {}
       }
-
-      // ── Daily player count ───────────────────────────────────────
-      let dailyCount=0;
-      try{
-        const today=new Date().toISOString().slice(0,10).replace(/-/g,'');
-        const dcSnap=await get(ref(db,`dailyStats/${today}/players`));
-        dailyCount=dcSnap.val()||0;
-      }catch(e){}
 
       // Build image
       const url = location.origin + location.pathname;
