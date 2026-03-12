@@ -1297,7 +1297,7 @@
         🔗 העתק לינק
       </button>
     </div>
-    <div class="card"><h3>🎮 קטגוריות</h3><div class="cats-prev" id="lobby-cats"></div></div>
+    <div class="card"><h3>🎮 קטגוריות</h3><div class="cats-prev" id="lobby-cats"></div><div id="lobby-est-time" style="margin-top:10px;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:5px;">⏱️ <span id="lobby-est-time-text"></span></div></div>
     <div class="card">
       <h3>👥 שחקנים (<span id="pl-count">0</span>)</h3>
       <div class="pl-list" id="pl-list"></div>
@@ -4248,6 +4248,8 @@
       const rntxt=document.getElementById('lobby-room-name-text');
       if(rntxt){rntxt.textContent='🏠 '+newName;document.getElementById('lobby-room-name-wrap').style.display='block';}
       backdrop.remove();
+      // עדכון הזמן המשוער
+      updateEstimatedTime();
       toast('✅ הגדרות עודכנו!');
     });
   }
@@ -4533,6 +4535,8 @@
     if(_becomeSpecBtn) _becomeSpecBtn.style.display=(!S.isSpectator&&!S.isHost)?'block':'none';
     document.getElementById('guest-wait').style.display=S.isHost?'none':'block';
     document.getElementById('lobby-cats').innerHTML=S.cats.map(c=>`<span class="cb">${c.emoji} ${c.name}</span>`).join('');
+    // Update estimated time
+    updateEstimatedTime();
     showScreen('lobby');
     enterRoom();
 
@@ -5286,6 +5290,22 @@
     const bar=document.getElementById('timer-bar');
     bar.style.width=pct+'%';
     bar.className='tbar'+(pct<30?' warn':'');
+  }
+
+  // עדכון הזמן המשוער בהלו
+  function updateEstimatedTime(){
+    const el = document.getElementById('lobby-est-time-text');
+    if (!el) return;
+    const cats = S.cats.length || 1;
+    const rt = S.rTime || 30;
+    if (rt === 0) { el.textContent = 'זמן פר סיבוב: ∞'; return; }
+    // In race mode only one category runs until someone submits — estimate ~15s avg
+    const catTime = S.raceMode ? 15 : rt;
+    const totalSec = cats * catTime + 20; // +20s for voting at end of round
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2,'0')} דקות` : `${secs} שניות`;
+    el.textContent = `זמן פר סיבוב: ~${timeStr}${S.raceMode ? ' (מצב מרוץ)' : ''}`;
   }
 
   // ─── SPECTATOR LIVE VIEW ──────────────────────────────────────────
