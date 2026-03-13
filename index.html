@@ -1235,6 +1235,10 @@
         <div class="tog on" id="tog-legendary-el"></div>
         <span class="tog-label">✨ סיבוב אגדי — קטגוריה מפתיעה אקראית (25% סיכוי)</span>
       </div>
+      <div class="tog-wrap" id="tog-bonus-cat-mode" style="margin-bottom:16px;">
+        <div class="tog" id="tog-bonus-cat-el"></div>
+        <span class="tog-label">💎 קטגוריית בונוס — כל שחקן בוחר קטגוריה אחת לנקודות ×2</span>
+      </div>
       <h3 style="margin-bottom:10px;">🌐 נראות חדר</h3>
       <div class="vis-opts" id="vis-opts">
         <div class="vis-opt sel" data-v="private">
@@ -1526,6 +1530,17 @@
     <div class="ol-label">האות של הסיבוב</div>
     <div class="ol-big" id="ol-letter">א</div>
     <div class="ol-go">יאללה! 🚀</div>
+  </div>
+
+  <!-- BONUS CAT PICKER OVERLAY -->
+  <div id="bonus-cat-overlay" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(10,10,20,.88);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
+    <div style="text-align:center;margin-bottom:4px;">
+      <div style="font-size:2.5rem;margin-bottom:8px;">💎</div>
+      <div style="font-size:1.4rem;font-weight:900;color:#fff;">בחר קטגוריית בונוס</div>
+      <div style="color:rgba(234,234,234,.6);font-size:.88rem;margin-top:6px;">הקטגוריה שתבחר תיתן לך נקודות ×2 בסיבוב זה</div>
+    </div>
+    <div id="bonus-cat-list" style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;"></div>
+    <div id="bonus-cat-wait" style="display:none;text-align:center;color:rgba(234,234,234,.6);font-size:.9rem;">✅ בחרת! ממתין לשאר...</div>
   </div>
 
   <script type="module">
@@ -2816,6 +2831,7 @@
     vetoThresholdValue:50,
     raceMode:false,
     creativeVoteEnabled:true,
+    bonusCatEnabled:false,
     tournamentMode:false,
     tournamentBracket:null
   };
@@ -3675,7 +3691,7 @@
     {id:'personality',name:'אישיות',emoji:'😊',on:false},
     {id:'song',name:'שיר',emoji:'🎵',on:false},
     {id:'language',name:'שפה',emoji:'🗣️',on:false},
-    {id:'movie',name:'סרט',emoji:'🎬',on:false},
+    {id:'movie',name:'סרט או סדרה',emoji:'🎬',on:false},
     {id:'fictional',name:'דמויות בדיוניות',emoji:'🎭',on:false},
     {id:'apps',name:'אפליקציות/אתרים',emoji:'💻',on:false},
   ];
@@ -3989,6 +4005,7 @@
     S.raceMode=document.getElementById('tog-race-el').classList.contains('on');
     S.creativeVoteEnabled=document.getElementById('tog-creative-el').classList.contains('on');
     S.legendaryEnabled=document.getElementById('tog-legendary-el')?.classList.contains('on')!==false;
+    S.bonusCatEnabled=document.getElementById('tog-bonus-cat-el').classList.contains('on');
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
 
     // Generate room ID without async collision check (8-char ID is collision-safe enough)
@@ -3996,7 +4013,7 @@
     S.roomId=roomId;
 
     const roomData={
-      host:S.pId,originalHost:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,
+      host:S.pId,originalHost:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,bonusCatEnabled:S.bonusCatEnabled||false,
       uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
@@ -5014,6 +5031,38 @@
     if(isLegendaryR1) lacTrack('legendary_round', { round_number: 1, cat_name: legendaryCatR1?.name });
   };
 
+  // ─── BONUS CAT PICKER ───────────────────────────────────────────
+  function showBonusCatPicker(cats){
+    return new Promise(resolve=>{
+      const overlay=document.getElementById('bonus-cat-overlay');
+      const list=document.getElementById('bonus-cat-list');
+      const waitDiv=document.getElementById('bonus-cat-wait');
+      list.innerHTML='';
+      waitDiv.style.display='none';
+      overlay.style.display='flex';
+      cats.forEach(cat=>{
+        const btn=document.createElement('button');
+        btn.style.cssText='display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:14px;padding:14px 18px;font-family:Heebo,sans-serif;cursor:pointer;transition:all .2s;color:#fff;font-size:.95rem;font-weight:700;width:100%;';
+        btn.innerHTML=`<span style="font-size:1.5rem">${cat.emoji}</span><span style="flex:1;text-align:right;">${cat.name}</span><span style="font-size:.8rem;color:rgba(255,215,0,.85);font-weight:900;">×2 נק'</span>`;
+        btn.onmouseover=()=>{btn.style.borderColor='rgba(212,175,55,.6)';btn.style.background='rgba(212,175,55,.1)';};
+        btn.onmouseout=()=>{if(!btn.dataset.selected){btn.style.borderColor='rgba(255,255,255,.12)';btn.style.background='rgba(255,255,255,.06)';}};
+        btn.addEventListener('click',async()=>{
+          if(btn.dataset.selected)return;
+          btn.dataset.selected='1';
+          list.querySelectorAll('button').forEach(b=>{b.disabled=true;b.style.opacity=b===btn?'1':'.4';});
+          btn.style.borderColor='rgba(212,175,55,.8)';btn.style.background='rgba(212,175,55,.18)';
+          const bonusFlag=`bonus_chosen_${S.roomId}_r${S.rNum}`;
+          sessionStorage.setItem(bonusFlag,cat.id);
+          await set(ref(db,`rooms/${S.roomId}/bonusCats/${S.pId}`),{catId:cat.id,round:S.rNum}).catch(()=>{});
+          list.style.display='none';
+          waitDiv.style.display='block';
+          setTimeout(()=>{overlay.style.display='none';resolve();},600);
+        });
+        list.appendChild(btn);
+      });
+    });
+  }
+
   // ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
   async function loadRound(){
     const snap=await get(ref(db,`rooms/${S.roomId}`));
@@ -5026,6 +5075,7 @@
     S.uniqueLetters=r.uniqueLetters||false;
     S.raceMode=r.raceMode||false;
     S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
+    S.bonusCatEnabled=r.bonusCatEnabled||false;
     S.isDailyChallenge=r.isDailyChallenge||false;
     S.catSubmitted=false;
 
@@ -5049,6 +5099,16 @@
     }
 
     enterRoom();
+
+    // 💎 Bonus cat picker — show on first cat, if enabled and not yet chosen this round
+    if(S.bonusCatEnabled && S.currentCatIndex===0 && !S.isSpectator){
+      const bonusFlag=`bonus_chosen_${S.roomId}_r${S.rNum}`;
+      const alreadyChosen=sessionStorage.getItem(bonusFlag);
+      if(!alreadyChosen){
+        await showBonusCatPicker(S.cats);
+      }
+    }
+
     // Check if we already submitted this category
     const cat=S.cats[S.currentCatIndex];
     if(cat){
@@ -5556,6 +5616,13 @@
     }
     const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=psSnap.val()||{};
+    // 💎 Bonus cats: map pid -> catId for this round
+    const bonusCatsData=room.bonusCats||{};
+    const bonusCatMap={}; // pid -> catId (only if round matches)
+    Object.entries(bonusCatsData).forEach(([pid,d])=>{
+      if(d&&d.round===room.round)bonusCatMap[pid]=d.catId;
+    });
+    const bonusCatEnabled=room.bonusCatEnabled||false;
     const totalPlayers=Object.keys(players).length;
 
     const container=document.getElementById('vote-cats');
@@ -5697,6 +5764,13 @@
     const vetoes=room.vetoes||{};
     const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=psSnap.val()||{};
+    // 💎 Bonus cats: map pid -> catId for this round
+    const bonusCatsData=room.bonusCats||{};
+    const bonusCatMap={}; // pid -> catId (only if round matches)
+    Object.entries(bonusCatsData).forEach(([pid,d])=>{
+      if(d&&d.round===room.round)bonusCatMap[pid]=d.catId;
+    });
+    const bonusCatEnabled=room.bonusCatEnabled||false;
     const totalPlayers=Object.keys(players).length;
     const vThreshType=room.vetoThresholdType||'percent';
     const vThreshVal=room.vetoThresholdValue!=null?room.vetoThresholdValue:50;
@@ -5853,6 +5927,13 @@
     S.visibility=room.visibility||'private';
     const psSnap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=psSnap.val()||{};
+    // 💎 Bonus cats: map pid -> catId for this round
+    const bonusCatsData=room.bonusCats||{};
+    const bonusCatMap={}; // pid -> catId (only if round matches)
+    Object.entries(bonusCatsData).forEach(([pid,d])=>{
+      if(d&&d.round===room.round)bonusCatMap[pid]=d.catId;
+    });
+    const bonusCatEnabled=room.bonusCatEnabled||false;
 
     // Build disqualified sets
     const disqMap=room.disqualified||{};
@@ -5877,6 +5958,7 @@
 
     const rScores={};
     Object.entries(players).forEach(([pid,p])=>{if(!p.spectator)rScores[pid]=0;});
+    const bonusCatExtraScores={}; // extra pts to add for bonus cat (×1 extra = total ×2)
 
     const bycat=document.getElementById('res-cats');
     bycat.innerHTML='';
@@ -5902,11 +5984,21 @@
           const isUniq=counts[al.toLowerCase()]===1;
           const base=isUniq?10:5;
           const rareBonus=isUniq?2:0;
-          rScores[pid]=(rScores[pid]||0)+(base+rareBonus);
+          const catPts=base+rareBonus;
+          rScores[pid]=(rScores[pid]||0)+catPts;
+          // Track extra for bonus cat (will add again at end = total ×2)
+          if(bonusCatEnabled && bonusCatMap[pid]===cat.id){
+            bonusCatExtraScores[pid]=(bonusCatExtraScores[pid]||0)+catPts;
+          }
         });
         // Time bonus only once per player (on first valid answer)
         const firstValid=ansArr.find(a=>{const al=(a||'').trim();return al&&!disqSet.has(al.toLowerCase());});
-        if(firstValid&&timeBonus>0)rScores[pid]=(rScores[pid]||0)+timeBonus;
+        if(firstValid&&timeBonus>0){
+          rScores[pid]=(rScores[pid]||0)+timeBonus;
+          if(bonusCatEnabled && bonusCatMap[pid]===cat.id){
+            bonusCatExtraScores[pid]=(bonusCatExtraScores[pid]||0)+timeBonus;
+          }
+        }
       });
       // Build table rows — one row per answer per player (skip spectators)
       const rowsArr=[];
@@ -5934,14 +6026,16 @@
           const rareLbl=u?'<span class="rare-badge">💎 נדיר +2</span>':'';
           const isCreativeWin=creativeWinner&&creativeWinner.pid===pid&&creativeWinner.answer===a;
           const creativeLbl=isCreativeWin?'<span style="background:rgba(245,166,35,.18);color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;font-size:.68rem;font-weight:800;padding:1px 7px;margin-right:4px;white-space:nowrap;">🌟 הכי יצירתי</span>':'';
-          const nameCell=ai===0?`${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}`
+          const isBonusCatRow=bonusCatEnabled&&bonusCatMap[pid]===cat.id;
+          const bonusBadge=isBonusCatRow&&ai===0?'<span style="background:rgba(212,175,55,.18);color:#d4af37;border:1px solid rgba(212,175,55,.4);border-radius:100px;font-size:.65rem;font-weight:900;padding:1px 6px;margin-right:4px;white-space:nowrap;">💎 ×2</span>':'';
+          const nameCell=ai===0?`${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}${bonusBadge}`
             :`<span style="opacity:.3">↳</span>`;
           const totalPts=base+rareBonus;
           rowsArr.push(`<tr>
             <td>${nameCell}</td>
             <td class="${cls}">${disqLabel}${rareLbl}${creativeLbl}${al||'—'}</td>
             <td style="text-align:center;font-weight:700;color:${isDisq?'var(--red)':totalPts>=12?'#a855f7':totalPts>=10?'var(--green)':totalPts>=5?'var(--orange)':'var(--muted)'}">
-              ${isDisq?'<span style="text-decoration:line-through;opacity:.5">0</span>':'+'+totalPts+(tb>0?`<span style="color:var(--blue);font-size:.75rem;"> +${tb}⚡</span>`:'')}</td>
+              ${isDisq?'<span style="text-decoration:line-through;opacity:.5">0</span>':'+'+totalPts+(isBonusCatRow&&ai===0?'<span style="color:#d4af37;font-size:.72rem;"> ×2</span>':'')+(tb>0?`<span style="color:var(--blue);font-size:.75rem;"> +${tb}⚡</span>`:'')}</td>
           </tr>`);
         });
       });
@@ -5955,6 +6049,16 @@
         </table></div>`;
       bycat.appendChild(card);
     });
+
+    // 💎 Apply bonus cat ×1 extra (makes affected cat ×2 total)
+    if(bonusCatEnabled){
+      Object.entries(bonusCatExtraScores).forEach(([pid,extra])=>{
+        rScores[pid]=(rScores[pid]||0)+extra;
+      });
+      const myBonusCat=bonusCatMap[S.pId];
+      const myBonusCatName=myBonusCat?cats.find(c=>c.id===myBonusCat)?.name:'';
+      if(myBonusCatName)setTimeout(()=>toast(`💎 קטגוריית בונוס: ${myBonusCatName} ×2!`),400);
+    }
 
     // FEATURE 6: Apply ×2 if hour letter round
     if (isHourLetterRound) {
@@ -6271,6 +6375,19 @@
       </div>`).join('');
   }
 
+
+  function renderSB(id,players){
+    const sorted=Object.entries(players)
+      .filter(([,p])=>!p.spectator)
+      .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+    const m=['🥇','🥈','🥉'];
+    document.getElementById(id).innerHTML=sorted.map(([pid,p],i)=>`
+      <div class="sr ${i===0?'gold':''}">
+        <span class="rk">${m[i]||i+1+'.'}</span>
+        <span class="sn">${p.name}${pid===S.pId?' <span style="color:var(--blue);font-size:.7rem;">(אתה)</span>':''}</span>
+        <span class="pts">${p.score||0}<span class="pts-l"> נק'</span></span>
+      </div>`).join('');
+  }
 
   // ─── PERMANENT LEADERBOARD ───────────────────────────────────────
   function renderPermLeaderboard(wrapId, lb){
@@ -7808,6 +7925,9 @@ const LEGENDARY_CATS = [
   // Legendary mode toggle
   document.getElementById('tog-legendary-mode').addEventListener('click',()=>{
     document.getElementById('tog-legendary-el').classList.toggle('on');
+  });
+  document.getElementById('tog-bonus-cat-mode').addEventListener('click',()=>{
+    document.getElementById('tog-bonus-cat-el').classList.toggle('on');
   });
   // Tournament toggle
   document.getElementById('btn-save-template-pre').addEventListener('click',saveTemplate);
