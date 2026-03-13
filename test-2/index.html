@@ -1272,10 +1272,16 @@
     <div id="lobby-room-name-wrap" style="display:none;margin-bottom:10px;">
       <div class="lobby-room-name" id="lobby-room-name-text"></div>
     </div>
-    <div class="code-box" id="code-box">
-      <div class="lbl">📤 שתף עם חברים</div>
-      <div class="code" id="lobby-code">------</div>
-      <div class="hint">לחץ להעתקת קוד 📋</div>
+    <div class="code-box" id="code-box" style="display:flex;align-items:center;gap:16px;text-align:right;">
+      <div style="flex:1;">
+        <div class="lbl">📤 שתף עם חברים</div>
+        <div class="code" id="lobby-code">------</div>
+        <div class="hint">לחץ להעתקת קוד 📋</div>
+      </div>
+      <div id="lobby-qr-wrap" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <img id="lobby-qr-img" src="" alt="QR" style="width:80px;height:80px;border-radius:8px;background:#fff;display:none;"/>
+        <div style="font-size:.6rem;color:var(--muted);font-weight:600;">סרוק לכניסה</div>
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
       <button class="share-btn" id="btn-share-link" style="margin-top:0;background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25d366;">
@@ -4549,6 +4555,7 @@
   function enterLobby(){
     S.totalRounds=S.totalRounds||0;
     document.getElementById('lobby-code').textContent=S.roomId;
+    updateLobbyQR(S.roomId);
     document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
     const _settingsBtn=document.getElementById('btn-room-settings');
     const _inviteBtn=document.getElementById('btn-invite-tmp');
@@ -4738,6 +4745,14 @@
 
   function copyCode(){
     navigator.clipboard.writeText(S.roomId).then(()=>toast('קוד הועתק! 📋'));
+  }
+
+  function updateLobbyQR(roomId){
+    const img = document.getElementById('lobby-qr-img');
+    if(!img || !roomId) return;
+    const url = `${location.origin}${location.pathname}?room=${roomId}`;
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=111120&margin=4`;
+    img.style.display = 'block';
   }
   function shareLink(){
     const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
