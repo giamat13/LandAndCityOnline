@@ -1725,21 +1725,53 @@
   // ═══════════════════════════════════════════════════════════════
   // ─── FEATURE 9: DAILY CHALLENGE ─────────────────────────────
   // ═══════════════════════════════════════════════════════════════
-  // Daily challenge: fixed letter + categories per day of week (repeating weekly).
+  // Daily challenge: fully random letter + categories, seeded by today's date.
+  // Same seed → same result for every player on the same calendar day.
   // Playing a room with the exact same letter + ≥1 matching category → ×2 XP.
-  const DAILY_CHALLENGES = [
-    { day: 0, letter: 'א', cats: ['ארץ','עיר','חי','אוכל','שם פרטי'],    tip: 'ראשון — א בהתחלה!' },
-    { day: 1, letter: 'ב', cats: ['ארץ','עיר','חי','דומם','שם פרטי'],    tip: 'שני — ב כמו ברצינות' },
-    { day: 2, letter: 'מ', cats: ['ארץ','עיר','מקצוע','אוכל','שם פרטי'], tip: 'שלישי — מגניב' },
-    { day: 3, letter: 'ר', cats: ['ארץ','עיר','חי','צומח','שם פרטי'],    tip: 'רביעי — רץ קדימה' },
-    { day: 4, letter: 'ש', cats: ['ארץ','עיר','חי','דומם','שם פרטי'],    tip: 'חמישי — שחק!' },
-    { day: 5, letter: 'ס', cats: ['ארץ','עיר','מקצוע','אוכל','שם פרטי'], tip: 'שישי — ס-בבה!' },
-    { day: 6, letter: 'ח', cats: ['ארץ','עיר','חי','צומח','שם פרטי'],    tip: 'שבת — חי וקיים' },
-  ];
+
+  function _dailySeed() {
+    const d = new Date();
+    // seed = YYYYMMDD as a number
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+  // Simple deterministic LCG pseudo-random (good enough for a daily pick)
+  function _seededRand(seed) {
+    let s = seed;
+    return function() {
+      s = (s * 1664525 + 1013904223) & 0xffffffff;
+      return (s >>> 0) / 0xffffffff;
+    };
+  }
+
+  // Full category list mirrored from DCATS — defined here so getDailyChallenge()
+  // can run before DCATS is initialised further down the script.
+  const _ALL_CAT_NAMES = ['ארץ','עיר','חי','צומח','דומם','מקצוע','שם פרטי','אוכל','אישיות','שיר','שפה','סרט או סדרה','דמויות בדיוניות','אפליקציות/אתרים'];
 
   function getDailyChallenge() {
-    const day = new Date().getDay(); // 0=Sun … 6=Sat
-    return DAILY_CHALLENGES[day];
+    const rand = _seededRand(_dailySeed());
+    // Pick a random letter (all 22 Hebrew letters)
+    const allLetters = 'אבגדהוזחטיכלמנסעפצקרשת'.split('');
+    const letter = allLetters[Math.floor(rand() * allLetters.length)];
+    // Fisher-Yates shuffle of category names, then take first 5
+    const allNames = _ALL_CAT_NAMES.slice();
+    for (let i = allNames.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [allNames[i], allNames[j]] = [allNames[j], allNames[i]];
+    }
+    const cats = allNames.slice(0, 5);
+    const dayNames = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+    const dayName = dayNames[new Date().getDay()];
+    const isShabat = new Date().getDay() === 6;
+    const tip = letter === 'ס' ? `${dayName} ס-בבה!`
+              : letter === 'מ' ? `${dayName} מ-גניב!`
+              : letter === 'ש' ? (isShabat ? `שבת שלום!` : `${dayName} שחקו!`)
+              : letter === 'כ' ? `${dayName} כיף גדול!`
+              : letter === 'נ' ? `${dayName} נ-הדר!`
+              : letter === 'פ' ? `${dayName} פ-נטסטי!`
+              : letter === 'ק' ? `${dayName} ק-סום!`
+              : letter === 'א' ? `${dayName} א-לוף!`
+              : `יום ${dayName} — אות ${letter}!`;
+    return { letter, cats, tip };
   }
 
   function _getDailyChallengeKey() {
