@@ -1090,7 +1090,7 @@
       <div class="streak-info">
         <div class="streak-title">רצף יומי</div>
         <div class="streak-count" id="streak-count-text">0 ימים</div>
-        <div class="streak-sub" id="streak-sub-text">שחק כל יום לבנות רצף (3 שומרים בשבוע)</div>
+        <div class="streak-sub" id="streak-sub-text">שחק כל יום לבנות רצף (+2 שומרים בשבוע)</div>
         <div class="streak-dots" id="streak-dots"></div>
       </div>
       <button id="btn-open-achievements-streak" title="הישגים שלי" style="background:none;border:none;font-size:1.6rem;cursor:pointer;padding:4px;flex-shrink:0;">🏅</button>
@@ -1147,10 +1147,12 @@
         </a>
       </div>
     </div>
-    <!-- Admin panel (main-dev only) -->
-    <div id="admin-panel-btn-wrap" style="display:none;margin-top:8px;">
-      <button id="btn-open-admin" style="width:100%;background:rgba(233,69,96,.08);border:1px solid rgba(233,69,96,.2);color:var(--red);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">👑 פאנל מנהל</button>
+    <!-- Public contributors leaderboard -->
+    <div style="margin-top:8px;display:flex;gap:8px;">
+      <button id="btn-open-contributors" style="flex:1;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);color:var(--blue);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">🏆 לוח תורמים</button>
+      <button id="btn-open-weekly-lb" style="flex:1;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.3);color:var(--orange);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">🏅 לוח שבועי</button>
     </div>
+
   </div>
   <div id="screen-create" class="screen">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
@@ -1271,10 +1273,16 @@
     <div id="lobby-room-name-wrap" style="display:none;margin-bottom:10px;">
       <div class="lobby-room-name" id="lobby-room-name-text"></div>
     </div>
-    <div class="code-box" id="code-box">
-      <div class="lbl">📤 שתף עם חברים</div>
-      <div class="code" id="lobby-code">------</div>
-      <div class="hint">לחץ להעתקת קוד 📋</div>
+    <div class="code-box" id="code-box" style="display:flex;align-items:center;gap:16px;text-align:right;">
+      <div style="flex:1;">
+        <div class="lbl">📤 שתף עם חברים</div>
+        <div class="code" id="lobby-code">------</div>
+        <div class="hint">לחץ להעתקת קוד 📋</div>
+      </div>
+      <div id="lobby-qr-wrap" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <img id="lobby-qr-img" src="" alt="QR" style="width:80px;height:80px;border-radius:8px;background:#fff;display:none;"/>
+        <div style="font-size:.6rem;color:var(--muted);font-weight:600;">סרוק לכניסה</div>
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
       <button class="share-btn" id="btn-share-link" style="margin-top:0;background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25d366;">
@@ -3294,8 +3302,7 @@
     renderProfileStats();
     updateNotifButton();
     // Show admin panel button for main-dev only
-    const adminWrap = document.getElementById('admin-panel-btn-wrap');
-    if (adminWrap) adminWrap.style.display = (S_pDevRoles.includes('main-dev')||S_pDevRoles.includes('dev')) ? 'block' : 'none';
+
   }
 
   // Wire input listener once
@@ -4549,6 +4556,7 @@
   function enterLobby(){
     S.totalRounds=S.totalRounds||0;
     document.getElementById('lobby-code').textContent=S.roomId;
+    updateLobbyQR(S.roomId);
     document.getElementById('host-ctrl').style.display=S.isHost?'block':'none';
     const _settingsBtn=document.getElementById('btn-room-settings');
     const _inviteBtn=document.getElementById('btn-invite-tmp');
@@ -4738,6 +4746,14 @@
 
   function copyCode(){
     navigator.clipboard.writeText(S.roomId).then(()=>toast('קוד הועתק! 📋'));
+  }
+
+  function updateLobbyQR(roomId){
+    const img = document.getElementById('lobby-qr-img');
+    if(!img || !roomId) return;
+    const url = `${location.origin}${location.pathname}?room=${roomId}`;
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=111120&margin=4`;
+    img.style.display = 'block';
   }
   function shareLink(){
     const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
@@ -6427,6 +6443,25 @@
       });
       await set(ref(db,'rooms/'+S.roomId+'/permLeaderboard'),lb).catch(()=>{});
     }
+    // ── Weekly global leaderboard submission ──────────────────────
+    try {
+      const myP = players[S.pId];
+      if (myP && !myP.spectator && (myP.score||0) > 0) {
+        const wk = getWeekKey();
+        const pKey = (myP.name||'אנונימי').replace(/[.#$/\[\]]/g,'_').slice(0,30);
+        const wRef = ref(db, `weeklyLeaderboard/${wk}/${pKey}`);
+        const prev = (await get(wRef)).val() || {};
+        await set(wRef, {
+          name: myP.name||'אנונימי',
+          emoji: myP.emoji||'',
+          color: myP.color||'#e94560',
+          score: (prev.score||0) + (myP.score||0),
+          games: (prev.games||0) + 1,
+          ts: Date.now()
+        });
+      }
+    } catch(e) { /* silent */ }
+    // ─────────────────────────────────────────────────────────────
     renderSB('final-sb',players);
     renderPodium(players);
     // Show permanent leaderboard section in final screen
@@ -6557,32 +6592,145 @@
     return 0;
   }
 
-  // ─── ADMIN: REFERRAL DASHBOARD (main-dev only) ────────────────────
-  async function openAdminReferrals() {
-    document.getElementById('admin-referrals-modal')?.remove();
+
+  // ─── WEEKLY LEADERBOARD HELPERS ──────────────────────────────────
+  function getWeekKey() {
+    const d = new Date();
+    const jan1 = new Date(d.getFullYear(), 0, 1);
+    const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+    return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+  }
+
+  async function openWeeklyLeaderboard() {
+    document.getElementById('weekly-lb-modal')?.remove();
     const modal = document.createElement('div');
-    modal.id = 'admin-referrals-modal';
+    modal.id = 'weekly-lb-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.88);display:flex;align-items:flex-end;justify-content:center;';
+
+    const wk = getWeekKey();
+    const [yr, wn] = wk.split('-W');
+    // Compute reset date (next Monday)
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun
+    const daysToMon = day === 0 ? 1 : 8 - day;
+    const nextMon = new Date(now); nextMon.setDate(now.getDate() + daysToMon);
+    const resetStr = nextMon.toLocaleDateString('he-IL', { weekday:'short', day:'numeric', month:'short' });
+
+    modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:22px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
+        <div>
+          <div style="font-size:1.1rem;font-weight:900;">🏅 לוח שבועי גלובלי</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">שבוע ${wn} · ${yr} · מתאפס ${resetStr}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="wlb-refresh" style="background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.35);color:var(--orange);border-radius:8px;padding:6px 12px;font-family:Heebo,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;">🔄</button>
+          <button id="wlb-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;">✕</button>
+        </div>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;flex-shrink:0;">הניקוד מצטבר מכל המשחקים השבוע — כל שחקן שמשחק תורם לטבלה</div>
+      <input id="wlb-search" placeholder="🔍 חיפוש שם..." style="width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-family:Heebo,sans-serif;font-size:.88rem;outline:none;margin-bottom:10px;direction:rtl;flex-shrink:0;">
+      <div id="wlb-list" style="overflow-y:auto;flex:1;"><div style="text-align:center;padding:30px;color:var(--muted);">⏳ טוען...</div></div>
+    </div>`;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .wlb-row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);}
+      .wlb-row:last-child{border-bottom:none;}
+      .wlb-rank{font-weight:900;font-size:1rem;width:32px;text-align:center;flex-shrink:0;}
+      .wlb-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;}
+      .wlb-info{flex:1;min-width:0;}
+      .wlb-name{font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .wlb-games{font-size:.72rem;color:var(--muted);}
+      .wlb-bar-wrap{display:flex;align-items:center;gap:8px;width:100px;flex-shrink:0;}
+      .wlb-bar{flex:1;background:rgba(255,255,255,.07);border-radius:100px;height:6px;overflow:hidden;}
+      .wlb-bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--orange),var(--red));}
+      .wlb-score{font-weight:900;font-size:1rem;color:var(--orange);min-width:44px;text-align:left;}
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+
+    modal.querySelector('#wlb-close').addEventListener('click', () => { modal.remove(); style.remove(); });
+    modal.addEventListener('click', e => { if (e.target === modal) { modal.remove(); style.remove(); } });
+    modal.querySelector('#wlb-refresh').addEventListener('click', loadWeekly);
+    modal.querySelector('#wlb-search').addEventListener('input', renderWeekly);
+
+    let allEntries = [];
+
+    function renderWeekly() {
+      const search = modal.querySelector('#wlb-search').value.trim().toLowerCase();
+      const filtered = search ? allEntries.filter(e => e.name.toLowerCase().includes(search)) : allEntries;
+      if (!filtered.length) {
+        modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">אין תוצאות לשבוע הזה עדיין</div>';
+        return;
+      }
+      const medals = ['🥇','🥈','🥉'];
+      const topScore = filtered[0]?.score || 1;
+      modal.querySelector('#wlb-list').innerHTML = filtered.map((e, i) => {
+        const rank = medals[i] || `${i+1}.`;
+        const pct = Math.round((e.score / topScore) * 100);
+        const isMe = e.name === (S && S.pName);
+        return `<div class="wlb-row" style="${isMe ? 'background:rgba(245,166,35,.06);border-radius:10px;' : ''}">
+          <span class="wlb-rank">${rank}</span>
+          <div class="wlb-av" style="background:${e.color}22;color:${e.color};">${e.emoji || e.name.charAt(0)}</div>
+          <div class="wlb-info">
+            <div class="wlb-name">${e.name}${isMe ? ' <span style="font-size:.65rem;color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;padding:1px 6px;font-weight:700;">אתה</span>' : ''}</div>
+            <div class="wlb-games">${e.games} משחק${e.games !== 1 ? 'ים' : ''}</div>
+          </div>
+          <div class="wlb-bar-wrap">
+            <div class="wlb-bar"><div class="wlb-bar-fill" style="width:${pct}%;"></div></div>
+          </div>
+          <div class="wlb-score">${e.score}<span style="font-size:.65rem;color:var(--muted);font-weight:600;"> נק'</span></div>
+        </div>`;
+      }).join('');
+    }
+
+    async function loadWeekly() {
+      modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">⏳ טוען...</div>';
+      try {
+        const snap = await get(ref(db, `weeklyLeaderboard/${wk}`));
+        const data = snap.val() || {};
+        allEntries = Object.values(data)
+          .sort((a, b) => (b.score || 0) - (a.score || 0));
+        if (!allEntries.length) {
+          modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2rem;margin-bottom:8px;">🏅</div><div style="color:var(--muted);font-size:.9rem;">עדיין אין ניקוד השבוע</div><div style="color:var(--muted);font-size:.78rem;margin-top:4px;">שחק משחק כדי להופיע בלוח!</div></div>';
+          return;
+        }
+        renderWeekly();
+      } catch(e) {
+        modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--red);">שגיאה בטעינה</div>';
+      }
+    }
+
+    loadWeekly();
+  }
+  // ─────────────────────────────────────────────────────────────────
+
+  // ─── PUBLIC: CONTRIBUTORS LEADERBOARD ────────────────────────────
+  async function openContributorsBoard() {
+    document.getElementById('contributors-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'contributors-modal';
     modal.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.88);display:flex;align-items:flex-end;justify-content:center;';
     modal.innerHTML = `<div style="background:var(--surface);border-radius:20px 20px 0 0;padding:22px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-shrink:0;">
         <div>
-          <div style="font-size:1.1rem;font-weight:900;">👑 לוח מפיצים</div>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:2px;" id="adm-subtitle">טוען...</div>
+          <div style="font-size:1.1rem;font-weight:900;">🏆 לוח תורמים</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px;" id="con-subtitle">טוען...</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button id="adm-refresh" style="background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.3);color:var(--blue);border-radius:8px;padding:6px 12px;font-family:Heebo,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;">🔄</button>
-          <button id="adm-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;">✕</button>
+          <button id="con-refresh" style="background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.3);color:var(--blue);border-radius:8px;padding:6px 12px;font-family:Heebo,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;">🔄</button>
+          <button id="con-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;">✕</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;flex-shrink:0;" id="adm-stats"></div>
-      <input id="adm-search" placeholder="🔍 חיפוש שם..." style="width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-family:Heebo,sans-serif;font-size:.88rem;outline:none;margin-bottom:10px;direction:rtl;flex-shrink:0;">
-      <div style="display:flex;gap:6px;margin-bottom:10px;flex-shrink:0;" id="adm-filters">
+      <input id="con-search" placeholder="🔍 חיפוש שם..." style="width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-family:Heebo,sans-serif;font-size:.88rem;outline:none;margin-bottom:10px;direction:rtl;flex-shrink:0;">
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-shrink:0;" id="con-filters">
         <button class="adm-f active" data-f="all">הכל</button>
         <button class="adm-f" data-f="1">1+</button>
         <button class="adm-f" data-f="2">2+</button>
         <button class="adm-f" data-f="3">3+</button>
       </div>
-      <div style="overflow-y:auto;flex:1;" id="adm-list"></div>
+      <div style="overflow-y:auto;flex:1;" id="con-list"></div>
     </div>`;
 
     const style = document.createElement('style');
@@ -6593,26 +6741,22 @@
       .adm-row:last-child{border-bottom:none;}
       .adm-rank{font-weight:900;font-size:.85rem;width:28px;text-align:center;flex-shrink:0;}
       .adm-name{flex:1;font-weight:700;font-size:.9rem;}
-      .adm-refid{font-size:.65rem;color:var(--muted);font-family:monospace;}
       .adm-bar-wrap{display:flex;align-items:center;gap:8px;width:120px;flex-shrink:0;}
       .adm-bar{flex:1;background:rgba(255,255,255,.07);border-radius:100px;height:5px;overflow:hidden;}
       .adm-bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--blue),#a855f7);}
       .adm-count{font-weight:900;font-size:.95rem;color:var(--blue);min-width:24px;text-align:center;}
       .adm-badge{font-size:.7rem;padding:2px 8px;border-radius:100px;font-weight:700;background:rgba(76,201,240,.1);color:var(--blue);}
-      .adm-stat{background:var(--s2);border-radius:12px;padding:12px;text-align:center;}
-      .adm-stat-n{font-size:1.5rem;font-weight:900;color:var(--blue);}
-      .adm-stat-l{font-size:.68rem;color:var(--muted);margin-top:2px;}
     `;
     document.head.appendChild(style);
     document.body.appendChild(modal);
 
-    modal.querySelector('#adm-close').addEventListener('click', () => { modal.remove(); style.remove(); });
+    modal.querySelector('#con-close').addEventListener('click', () => { modal.remove(); style.remove(); });
     modal.addEventListener('click', e => { if (e.target === modal) { modal.remove(); style.remove(); } });
 
     let allUsers = [];
     let filterLevel = 'all';
 
-    modal.querySelector('#adm-search').addEventListener('input', renderList);
+    modal.querySelector('#con-search').addEventListener('input', renderList);
     modal.querySelectorAll('.adm-f').forEach(btn => {
       btn.addEventListener('click', () => {
         modal.querySelectorAll('.adm-f').forEach(b => b.classList.remove('active'));
@@ -6621,10 +6765,10 @@
         renderList();
       });
     });
-    modal.querySelector('#adm-refresh').addEventListener('click', loadUsers);
+    modal.querySelector('#con-refresh').addEventListener('click', loadUsers);
 
     function renderList() {
-      const search = modal.querySelector('#adm-search').value.trim().toLowerCase();
+      const search = modal.querySelector('#con-search').value.trim().toLowerCase();
       const filtered = allUsers.filter(u => {
         if (filterLevel !== 'all' && u.level < filterLevel) return false;
         if (search && !u.name.toLowerCase().includes(search)) return false;
@@ -6634,16 +6778,15 @@
       const medals = ['🥇','🥈','🥉'];
       const badgeNames = ['','🥉 L1','🥈 L2','🥇 L3','💎 L4','🌟 L5','👑 L6'];
       if (!filtered.length) {
-        modal.querySelector('#adm-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">אין תוצאות</div>';
+        modal.querySelector('#con-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">אין תוצאות</div>';
         return;
       }
-      modal.querySelector('#adm-list').innerHTML = filtered.map((u, i) => {
+      modal.querySelector('#con-list').innerHTML = filtered.map((u, i) => {
         const pct = Math.round((u.refCount / maxRef) * 100);
         return `<div class="adm-row">
           <div class="adm-rank">${medals[i] || '#'+(i+1)}</div>
           <div style="flex:1;min-width:0;">
             <div class="adm-name" style="${u.unknown?'color:var(--muted);':''}">${u.emoji||''} ${u.name}</div>
-            <div class="adm-refid">${u.refId}</div>
           </div>
           <div class="adm-bar-wrap">
             <div class="adm-bar"><div class="adm-bar-fill" style="width:${pct}%"></div></div>
@@ -6655,70 +6798,31 @@
     }
 
     async function loadUsers() {
-      modal.querySelector('#adm-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);">⏳ טוען הפצות...</div>';
-      modal.querySelector('#adm-subtitle').textContent = 'טוען...';
+      modal.querySelector('#con-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);">⏳ טוען...</div>';
+      modal.querySelector('#con-subtitle').textContent = 'טוען...';
       try {
-        // Step 1: fetch all referrals (public path) + anon stats
-        const [refSnap, anonSnap] = await Promise.all([
-          get(ref(db, 'referrals')),
-          get(ref(db, 'adminData/anonStats'))
-        ]);
-        const referrals = refSnap.val() || {}; // { refId: { count: N } }
-        const anonData = anonSnap.val() || {};
-
-        // Step 2: fetch adminData/referrals to get uid→refId mapping
-        // (each user writes their own entry, so we can read it with auth)
+        const refSnap = await get(ref(db, 'referrals'));
+        const referrals = refSnap.val() || {};
         const adminSnap = await get(ref(db, 'adminData/referrals'));
-        const adminUsers = adminSnap.val() || {}; // { uid: { name, refId, refCount, ... } }
-
-        // Build refId → user map
+        const adminUsers = adminSnap.val() || {};
         const refIdToUser = {};
         Object.entries(adminUsers).forEach(([uid, p]) => {
           if (p.refId) refIdToUser[p.refId] = { uid, ...p };
         });
-
-        // Step 3: for each referral entry, attach user info
         allUsers = [];
-        let totalRefs = 0;
         Object.entries(referrals).forEach(([refId, data]) => {
           const count = data.count || 0;
           if (count === 0) return;
           const user = refIdToUser[refId];
-          const name = user?.name || `👤 לא מזוהה`;
-          const emoji = user?.emoji || null;
+          if (!user || !user.name) return; // skip anonymous/unknown users
           const level = getSupporterLevel(count);
-          totalRefs += count;
-          allUsers.push({ uid: user?.uid || refId, name, refCount: count, level, refId, emoji, unknown: !user });
+          allUsers.push({ uid: user.uid, name: user.name, refCount: count, level, emoji: user.emoji || null });
         });
-
-        // Also add users with 0 refs but who have accounts (so all users are visible)
-        Object.entries(adminUsers).forEach(([uid, p]) => {
-          if (!p.name) return;
-          const alreadyIn = allUsers.find(u => u.uid === uid);
-          if (!alreadyIn) {
-            const level = Math.max(p.supporterLevel || 0, getSupporterLevel(p.refCount || 0));
-            allUsers.push({ uid, name: p.name, refCount: p.refCount || 0, level, refId: p.refId || null, emoji: p.emoji || null });
-          }
-        });
-
         allUsers.sort((a, b) => b.refCount - a.refCount);
-        const activeRefs = allUsers.filter(u => u.refCount > 0).length;
-
-        // Anon stats
-        const anonDays = Object.values(anonData);
-        const anonRooms = anonDays.reduce((s, d) => s + (d.rooms||0), 0);
-        const anonPlayers = anonDays.reduce((s, d) => s + (d.players||0), 0);
-
-        modal.querySelector('#adm-stats').innerHTML = `
-          <div class="adm-stat"><div class="adm-stat-n">${allUsers.length}</div><div class="adm-stat-l">מחוברים</div></div>
-          <div class="adm-stat"><div class="adm-stat-n">${totalRefs}</div><div class="adm-stat-l">סה"כ הפניות</div></div>
-          <div class="adm-stat"><div class="adm-stat-n">${activeRefs}</div><div class="adm-stat-l">מפיצים פעילים</div></div>
-          <div class="adm-stat" style="grid-column:span 2;"><div class="adm-stat-n" style="color:var(--orange);">${anonPlayers.toLocaleString()}</div><div class="adm-stat-l">שחקנים אנונימיים (יצרו חדר)</div></div>
-          <div class="adm-stat"><div class="adm-stat-n" style="color:var(--orange);">${anonRooms.toLocaleString()}</div><div class="adm-stat-l">חדרים אנונימיים</div></div>`;
-        modal.querySelector('#adm-subtitle').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+        modal.querySelector('#con-subtitle').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
         renderList();
       } catch(e) {
-        modal.querySelector('#adm-list').innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);">❌ שגיאה: ${e.message}</div>`;
+        modal.querySelector('#con-list').innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);">❌ שגיאה: ${e.message}</div>`;
       }
     }
 
@@ -7138,6 +7242,24 @@
   // ─── STREAK SYSTEM (#2) ────────────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
   const STREAK_KEY = 'aretz_play_dates';
+  const GUARD_KEY  = 'aretz_guards';    // { total: N, lastWeekKey: 'YYYY-Www', bonusEarned: [...achievementIds] }
+
+  // ── Grant bonus guard from achievement ─────────────────────────────────
+  function grantAchievementGuard(achievementId) {
+    try {
+      const MAX_GUARDS = 15;
+      let guardData = JSON.parse(localStorage.getItem(GUARD_KEY)||'{}');
+      const bonusEarned = guardData.bonusEarned || [];
+      if (bonusEarned.includes(achievementId)) return; // already granted
+      const current = typeof guardData.total === 'number' ? guardData.total : 2;
+      guardData.total = Math.min(MAX_GUARDS, current + 1);
+      bonusEarned.push(achievementId);
+      guardData.bonusEarned = bonusEarned;
+      localStorage.setItem(GUARD_KEY, JSON.stringify(guardData));
+      renderStreakCard();
+      toast('🛡️ קיבלת שומר רצף מהישג!');
+    } catch(e) {}
+  }    // { total: N, lastWeekKey: 'YYYY-Www', bonusEarned: [...achievementIds] }
 
   function getTodayStr(){
     const d = new Date();
@@ -7156,6 +7278,7 @@
       localStorage.setItem(STREAK_KEY, JSON.stringify(dates));
       fbSave('playDates', dates);
       renderStreakCard();
+      checkAchievementGuards();
       // Track streak if newly achieved
       const nowActive = getStreakData().isActive;
       if(!wasActive && nowActive) lacTrack('streak_achieved', { streak_days: getStreakData().count });
@@ -7179,14 +7302,37 @@
         return `${tmp.getFullYear()}-W${String(weekNo).padStart(2,'0')}`;
       }
 
-      const GUARDS_PER_WEEK = 3;
+      const GUARDS_PER_WEEK  = 2;   // guards added each week (not reset)
+      const MAX_GUARDS       = 15;  // max guards held at once
 
-      // ── Walk backwards from today, tracking guards per calendar week ──
-      // Each calendar week gets exactly 3 guards — always resets to 3.
-      // A missed day costs 1 guard that week; if none left → streak breaks.
+      // ── Load persistent guard pool ─────────────────────────────
+      let guardData = (() => { try { return JSON.parse(localStorage.getItem(GUARD_KEY)||'{}'); } catch(e){ return {}; } })();
+      let guardTotal = typeof guardData.total === 'number' ? guardData.total : GUARDS_PER_WEEK;
+      const lastWeekKey = guardData.lastWeekKey || '';
+
+      // ── Grant 2 guards for each new calendar week that has passed ──
+      const thisWeekKey = isoWeekKey(today);
+      if(lastWeekKey !== thisWeekKey){
+        // Count weeks elapsed since last grant
+        let weeksToGrant = 1;
+        if(lastWeekKey){
+          // rough count: parse the week numbers
+          try {
+            const [ly, lw] = lastWeekKey.split('-W').map(Number);
+            const [ty, tw] = thisWeekKey.split('-W').map(Number);
+            weeksToGrant = Math.max(1, (ty - ly) * 52 + (tw - lw));
+          } catch(e){ weeksToGrant = 1; }
+        }
+        guardTotal = Math.min(MAX_GUARDS, guardTotal + weeksToGrant * GUARDS_PER_WEEK);
+        guardData.total = guardTotal;
+        guardData.lastWeekKey = thisWeekKey;
+        try { localStorage.setItem(GUARD_KEY, JSON.stringify(guardData)); } catch(e){}
+      }
+
+      // ── Walk backwards from today, consuming guards from the pool ──
       const MAX_DAYS = 90;
       let streak = 0;
-      const weekGuardsUsed = {}; // weekKey → guards used
+      let guardsUsedNow = 0;
 
       const recentDays = [];
       for(let i=0; i<MAX_DAYS; i++){
@@ -7196,15 +7342,13 @@
       }
 
       for(let i=0; i<recentDays.length; i++){
-        const {str, date} = recentDays[i];
+        const {str} = recentDays[i];
         const played = playedSet.has(str);
         if(played){
           streak++;
         } else {
-          const wk = isoWeekKey(date);
-          const used = weekGuardsUsed[wk] || 0;
-          if(used < GUARDS_PER_WEEK){
-            weekGuardsUsed[wk] = used + 1;
+          if(guardsUsedNow < guardTotal){
+            guardsUsedNow++;
             streak++;
           } else {
             break;
@@ -7212,17 +7356,15 @@
         }
       }
 
-      // ── Guards left THIS week (for display) ────────────────────
-      const thisWeekKey = isoWeekKey(today);
-      const guardsUsedThisWeek = weekGuardsUsed[thisWeekKey] || 0;
-      const guardsLeftThisWeek = GUARDS_PER_WEEK - guardsUsedThisWeek;
+      // guards remaining for display (how many are still available)
+      const guardsLeft = guardTotal - guardsUsedNow;
 
       // ── Last 7 days for dots display ───────────────────────────
       const last7 = recentDays.slice(0,7).map(e=>e.str).reverse();
       const days = last7.map(d=>({date:d, played:playedSet.has(d)}));
 
-      return {days, count: streak, isActive: streak>=7, guardsLeft: guardsLeftThisWeek, guardsUsed: guardsUsedThisWeek};
-    }catch(e){ return {days:[], count:0, isActive:false, guardsLeft:3, guardsUsed:0}; }
+      return {days, count: streak, isActive: streak>=7, guardsLeft, guardsUsed: guardsUsedNow, guardTotal};
+    }catch(e){ return {days:[], count:0, isActive:false, guardsLeft:2, guardsUsed:0, guardTotal:2}; }
   }
 
   function renderStreakCard(){
@@ -7236,17 +7378,21 @@
 
     document.getElementById('streak-count-text').textContent = `${count} יום ברצף`;
     const subEl = document.getElementById('streak-sub-text');
-    const gl = guardsLeft !== undefined ? guardsLeft : 3;
-    if(gl === 3){
-      subEl.textContent = '🛡️🛡️🛡️ 3 שומרי רצף זמינים השבוע';
+    const gl = guardsLeft !== undefined ? guardsLeft : 2;
+    if(gl >= 8){
+      subEl.textContent = '🛡️ ' + gl + ' שומרי רצף זמינים';
+      subEl.style.color = 'var(--blue)';
+      card.style.borderColor = 'rgba(76,201,240,.3)';
+    } else if(gl >= 4){
+      subEl.textContent = '🛡️ ' + gl + ' שומרי רצף זמינים';
       subEl.style.color = 'var(--green)';
       card.style.borderColor = 'rgba(15,186,129,.3)';
-    } else if(gl === 2){
-      subEl.textContent = '🛡️🛡️ 2 שומרי רצף זמינים השבוע';
+    } else if(gl >= 2){
+      subEl.textContent = '🛡️ ' + gl + ' שומרי רצף זמינים';
       subEl.style.color = 'var(--green)';
       card.style.borderColor = 'rgba(15,186,129,.3)';
     } else if(gl === 1){
-      subEl.textContent = '🛡️ שומר רצף אחד נותר השבוע';
+      subEl.textContent = '🛡️ שומר רצף אחד נותר — שחק בקרוב!';
       subEl.style.color = 'var(--orange)';
       card.style.borderColor = 'rgba(245,166,35,.3)';
     } else {
@@ -7305,6 +7451,27 @@
     { id:'share_5',     section:'📤 שיתוף',         icon:'📣', name:'שגריר ארץ עיר',    desc:'שיתפת 5 פעמים',                   check: ()=>parseInt(localStorage.getItem('aretz_share_count')||'0')>=5 },
     { id:'ref_1',       section:'📤 שיתוף',         icon:'🔗', name:'מגייס',              desc:'הפצת קישור שהביא שחקן חדש',      check: ()=>(S_pRefCount||0)>=1 },
   ];
+
+
+  // ── Check and grant guards for newly unlocked achievements ─────────────
+  function checkAchievementGuards() {
+    const GUARD_ACHIEVEMENTS = [
+      { id: 'streak_3',   check: ()=>getStreakData().count>=3 },
+      { id: 'streak_5',   check: ()=>getStreakData().count>=7 },
+      { id: 'wins_3',     check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=3 },
+      { id: 'wins_5',     check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=5 },
+      { id: 'games_10',   check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=10 },
+      { id: 'games_20',   check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=20 },
+      { id: 'games_50',   check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=50 },
+      { id: 'sup_1',      check: ()=>(S_pSupporterLevel||0)>=1 },
+      { id: 'sup_3',      check: ()=>(S_pSupporterLevel||0)>=3 },
+      { id: 'room_5',     check: ()=>parseInt(localStorage.getItem('aretz_rooms_created')||'0')>=5 },
+      { id: 'share_5',    check: ()=>parseInt(localStorage.getItem('aretz_share_count')||'0')>=5 },
+    ];
+    GUARD_ACHIEVEMENTS.forEach(a => {
+      try { if (a.check()) grantAchievementGuard('ach_' + a.id); } catch(e) {}
+    });
+  }
 
   function showAchievements() {
     document.getElementById('ach-modal')?.remove();
@@ -7387,7 +7554,7 @@
       <div class="ep-achievement" style="animation-delay:.15s;animation-fill-mode:both;">
         <div class="ep-icon">🛡️</div>
         <div class="ep-label">מתנת פתיחה</div>
-        <div class="ep-text">3 שומרי רצף מתנה!<br><span style="font-size:.85rem;color:var(--muted);">ימים שפספסת לא ישברו את הרצף — 3 בכל שבוע</span></div>
+        <div class="ep-text">2 שומרי רצף בשבוע!<br><span style="font-size:.85rem;color:var(--muted);">ימים שפספסת לא ישברו את הרצף — +2 בכל שבוע (עד 15)</span></div>
       </div>
       <div class="ep-achievement" style="animation-delay:.25s;animation-fill-mode:both;">
         <div class="ep-icon">🎖️</div>
@@ -7931,7 +8098,8 @@ const LEGENDARY_CATS = [
   });
   // Tournament toggle
   document.getElementById('btn-save-template-pre').addEventListener('click',saveTemplate);
-  document.getElementById('btn-open-admin').addEventListener('click', openAdminReferrals);
+  document.getElementById('btn-open-contributors').addEventListener('click', openContributorsBoard);
+  document.getElementById('btn-open-weekly-lb').addEventListener('click', openWeeklyLeaderboard);
 
   // Chat emoji picker
   const CHAT_EMOJIS=['😂','🔥','😮','❤️','👏','💀','🤣','😭','👍','🤔','😅','🎉','💯','🤯','😤','🥳','😎','🙏','💪','🤦'];
