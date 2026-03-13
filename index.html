@@ -1307,7 +1307,7 @@
         </div>
       </div>
       <button class="btn btn-g" id="start-btn" disabled>🎯 התחל משחק</button>
-      <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
+      <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">ניתן לשחק לבד — חצי נקודות במצב סולו</p>
       <button id="btn-invite-tmp" class="btn btn-s" style="display:none;margin-top:10px;">📨 הזמן משתמש זמני</button>
       <button id="btn-sim-players" class="btn btn-s" style="display:none;margin-top:10px;border-color:rgba(168,85,247,.4);color:#a855f7;font-size:.85rem;">🤖 הוסף שחקנים מדומים</button>
       <!-- Space Game mini-banner for host while waiting -->
@@ -4657,7 +4657,7 @@
         });
       });
             const btn=document.getElementById('start-btn');
-      if(btn)btn.disabled=Object.keys(getEligible(ps)).length<2;
+      if(btn)btn.disabled=false;
       if(S.isHost&&S.visibility!=='private'){
         update(ref(db,'publicRooms/'+S.roomId),{playerCount:activePlayers.length}).catch(()=>{});
       }
@@ -5028,7 +5028,7 @@
     const s=await get(ref(db,`rooms/${S.roomId}/players`));
     const allPs=s.val()||{};
     const activePlayers=Object.entries(getEligible(allPs));
-    if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
+    const isSoloGame = activePlayers.length < 2;
     const letter=S.isDailyChallenge ? getDailyChallenge().letter : LETTERS[Math.floor(Math.random()*LETTERS.length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;
     // 🌟 Legendary round: 25% chance even on first round
@@ -5039,10 +5039,11 @@
       status:'playing',round:1,letter,uniqueLetters:S.uniqueLetters,
       catStartedAt:Date.now(),currentCatIndex:0,
       catAnswers:null,lastActivity:Date.now(),
-      legendaryNext:999, legendaryCat:legendaryCatR1||null, isLegendary:isLegendaryR1
+      legendaryNext:999, legendaryCat:legendaryCatR1||null, isLegendary:isLegendaryR1, isSoloGame:isSoloGame
     });
     // Remove from public listing once game starts
     if(S.visibility!=='private') remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});
+    if(isSoloGame) setTimeout(()=>toast('🎮 מצב סולו — חצי נקודות!'),600);
     lacTrack('round_start', { round_number: 1, letter: letter, is_legendary: isLegendaryR1 });
     if(isLegendaryR1) lacTrack('legendary_round', { round_number: 1, cat_name: legendaryCatR1?.name });
   };
@@ -5093,6 +5094,7 @@
     S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
     S.bonusCatEnabled=r.bonusCatEnabled||false;
     S.isDailyChallenge=r.isDailyChallenge||false;
+    S.isSoloGame=r.isSoloGame||false;
     S.catSubmitted=false;
 
     // 🌟 Legendary round: always inject cat (not just on first cat)
@@ -5549,9 +5551,15 @@
       if((snap.val()||0)!==S.currentCatIndex){return;}
       const nextIdx=S.currentCatIndex+1;
       if(nextIdx>=S.cats.length){
+        // All cats done → skip voting+creative in solo mode, go straight to results
+        if(S.isSoloGame){
+          await update(ref(db,`rooms/${S.roomId}`),{status:'results',lastActivity:Date.now()});
+          await showResults();
+        }else{
         // All cats done → go to voting phase
         await update(ref(db,`rooms/${S.roomId}`),{status:'voting',lastActivity:Date.now()});
         await showVoting();
+        }
       }else{
         let catUpdate={currentCatIndex:nextIdx,catStartedAt:Date.now(),lastActivity:Date.now()};
         if(S.uniqueLetters){
@@ -5612,6 +5620,8 @@
 
   // ─── VOTING ───────────────────────────────────────────────────────
   async function showVoting(){
+    // Skip voting entirely in solo mode
+    if(S.isSoloGame){await showResults();return;}
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
     enterRoom();
     const snap=await get(ref(db,`rooms/${S.roomId}`));
@@ -5856,6 +5866,8 @@
 
   // ─── CREATIVE VOTE ────────────────────────────────────────────────
   async function showCreativeVote(){
+    // Skip creative vote in solo mode
+    if(S.isSoloGame){await showResults();return;}
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();
     enterRoom();
     const snap=await get(ref(db,`rooms/${S.roomId}`));
@@ -6092,6 +6104,12 @@
       setTimeout(() => toast('🔥🎯 אות השעה + אתגר יומי! ×2!'), 800);
       if (S.pId) markDailyChallengeDone();
       renderDailyChallengeCard();
+    }
+    // Solo mode: halve all scores
+    const isSoloGame = room.isSoloGame || false;
+    if (isSoloGame) {
+      Object.keys(rScores).forEach(pid => { rScores[pid] = Math.floor((rScores[pid]||0) / 2); });
+      setTimeout(() => toast("🎮 מצב סולו — חצי נקודות!"), 400);
     }
     Object.entries(rScores).forEach(([pid,pts])=>{
       S.totScores[pid]=(S.totScores[pid]||0)+pts;
