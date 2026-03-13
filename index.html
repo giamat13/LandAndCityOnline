@@ -1147,6 +1147,10 @@
         </a>
       </div>
     </div>
+    <!-- Public contributors leaderboard -->
+    <div style="margin-top:8px;">
+      <button id="btn-open-contributors" style="width:100%;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);color:var(--blue);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">🏆 לוח תורמים</button>
+    </div>
     <!-- Admin panel (main-dev only) -->
     <div id="admin-panel-btn-wrap" style="display:none;margin-top:8px;">
       <button id="btn-open-admin" style="width:100%;background:rgba(233,69,96,.08);border:1px solid rgba(233,69,96,.2);color:var(--red);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">👑 פאנל מנהל</button>
@@ -6557,6 +6561,130 @@
     return 0;
   }
 
+
+  // ─── PUBLIC: CONTRIBUTORS LEADERBOARD ────────────────────────────
+  async function openContributorsBoard() {
+    document.getElementById('contributors-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'contributors-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.88);display:flex;align-items:flex-end;justify-content:center;';
+    modal.innerHTML = `<div style="background:var(--surface);border-radius:20px 20px 0 0;padding:22px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-shrink:0;">
+        <div>
+          <div style="font-size:1.1rem;font-weight:900;">🏆 לוח תורמים</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px;" id="con-subtitle">טוען...</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="con-refresh" style="background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.3);color:var(--blue);border-radius:8px;padding:6px 12px;font-family:Heebo,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;">🔄</button>
+          <button id="con-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;">✕</button>
+        </div>
+      </div>
+      <input id="con-search" placeholder="🔍 חיפוש שם..." style="width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-family:Heebo,sans-serif;font-size:.88rem;outline:none;margin-bottom:10px;direction:rtl;flex-shrink:0;">
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-shrink:0;" id="con-filters">
+        <button class="adm-f active" data-f="all">הכל</button>
+        <button class="adm-f" data-f="1">1+</button>
+        <button class="adm-f" data-f="2">2+</button>
+        <button class="adm-f" data-f="3">3+</button>
+      </div>
+      <div style="overflow-y:auto;flex:1;" id="con-list"></div>
+    </div>`;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .adm-f{background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 12px;font-family:Heebo,sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;}
+      .adm-f.active{background:rgba(76,201,240,.12);border-color:rgba(76,201,240,.35);color:var(--blue);}
+      .adm-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border);}
+      .adm-row:last-child{border-bottom:none;}
+      .adm-rank{font-weight:900;font-size:.85rem;width:28px;text-align:center;flex-shrink:0;}
+      .adm-name{flex:1;font-weight:700;font-size:.9rem;}
+      .adm-bar-wrap{display:flex;align-items:center;gap:8px;width:120px;flex-shrink:0;}
+      .adm-bar{flex:1;background:rgba(255,255,255,.07);border-radius:100px;height:5px;overflow:hidden;}
+      .adm-bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--blue),#a855f7);}
+      .adm-count{font-weight:900;font-size:.95rem;color:var(--blue);min-width:24px;text-align:center;}
+      .adm-badge{font-size:.7rem;padding:2px 8px;border-radius:100px;font-weight:700;background:rgba(76,201,240,.1);color:var(--blue);}
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+
+    modal.querySelector('#con-close').addEventListener('click', () => { modal.remove(); style.remove(); });
+    modal.addEventListener('click', e => { if (e.target === modal) { modal.remove(); style.remove(); } });
+
+    let allUsers = [];
+    let filterLevel = 'all';
+
+    modal.querySelector('#con-search').addEventListener('input', renderList);
+    modal.querySelectorAll('.adm-f').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modal.querySelectorAll('.adm-f').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterLevel = btn.dataset.f === 'all' ? 'all' : parseInt(btn.dataset.f);
+        renderList();
+      });
+    });
+    modal.querySelector('#con-refresh').addEventListener('click', loadUsers);
+
+    function renderList() {
+      const search = modal.querySelector('#con-search').value.trim().toLowerCase();
+      const filtered = allUsers.filter(u => {
+        if (filterLevel !== 'all' && u.level < filterLevel) return false;
+        if (search && !u.name.toLowerCase().includes(search)) return false;
+        return true;
+      });
+      const maxRef = allUsers[0]?.refCount || 1;
+      const medals = ['🥇','🥈','🥉'];
+      const badgeNames = ['','🥉 L1','🥈 L2','🥇 L3','💎 L4','🌟 L5','👑 L6'];
+      if (!filtered.length) {
+        modal.querySelector('#con-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">אין תוצאות</div>';
+        return;
+      }
+      modal.querySelector('#con-list').innerHTML = filtered.map((u, i) => {
+        const pct = Math.round((u.refCount / maxRef) * 100);
+        return `<div class="adm-row">
+          <div class="adm-rank">${medals[i] || '#'+(i+1)}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="adm-name" style="${u.unknown?'color:var(--muted);':''}">${u.emoji||''} ${u.name}</div>
+          </div>
+          <div class="adm-bar-wrap">
+            <div class="adm-bar"><div class="adm-bar-fill" style="width:${pct}%"></div></div>
+            <span class="adm-count">${u.refCount}</span>
+          </div>
+          ${u.level > 0 ? `<span class="adm-badge">${badgeNames[u.level]}</span>` : '<span style="width:40px;"></span>'}
+        </div>`;
+      }).join('');
+    }
+
+    async function loadUsers() {
+      modal.querySelector('#con-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);">⏳ טוען...</div>';
+      modal.querySelector('#con-subtitle').textContent = 'טוען...';
+      try {
+        const refSnap = await get(ref(db, 'referrals'));
+        const referrals = refSnap.val() || {};
+        const adminSnap = await get(ref(db, 'adminData/referrals'));
+        const adminUsers = adminSnap.val() || {};
+        const refIdToUser = {};
+        Object.entries(adminUsers).forEach(([uid, p]) => {
+          if (p.refId) refIdToUser[p.refId] = { uid, ...p };
+        });
+        allUsers = [];
+        Object.entries(referrals).forEach(([refId, data]) => {
+          const count = data.count || 0;
+          if (count === 0) return;
+          const user = refIdToUser[refId];
+          if (!user || !user.name) return; // skip anonymous/unknown users
+          const level = getSupporterLevel(count);
+          allUsers.push({ uid: user.uid, name: user.name, refCount: count, level, emoji: user.emoji || null });
+        });
+        allUsers.sort((a, b) => b.refCount - a.refCount);
+        modal.querySelector('#con-subtitle').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+        renderList();
+      } catch(e) {
+        modal.querySelector('#con-list').innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);">❌ שגיאה: ${e.message}</div>`;
+      }
+    }
+
+    loadUsers();
+  }
+
   // ─── ADMIN: REFERRAL DASHBOARD (main-dev only) ────────────────────
   async function openAdminReferrals() {
     document.getElementById('admin-referrals-modal')?.remove();
@@ -6709,12 +6837,7 @@
         const anonRooms = anonDays.reduce((s, d) => s + (d.rooms||0), 0);
         const anonPlayers = anonDays.reduce((s, d) => s + (d.players||0), 0);
 
-        modal.querySelector('#adm-stats').innerHTML = `
-          <div class="adm-stat"><div class="adm-stat-n">${allUsers.length}</div><div class="adm-stat-l">מחוברים</div></div>
-          <div class="adm-stat"><div class="adm-stat-n">${totalRefs}</div><div class="adm-stat-l">סה"כ הפניות</div></div>
-          <div class="adm-stat"><div class="adm-stat-n">${activeRefs}</div><div class="adm-stat-l">מפיצים פעילים</div></div>
-          <div class="adm-stat" style="grid-column:span 2;"><div class="adm-stat-n" style="color:var(--orange);">${anonPlayers.toLocaleString()}</div><div class="adm-stat-l">שחקנים אנונימיים (יצרו חדר)</div></div>
-          <div class="adm-stat"><div class="adm-stat-n" style="color:var(--orange);">${anonRooms.toLocaleString()}</div><div class="adm-stat-l">חדרים אנונימיים</div></div>`;
+        modal.querySelector('#adm-stats').innerHTML = ``;
         modal.querySelector('#adm-subtitle').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
         renderList();
       } catch(e) {
@@ -7932,6 +8055,7 @@ const LEGENDARY_CATS = [
   // Tournament toggle
   document.getElementById('btn-save-template-pre').addEventListener('click',saveTemplate);
   document.getElementById('btn-open-admin').addEventListener('click', openAdminReferrals);
+  document.getElementById('btn-open-contributors').addEventListener('click', openContributorsBoard);
 
   // Chat emoji picker
   const CHAT_EMOJIS=['😂','🔥','😮','❤️','👏','💀','🤣','😭','👍','🤔','😅','🎉','💯','🤯','😤','🥳','😎','🙏','💪','🤦'];
