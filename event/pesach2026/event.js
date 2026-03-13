@@ -87,6 +87,7 @@
     showPlagueEffect(plague);
   }
   window._pesachTriggerPlague = triggerPlague;
+  window._pesachShowPlagueEffect = showPlagueEffect;
 
   function showPlagueEffect(plague) {
     spawnPlagueParticles(plague);
@@ -650,7 +651,7 @@
         window._devPlagueIdx = (_devPlagueIdx + 1) % 10;
         var p = PLAGUES_SIM[_devPlagueIdx];
         // קריאה לפונקציה המרכזית שמכילה את כל האפקטים
-        showPlagueEffect(p);
+        (window._pesachShowPlagueEffect || window._pesachTriggerPlague)(p);
         plagueTestBtn.textContent='🌧️ מכת '+p.name+' ('+((_devPlagueIdx)+1)+'/10)';
       });
       var devBtn = document.getElementById('pesach-dev-sim-btn');
