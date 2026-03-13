@@ -74,6 +74,15 @@
         }
       }
     },
+    "weeklyLeaderboard": {
+      ".read": true,
+      "$week": {
+        "$player": {
+          ".write": true,
+          ".validate": "newData.hasChildren(['name','score','games','ts']) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 999999 && newData.child('games').isNumber() && newData.child('games').val() >= 0 && newData.child('games').val() <= 9999"
+        }
+      }
+    },
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",

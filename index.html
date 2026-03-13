@@ -1148,8 +1148,9 @@
       </div>
     </div>
     <!-- Public contributors leaderboard -->
-    <div style="margin-top:8px;">
-      <button id="btn-open-contributors" style="width:100%;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);color:var(--blue);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">🏆 לוח תורמים</button>
+    <div style="margin-top:8px;display:flex;gap:8px;">
+      <button id="btn-open-contributors" style="flex:1;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);color:var(--blue);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">🏆 לוח תורמים</button>
+      <button id="btn-open-weekly-lb" style="flex:1;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.3);color:var(--orange);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">🏅 לוח שבועי</button>
     </div>
 
   </div>
@@ -6442,6 +6443,25 @@
       });
       await set(ref(db,'rooms/'+S.roomId+'/permLeaderboard'),lb).catch(()=>{});
     }
+    // ── Weekly global leaderboard submission ──────────────────────
+    try {
+      const myP = players[S.pId];
+      if (myP && !myP.spectator && (myP.score||0) > 0) {
+        const wk = getWeekKey();
+        const pKey = (myP.name||'אנונימי').replace(/[.#$/\[\]]/g,'_').slice(0,30);
+        const wRef = ref(db, `weeklyLeaderboard/${wk}/${pKey}`);
+        const prev = (await get(wRef)).val() || {};
+        await set(wRef, {
+          name: myP.name||'אנונימי',
+          emoji: myP.emoji||'',
+          color: myP.color||'#e94560',
+          score: (prev.score||0) + (myP.score||0),
+          games: (prev.games||0) + 1,
+          ts: Date.now()
+        });
+      }
+    } catch(e) { /* silent */ }
+    // ─────────────────────────────────────────────────────────────
     renderSB('final-sb',players);
     renderPodium(players);
     // Show permanent leaderboard section in final screen
@@ -6572,6 +6592,119 @@
     return 0;
   }
 
+
+  // ─── WEEKLY LEADERBOARD HELPERS ──────────────────────────────────
+  function getWeekKey() {
+    const d = new Date();
+    const jan1 = new Date(d.getFullYear(), 0, 1);
+    const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+    return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+  }
+
+  async function openWeeklyLeaderboard() {
+    document.getElementById('weekly-lb-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'weekly-lb-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.88);display:flex;align-items:flex-end;justify-content:center;';
+
+    const wk = getWeekKey();
+    const [yr, wn] = wk.split('-W');
+    // Compute reset date (next Monday)
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun
+    const daysToMon = day === 0 ? 1 : 8 - day;
+    const nextMon = new Date(now); nextMon.setDate(now.getDate() + daysToMon);
+    const resetStr = nextMon.toLocaleDateString('he-IL', { weekday:'short', day:'numeric', month:'short' });
+
+    modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:22px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
+        <div>
+          <div style="font-size:1.1rem;font-weight:900;">🏅 לוח שבועי גלובלי</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">שבוע ${wn} · ${yr} · מתאפס ${resetStr}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="wlb-refresh" style="background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.35);color:var(--orange);border-radius:8px;padding:6px 12px;font-family:Heebo,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;">🔄</button>
+          <button id="wlb-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:Heebo,sans-serif;cursor:pointer;">✕</button>
+        </div>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;flex-shrink:0;">הניקוד מצטבר מכל המשחקים השבוע — כל שחקן שמשחק תורם לטבלה</div>
+      <input id="wlb-search" placeholder="🔍 חיפוש שם..." style="width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-family:Heebo,sans-serif;font-size:.88rem;outline:none;margin-bottom:10px;direction:rtl;flex-shrink:0;">
+      <div id="wlb-list" style="overflow-y:auto;flex:1;"><div style="text-align:center;padding:30px;color:var(--muted);">⏳ טוען...</div></div>
+    </div>`;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .wlb-row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);}
+      .wlb-row:last-child{border-bottom:none;}
+      .wlb-rank{font-weight:900;font-size:1rem;width:32px;text-align:center;flex-shrink:0;}
+      .wlb-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;}
+      .wlb-info{flex:1;min-width:0;}
+      .wlb-name{font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .wlb-games{font-size:.72rem;color:var(--muted);}
+      .wlb-bar-wrap{display:flex;align-items:center;gap:8px;width:100px;flex-shrink:0;}
+      .wlb-bar{flex:1;background:rgba(255,255,255,.07);border-radius:100px;height:6px;overflow:hidden;}
+      .wlb-bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--orange),var(--red));}
+      .wlb-score{font-weight:900;font-size:1rem;color:var(--orange);min-width:44px;text-align:left;}
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+
+    modal.querySelector('#wlb-close').addEventListener('click', () => { modal.remove(); style.remove(); });
+    modal.addEventListener('click', e => { if (e.target === modal) { modal.remove(); style.remove(); } });
+    modal.querySelector('#wlb-refresh').addEventListener('click', loadWeekly);
+    modal.querySelector('#wlb-search').addEventListener('input', renderWeekly);
+
+    let allEntries = [];
+
+    function renderWeekly() {
+      const search = modal.querySelector('#wlb-search').value.trim().toLowerCase();
+      const filtered = search ? allEntries.filter(e => e.name.toLowerCase().includes(search)) : allEntries;
+      if (!filtered.length) {
+        modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">אין תוצאות לשבוע הזה עדיין</div>';
+        return;
+      }
+      const medals = ['🥇','🥈','🥉'];
+      const topScore = filtered[0]?.score || 1;
+      modal.querySelector('#wlb-list').innerHTML = filtered.map((e, i) => {
+        const rank = medals[i] || `${i+1}.`;
+        const pct = Math.round((e.score / topScore) * 100);
+        const isMe = e.name === (S && S.pName);
+        return `<div class="wlb-row" style="${isMe ? 'background:rgba(245,166,35,.06);border-radius:10px;' : ''}">
+          <span class="wlb-rank">${rank}</span>
+          <div class="wlb-av" style="background:${e.color}22;color:${e.color};">${e.emoji || e.name.charAt(0)}</div>
+          <div class="wlb-info">
+            <div class="wlb-name">${e.name}${isMe ? ' <span style="font-size:.65rem;color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;padding:1px 6px;font-weight:700;">אתה</span>' : ''}</div>
+            <div class="wlb-games">${e.games} משחק${e.games !== 1 ? 'ים' : ''}</div>
+          </div>
+          <div class="wlb-bar-wrap">
+            <div class="wlb-bar"><div class="wlb-bar-fill" style="width:${pct}%;"></div></div>
+          </div>
+          <div class="wlb-score">${e.score}<span style="font-size:.65rem;color:var(--muted);font-weight:600;"> נק'</span></div>
+        </div>`;
+      }).join('');
+    }
+
+    async function loadWeekly() {
+      modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">⏳ טוען...</div>';
+      try {
+        const snap = await get(ref(db, `weeklyLeaderboard/${wk}`));
+        const data = snap.val() || {};
+        allEntries = Object.values(data)
+          .sort((a, b) => (b.score || 0) - (a.score || 0));
+        if (!allEntries.length) {
+          modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2rem;margin-bottom:8px;">🏅</div><div style="color:var(--muted);font-size:.9rem;">עדיין אין ניקוד השבוע</div><div style="color:var(--muted);font-size:.78rem;margin-top:4px;">שחק משחק כדי להופיע בלוח!</div></div>';
+          return;
+        }
+        renderWeekly();
+      } catch(e) {
+        modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--red);">שגיאה בטעינה</div>';
+      }
+    }
+
+    loadWeekly();
+  }
+  // ─────────────────────────────────────────────────────────────────
 
   // ─── PUBLIC: CONTRIBUTORS LEADERBOARD ────────────────────────────
   async function openContributorsBoard() {
@@ -7966,6 +8099,7 @@ const LEGENDARY_CATS = [
   // Tournament toggle
   document.getElementById('btn-save-template-pre').addEventListener('click',saveTemplate);
   document.getElementById('btn-open-contributors').addEventListener('click', openContributorsBoard);
+  document.getElementById('btn-open-weekly-lb').addEventListener('click', openWeeklyLeaderboard);
 
   // Chat emoji picker
   const CHAT_EMOJIS=['😂','🔥','😮','❤️','👏','💀','🤣','😭','👍','🤔','😅','🎉','💯','🤯','😤','🥳','😎','🙏','💪','🤦'];
