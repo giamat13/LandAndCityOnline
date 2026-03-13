@@ -3931,6 +3931,9 @@
     const n=document.getElementById('player-name').value.trim();
     if(!n){toast('נא להזין שם שחקן');return;}
     S.pName=n;
+    // Reset create button in case user left mid-creation
+    const createBtn=document.getElementById('btn-create-room');
+    if(createBtn){createBtn.disabled=false;createBtn.innerHTML='🚀 צור חדר';}
     const rni=document.getElementById('room-name-inp');
     if(rni){
       if(!roomNameManuallyChanged){
@@ -3957,8 +3960,16 @@
     }).filter(Boolean);
     S.cCats.forEach((name,i)=>active.push({id:'cc_'+i,name,emoji:'⭐'}));
     if(!active.length){toast('בחר לפחות קטגוריה אחת');return;}
+
+    // Show loading state on button
+    const btn=document.getElementById('btn-create-room');
+    const origText=btn.innerHTML;
+    btn.disabled=true;
+    btn.innerHTML='<span class="spin" style="width:20px;height:20px;border-width:2px;margin:0;display:inline-block;vertical-align:middle;margin-left:8px;"></span> יוצר חדר...';
+
+    try{
     S.cats=active;S.pId=gid(10);S.isHost=true;S.totScores={};S.currentCatIndex=0;
-    // Track anonymous players
+    // Track anonymous players (fire-and-forget, don't await)
     if(!currentUser){
       const today=new Date().toISOString().slice(0,10);
       get(ref(db,'adminData/anonStats/'+today)).then(s=>{
@@ -3976,45 +3987,55 @@
       :Math.max(1,parseInt(document.getElementById('cr-veto-cnt-inp').value)||2);
     S.vetoThresholdType=crVetoType;S.vetoThresholdValue=crVetoValue;
     S.raceMode=document.getElementById('tog-race-el').classList.contains('on');
-
     S.creativeVoteEnabled=document.getElementById('tog-creative-el').classList.contains('on');
     S.legendaryEnabled=document.getElementById('tog-legendary-el')?.classList.contains('on')!==false;
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
-    let roomId,t=0;
-    do{roomId=gid(6);const s=await get(ref(db,'rooms/'+roomId));if(!s.exists())break;}while(++t<5);
+
+    // Generate room ID without async collision check (8-char ID is collision-safe enough)
+    const roomId=gid(8);
     S.roomId=roomId;
-    await set(ref(db,'rooms/'+roomId),{
+
+    const roomData={
       host:S.pId,originalHost:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,
       uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
       players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:getPrimaryDevRole(),
         emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'}}
-    });
-    // Register in public index if not private
+    };
+
+    // Build all writes in parallel
+    const writes=[set(ref(db,'rooms/'+roomId),roomData)];
     if(S.visibility!=='private'){
-      await set(ref(db,'publicRooms/'+roomId),{
+      writes.push(set(ref(db,'publicRooms/'+roomId),{
         hostName:S.pName,visibility:S.visibility,roomName,
         cats:active.slice(0,5).map(c=>({emoji:c.emoji,name:c.name})),
         roundTime:S.rTime,playerCount:1,
         status:'lobby',createdAt:Date.now()
-      });
+      }));
     }
-    // Permanent rooms skip the expiry index; regular rooms register for cleanup
+    if(S.isPermanent){
+      writes.push(update(ref(db,'rooms/'+roomId),{isPermanent:true}));
+    } else {
+      writes.push(set(ref(db,'roomActivity/'+roomId),Date.now()));
+    }
+    await Promise.all(writes);
+
     if(S.isPermanent){
       saveMyRoom(roomId, roomName, active.slice(0,5));
       renderMyRooms();
-      await update(ref(db,'rooms/'+roomId),{isPermanent:true});
-    } else {
-      set(ref(db,'roomActivity/'+roomId),Date.now()).catch(()=>{});
     }
     saveSession();
-    applyRoomTheme(S_roomTheme||'default'); // FEATURE 8: apply theme for creator too
+    applyRoomTheme(S_roomTheme||'default');
     enterLobby();
     lacTrack('room_created', { room_id: roomId, cat_count: active.length, round_time: S.rTime, race_mode: S.raceMode, visibility: S.visibility });
-    // Track room creation for achievements
     const rc = parseInt(localStorage.getItem('aretz_rooms_created')||'0')+1;
     localStorage.setItem('aretz_rooms_created', rc);
+    }catch(e){
+      toast('שגיאה ביצירת חדר, נסה שוב');
+      btn.disabled=false;
+      btn.innerHTML=origText;
+    }
   };
 
   // ─── JOIN ROOM ────────────────────────────────────────────────────
@@ -6222,7 +6243,22 @@
     }
   }
 
-  function renderSB(id,players){
+  // ─── PLAGUE EFFECT (Pesach event hook) ──────────────────────────
+  function showPlagueEffect(plagueId){
+    // Mapping of plague IDs to emoji + Hebrew name
+    const PLAGUES={
+      blood:    {emoji:'🩸', name:'דם',           color:'#c0392b'},
+      frogs:    {emoji:'🐸', name:'צפרדע',        color:'#27ae60'},
+      lice:     {emoji:'🦟', name:'כינים',        color:'#7f8c8d'},
+      flies:    {emoji:'🪰', name:'ערוב',          color:'#6d4c41'},
+      cattle:   {emoji:'🐄', name:'דבר',           color:'#795548'},
+      boils:    {emoji:'🤒', name:'שחין',          color:'#e67e22'},
+      hail:     {emoji:'🌨️', name:'ברד',           color:'#4cc9f0'},
+      locusts:  {emoji:'🦗', name:'ארבה',          color:'#8bc34a'},
+      darkness: {emoji:'🌑', name:'חושך',          color:'#2c3e50'},
+      firstborn:{emoji:'💀', name:'מכת בכורות',   color:'#8e44ad'},
+    };
+    const p=PLAGUES[plagueId]||{emoji:'🪄',name:'מכה',color:'var(--red)'};
     const sorted=Object.entries(players)
       .filter(([,p])=>!p.spectator)
       .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
