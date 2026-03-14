@@ -5141,6 +5141,12 @@
 
   // ─── LOAD ROUND (reads Firebase state, then starts the current cat) ─
   async function loadRound(){
+    // Detach all existing listeners immediately to prevent stale catAnswers/status
+    // listeners from firing (and calling advanceCat again) during the async setup below.
+    detach();
+    clearInterval(S.timerInt);
+    if(S.pendingAdvance){clearTimeout(S.pendingAdvance);S.pendingAdvance=null;}
+    S.advancing=false;
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const r=snap.val();
     S.letter=r.letter;S.rNum=r.round;
@@ -5412,6 +5418,7 @@
       // Host: auto-advance when all eligible players submitted
       if(S.isHost&&cnt>=total&&total>0){
         clearInterval(S.timerInt);
+        if(S.pendingAdvance){clearTimeout(S.pendingAdvance);S.pendingAdvance=null;}
         await advanceCat();
         // Show next button in progress bar 2.5s later in case auto-advance failed
         setTimeout(()=>{
