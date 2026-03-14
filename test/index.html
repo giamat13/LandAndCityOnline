@@ -1809,16 +1809,16 @@
     tagsEl.innerHTML = dc.cats.map(c => `<span class="dcc-cat-tag">${c}</span>`).join('');
 
     const btn = document.getElementById('dcc-start-btn');
+    btn.style.display = 'block';
+    btn.disabled = false;
     if (done) {
-      btn.style.display = 'none';
+      btn.textContent = '🔁 שחק שוב — XP ×2';
       card.classList.add('done');
     } else {
-      btn.style.display = 'block';
-      btn.disabled = false;
       btn.textContent = '🎯 שחק את אתגר היום — XP ×2';
       card.classList.remove('done');
-      btn.onclick = () => _launchDailyChallenge(dc);
     }
+    btn.onclick = () => _launchDailyChallenge(dc);
 
     card.style.display = 'block';
     lacTrack('daily_challenge_card_shown', { letter: dc.letter, done });
@@ -4130,6 +4130,8 @@
     }
     S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
     S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;S.isDailyChallenge=room.isDailyChallenge||false;S.isSolo=room.soloMode||false;
+    // Mark daily challenge done when joining a daily challenge room
+    if (room.isDailyChallenge && !asSpectator) { markDailyChallengeDone(); renderDailyChallengeCard(); }
     applyRoomTheme(room.roomTheme||'default'); // FEATURE 8
     S.currentCatIndex=room.currentCatIndex||0;
     S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
