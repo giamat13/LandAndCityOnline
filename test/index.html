@@ -2335,7 +2335,9 @@
       .slice(0, 3);
     // Best word from history (saved since last update)
     const bestWord = (() => { try { return localStorage.getItem('aretz_best_word') || null; } catch(e) { return null; } })();
-    return { totalGames, wins, topThree, avgScore, winRate, catScores, bestWord };
+    // All-time high score
+    const highScore = (() => { try { return parseInt(localStorage.getItem('aretz_high_score')||'0') || null; } catch(e) { return null; } })();
+    return { totalGames, wins, topThree, avgScore, winRate, catScores, bestWord, highScore };
   }
   function renderProfileStats() {
     const el = document.getElementById('profile-stats-content');
@@ -2352,6 +2354,7 @@
         <div class="pstat-box"><div class="pstat-num">${stats.avgScore}</div><div class="pstat-lbl">ממוצע נקודות</div></div>
         <div class="pstat-box"><div class="pstat-num">${stats.topThree}</div><div class="pstat-lbl">פודיום (מקום 1–3)</div></div>
       </div>
+      ${stats.highScore ? `<div class="pstat-best" style="background:linear-gradient(135deg,rgba(233,69,96,.1),rgba(245,166,35,.08));border-color:rgba(233,69,96,.3);margin-top:8px;"><div class="pstat-best-lbl">🏆 ניקוד שיא אישי</div><div class="pstat-best-word" style="color:var(--orange);font-size:1.6rem;">${stats.highScore}</div><div class="pstat-best-lbl">הנקודות הכי הרבה שצברת במשחק אחד</div></div>` : ''}
       ${stats.bestWord ? `<div class="pstat-best"><div class="pstat-best-lbl">💎 המילה הנדירה ביותר שלך</div><div class="pstat-best-word">${stats.bestWord}</div></div>` : ''}
       ${stats.catScores.length ? `
         <div style="margin-top:10px;">
@@ -2517,6 +2520,7 @@
             <div class="ppm-stat"><div class="ppm-stat-num">${myStats.topThree}</div><div class="ppm-stat-label">פודיום</div></div>
           </div>
           ${catBarsHtml ? `<div style="margin-bottom:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">קטגוריות חזקות</div>${catBarsHtml}` : ''}
+          ${myStats.highScore ? `<div style="background:linear-gradient(135deg,rgba(233,69,96,.08),rgba(245,166,35,.06));border:1px solid rgba(233,69,96,.25);border-radius:10px;padding:10px;margin-top:8px;text-align:center;"><div style="font-size:.68rem;color:var(--muted);margin-bottom:3px;">🏆 ניקוד שיא אישי</div><div style="font-weight:900;font-size:1.3rem;color:var(--orange);">${myStats.highScore}</div></div>` : ''}
           ${myStats.bestWord ? `<div style="background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);border-radius:10px;padding:10px;margin-top:8px;text-align:center;"><div style="font-size:.68rem;color:var(--muted);margin-bottom:3px;">💎 המילה הנדירה ביותר שלך</div><div style="font-weight:900;font-size:1.1rem;color:var(--blue);">${myStats.bestWord}</div></div>` : ''}
         </div>`;
       }
