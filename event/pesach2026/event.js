@@ -454,7 +454,7 @@
 })();
 
 /* ══════════════════════════════════════════════════════════════════
-   DEV SIMULATION BUTTON — MutationObserver על admin-panel-btn-wrap
+   DEV SIMULATION BUTTON — עוגן: btn-open-weekly-lb (החליף את admin-panel-btn-wrap)
    ══════════════════════════════════════════════════════════════════ */
 (function() {
 
@@ -473,8 +473,10 @@
     if (document.getElementById('pesach-dev-sim-btn')) return;
     if (new Date() >= new Date('2026-04-09T00:00:00')) return;
     if (!_hasDevRole()) return;
-    var wrap = document.getElementById('admin-panel-btn-wrap');
-    if (!wrap) return;
+    // עוגן: הכפתור "לוח שבועי" שהחליף את admin-panel-btn-wrap
+    var anchor = document.getElementById('btn-open-weekly-lb');
+    if (!anchor) return;
+    var wrap = anchor.parentElement; // ה-div שמכיל את כפתורי לוח תורמים + לוח שבועי
 
     var btn = document.createElement('button');
     btn.id = 'pesach-dev-sim-btn';
@@ -488,13 +490,14 @@
     btn.addEventListener('mouseleave', function(){ btn.style.background='linear-gradient(135deg,rgba(212,175,55,0.12),rgba(212,175,55,0.06))'; btn.style.boxShadow='none'; });
     btn.addEventListener('click', openSimModal);
 
-    // מוסיף אחרי ה-wrap — גלוי תמיד, ללא תלות ב-display של ה-wrap
+    // מוסיף אחרי ה-div שמכיל את כפתורי הלוחות
     wrap.insertAdjacentElement('afterend', btn);
   }
 
   function observe() {
-    var wrap = document.getElementById('admin-panel-btn-wrap');
-    if (!wrap) { setTimeout(observe, 300); return; }
+    // ממתין ל-btn-open-weekly-lb במקום ל-admin-panel-btn-wrap שהוסר
+    var anchor = document.getElementById('btn-open-weekly-lb');
+    if (!anchor) { setTimeout(observe, 300); return; }
     addBtn();
   }
 
