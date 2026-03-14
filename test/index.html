@@ -3843,7 +3843,7 @@
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('screen-'+id).classList.add('active');
     window.scrollTo(0,0);
-    if(id==='home') renderDailyChallengeCard();
+    if(id==='home') { renderDailyChallengeCard(); setTimeout(()=>tryStartTut('home'),800); }
   }
   function toast(m){
     const t=document.getElementById('toast');
@@ -4631,6 +4631,7 @@
     // Update estimated time
     updateEstimatedTime();
     showScreen('lobby');
+    setTimeout(()=>tryStartTut('lobby'), 600);
     enterRoom();
 
     // Show room name + save permanent room for this participant
@@ -6586,6 +6587,7 @@
       fbSave('gameHistory',histToSave);
     }catch(e){}
     showScreen('final');
+    setTimeout(()=>tryStartTut('final'), 600);
     // Find our placement
     const sorted=Object.entries(players)
       .filter(([,p])=>!p.spectator)
@@ -8452,6 +8454,68 @@ const LEGENDARY_CATS = [
         pos: 'above'
       },
     ],
+    lobby: [
+      {
+        target: 'code-box',
+        emoji: '📤',
+        title: 'שתף עם חברים!',
+        text: 'זה קוד החדר — שתף אותו עם חברים וישירות ייכנסו.\nאפשר גם לסרוק את קוד ה-QR שליד.',
+        pos: 'below'
+      },
+      {
+        target: 'lobby-cats',
+        emoji: '🎮',
+        title: 'הקטגוריות של המשחק',
+        text: 'אלו הקטגוריות שתשחקו הסיבוב.\nכמארח תוכל לשנות אותן בהגדרות ⚙️ לפני שמתחילים.',
+        pos: 'below'
+      },
+      {
+        target: 'start-btn',
+        emoji: '🎯',
+        title: 'התחל כשכולם מוכנים',
+        text: 'אפשר גם לשחק לבד!\nבמצב יחיד הניקוד ל-leaderboard יחצה.\nלחץ כשכולם בפנים.',
+        pos: 'above'
+      },
+    ],
+    home: [
+      {
+        target: 'daily-challenge-card',
+        emoji: '🎯',
+        title: 'אתגר יומי!',
+        text: 'כל יום יש אתגר עם אות וקטגוריות קבועות.\nשחק אותו וקבל ניקוד ×2! 🌟',
+        pos: 'below'
+      },
+      {
+        target: 'btn-open-achievements',
+        emoji: '🏅',
+        title: 'הישגים',
+        text: 'צבור הישגים על ידי משחק, ניצחונות, ורצף יומי.\nלחץ כדי לראות מה כבר השגת!',
+        pos: 'above'
+      },
+      {
+        target: 'btn-open-weekly-lb',
+        emoji: '🏆',
+        title: 'לוח שבועי',
+        text: 'כל שבוע — תחרות גלובלית!\nהניקוד שלך מסך הסיום נכנס ללוח.\nהאם תגיע לראש? 🥇',
+        pos: 'above'
+      },
+    ],
+    final: [
+      {
+        target: 'final-sb',
+        emoji: '🥇',
+        title: 'תוצאות סופיות!',
+        text: 'כאן הניקוד הסופי של כולם.\nהשחקן עם הניקוד הגבוה ביותר מנצח! 🏆',
+        pos: 'below'
+      },
+      {
+        target: 'btn-share-results',
+        emoji: '📤',
+        title: 'שתף תוצאות',
+        text: 'לחץ כדי לשתף את התוצאות לוואטסאפ — כיף להראות לחברים מי ניצח 😄',
+        pos: 'above'
+      },
+    ],
   };
 
   // Track which screens were tutored this session
@@ -8464,9 +8528,19 @@ const LEGENDARY_CATS = [
 
   function isTutDone() { return !!localStorage.getItem(TUT_KEY); }
   function markTutDone() { localStorage.setItem(TUT_KEY, '1'); fbSave('tut','1'); }
+  // Per-screen keys so new screens show even for users who finished the old tutorial
+  const TUT_SCREEN_KEYS = { lobby: 'etz_tut_lobby', home: 'etz_tut_home', final: 'etz_tut_final' };
+  function isScreenTutDone(screen) {
+    if (TUT_SCREEN_KEYS[screen]) return !!localStorage.getItem(TUT_SCREEN_KEYS[screen]);
+    return isTutDone();
+  }
+  function markScreenTutDone(screen) {
+    if (TUT_SCREEN_KEYS[screen]) localStorage.setItem(TUT_SCREEN_KEYS[screen], '1');
+    if (screen === 'results') markTutDone();
+  }
 
   function tryStartTut(screen) {
-    if (isTutDone()) return;
+    if (isScreenTutDone(screen)) return;
     if (tutShown[screen]) return;
     if (!TUT_SCREENS[screen] || !TUT_SCREENS[screen].length) return;
     tutShown[screen] = true;
@@ -8523,7 +8597,9 @@ const LEGENDARY_CATS = [
     document.body.appendChild(tutTooltipEl);
 
     document.getElementById('tut-skip').addEventListener('click', () => {
-      markTutDone(); _cleanTut();
+      markTutDone();
+      if (TUT_SCREEN_KEYS[tutScreenName]) localStorage.setItem(TUT_SCREEN_KEYS[tutScreenName], '1');
+      _cleanTut();
     });
     document.getElementById('tut-next').addEventListener('click', () => {
       const steps = TUT_SCREENS[tutScreenName] || [];
@@ -8531,7 +8607,7 @@ const LEGENDARY_CATS = [
       if (tutStep >= steps.length) {
         _cleanTut();
         // If this was the results screen, we're fully done
-        if (tutScreenName === 'results') markTutDone();
+        markScreenTutDone(tutScreenName);
       } else {
         _showTutStep();
       }
@@ -8637,6 +8713,7 @@ const LEGENDARY_CATS = [
   // Tutorial button on home — show interactive tutorial
   document.getElementById('btn-show-tutorial').addEventListener('click',()=>{
     localStorage.removeItem(TUT_KEY);
+    Object.values(TUT_SCREEN_KEYS).forEach(k=>localStorage.removeItem(k));
     Object.keys(tutShown).forEach(k=>delete tutShown[k]);
     // Show a standalone tutorial card with all tips
     _showTutorialBrochure();
