@@ -404,10 +404,29 @@
         (async function(){
           try {
             var snap=await get(ref(db,'rooms/'+S.roomId+'/players/'+S.pId));
-            var ups={}; ups['rooms/'+S.roomId+'/players/'+S.pId+'/score']=((snap.val()||{}).score||0)+20;
+            var newScore=((snap.val()||{}).score||0)+20;
+            var ups={};
+            ups['rooms/'+S.roomId+'/players/'+S.pId+'/score']=newScore;
             ups['rooms/'+S.roomId+'/afikomanFound']={pId:S.pId,name:S.pName,ts:Date.now()};
-            await update(ref(db),ups); S.totScores[S.pId]=(S.totScores[S.pId]||0)+20;
+            await update(ref(db),ups);
+            S.totScores[S.pId]=(S.totScores[S.pId]||0)+20;
             if(typeof toast==='function') toast('🫓 +20 נקודות אפיקומן!');
+
+            // ── רענן פודיום וסקורבורד על המסך ──
+            var psSnap=await get(ref(db,'rooms/'+S.roomId+'/players'));
+            var freshPlayers=psSnap.val()||{};
+            if(typeof renderPodium==='function'){
+              if(document.getElementById('results-podium-wrap'))
+                renderPodium(freshPlayers,'results-podium-wrap');
+              if(document.getElementById('podium-wrap'))
+                renderPodium(freshPlayers,'podium-wrap');
+            }
+            if(typeof renderSB==='function'){
+              if(document.getElementById('scoreboard'))
+                renderSB('scoreboard',freshPlayers);
+              if(document.getElementById('final-sb'))
+                renderSB('final-sb',freshPlayers);
+            }
           } catch(e){}
         })();
       }
@@ -555,6 +574,31 @@
 
   function simAfikomanWin(){
     simSpawnParticles(60);
+
+    // ── עדכן ניקוד מקומי + רענן פודיום/סקורבורד (סימולציה) ──
+    if(window.S&&S.pId){
+      S.totScores=S.totScores||{};
+      S.totScores[S.pId]=(S.totScores[S.pId]||0)+20;
+      // בנה מפת שחקנים זמנית עם הניקוד המעודכן לצורך רינדור
+      var simPlayers={};
+      if(S.players){
+        Object.entries(S.players).forEach(function(e){
+          simPlayers[e[0]]=Object.assign({},e[1],{score:S.totScores[e[0]]||0});
+        });
+      } else {
+        // fallback — שחקן יחיד
+        simPlayers[S.pId]={name:S.pName||'אתה',score:S.totScores[S.pId],color:S.pColor||'#d4af37'};
+      }
+      if(typeof renderPodium==='function'){
+        if(document.getElementById('results-podium-wrap')) renderPodium(simPlayers,'results-podium-wrap');
+        if(document.getElementById('podium-wrap')) renderPodium(simPlayers,'podium-wrap');
+      }
+      if(typeof renderSB==='function'){
+        if(document.getElementById('scoreboard')) renderSB('scoreboard',simPlayers);
+        if(document.getElementById('final-sb')) renderSB('final-sb',simPlayers);
+      }
+    }
+
     var ol=document.createElement('div');
     ol.style.cssText='position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;background:rgba(5,4,15,.85);backdrop-filter:blur(10px);padding:20px;animation:pesach-fade-in 0.3s ease;font-family:Heebo,sans-serif;direction:rtl;';
     ol.innerHTML='<div style="background:linear-gradient(160deg,#1a1408,#0f0c00);border:1.5px solid rgba(212,175,55,0.6);border-radius:24px;padding:36px 28px;max-width:340px;width:100%;text-align:center;"><div style="font-size:3rem;margin-bottom:16px;">🫓</div><div style="font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,#ffd700,#d4af37);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;">מצאת את האפיקומן!</div><div style="color:rgba(234,234,234,.75);font-size:.95rem;margin-bottom:6px;">כל הכבוד! 20 נקודות בונוס! 🎉</div><div style="color:rgba(212,175,55,.5);font-size:.7rem;margin-bottom:20px;">[סימולציה — ללא Firebase]</div><button id="sim-afw-close" style="width:100%;padding:12px;background:linear-gradient(135deg,#d4af37,#b8960c);border:none;border-radius:12px;color:#0f0c00;font-family:Heebo,sans-serif;font-size:1rem;font-weight:900;cursor:pointer;">אחלה! 🎊</button></div>';
