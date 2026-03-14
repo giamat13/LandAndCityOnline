@@ -141,6 +141,24 @@
     margin-top:8px;font-size:1.6rem;font-weight:900;color:var(--green);
     opacity:0;animation:fadeUp .4s .7s ease forwards;
   }
+  .ltr-overlay .ol-countdown{
+    font-size:7rem;font-weight:900;line-height:1;
+    color:var(--orange);
+    filter:drop-shadow(0 0 24px rgba(245,166,35,.7));
+    display:none;
+  }
+  @keyframes countPop{
+    0%{transform:scale(1.8);opacity:0}
+    40%{transform:scale(.9);opacity:1}
+    70%{transform:scale(1.05)}
+    100%{transform:scale(1);opacity:1}
+  }
+  @keyframes countFade{
+    0%{opacity:1;transform:scale(1)}
+    100%{opacity:0;transform:scale(.5)}
+  }
+  .ol-countdown.pop{animation:countPop .35s cubic-bezier(.34,1.56,.64,1) forwards}
+  .ol-countdown.fade{animation:countFade .25s ease forwards}
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   .ltr{text-align:center;margin-bottom:12px}
   .big-l{font-size:5rem;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:lp .4s cubic-bezier(.34,1.56,.64,1)}
@@ -1234,6 +1252,10 @@
         <div class="tog on" id="tog-creative-el"></div>
         <span class="tog-label">🌟 הצבעת יצירתיות אחרי פסילות (+10 נק' לזוכה)</span>
       </div>
+      <div class="tog-wrap" id="tog-funny-vote" style="margin-bottom:16px;">
+        <div class="tog" id="tog-funny-el"></div>
+        <span class="tog-label">😂 הצבעת "הכי מצחיק" אחרי פסילות (+10 נק' לזוכה)</span>
+      </div>
       <div class="tog-wrap" id="tog-legendary-mode" style="margin-bottom:16px;">
         <div class="tog on" id="tog-legendary-el"></div>
         <span class="tog-label">✨ סיבוב אגדי — קטגוריה מפתיעה אקראית (25% סיכוי)</span>
@@ -1537,6 +1559,7 @@
   <div id="toast"></div>
   <div id="ltr-overlay" class="ltr-overlay" style="display:none;">
     <div class="ol-label">האות של הסיבוב</div>
+    <div class="ol-countdown" id="ol-countdown">3</div>
     <div class="ol-big" id="ol-letter">א</div>
     <div class="ol-go">יאללה! 🚀</div>
   </div>
@@ -2840,6 +2863,7 @@
     vetoThresholdValue:50,
     raceMode:false,
     creativeVoteEnabled:true,
+    funnyVoteEnabled:false,
     bonusCatEnabled:false,
     tournamentMode:false,
     tournamentBracket:null
@@ -5144,36 +5168,60 @@
       if(!showAnim){resolve();return;}
       const overlay=document.getElementById('ltr-overlay');
       const olLetter=document.getElementById('ol-letter');
+      const olCountdown=document.getElementById('ol-countdown');
       overlay.style.display='flex';
-      olLetter.className='ol-big roll';
+      olLetter.style.display='none';
+      olLetter.className='ol-big';
       olLetter.style.animation='none';
 
-      let count=0;
-      const total=18;
-      // Slow down toward end: starts at 55ms, ends at 130ms
-      let tickDelay=55;
-      let tickTimer=null;
-      function doTick(){
-        const rndLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
-        olLetter.textContent=rndLetter;
-        SFX.play('slotTick');
-        count++;
-        if(count>=total){
-          olLetter.textContent=finalLetter;
-          olLetter.className='ol-big land';
-          SFX.play('slotLand');
+      // ── Countdown 3 → 2 → 1 ──
+      olCountdown.style.display='block';
+      let count=3;
+      function showCount(){
+        olCountdown.textContent=count;
+        olCountdown.className='ol-countdown pop';
+        if(count===3)SFX.play('slotTick');
+        setTimeout(()=>{
+          olCountdown.className='ol-countdown fade';
           setTimeout(()=>{
-            overlay.style.display='none';
-            olLetter.className='ol-big';
-            resolve();
-          },1500);
-          return;
-        }
-        // Ease out: tick gets ~5ms slower each step after halfway
-        if(count>total/2) tickDelay=Math.min(tickDelay+7,150);
-        tickTimer=setTimeout(doTick, tickDelay);
+            count--;
+            if(count>0){
+              SFX.play('slotTick');
+              showCount();
+            } else {
+              // Done countdown — start the spin
+              olCountdown.style.display='none';
+              olLetter.style.display='';
+              olLetter.className='ol-big roll';
+              let spinCount=0;
+              const total=18;
+              let tickDelay=55;
+              let tickTimer=null;
+              function doTick(){
+                const rndLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+                olLetter.textContent=rndLetter;
+                SFX.play('slotTick');
+                spinCount++;
+                if(spinCount>=total){
+                  olLetter.textContent=finalLetter;
+                  olLetter.className='ol-big land';
+                  SFX.play('slotLand');
+                  setTimeout(()=>{
+                    overlay.style.display='none';
+                    olLetter.className='ol-big';
+                    resolve();
+                  },1500);
+                  return;
+                }
+                if(spinCount>total/2) tickDelay=Math.min(tickDelay+7,150);
+                tickTimer=setTimeout(doTick, tickDelay);
+              }
+              tickTimer=setTimeout(doTick, tickDelay);
+            }
+          },280);
+        },380);
       }
-      tickTimer=setTimeout(doTick, tickDelay);
+      showCount();
     });
   }
 
