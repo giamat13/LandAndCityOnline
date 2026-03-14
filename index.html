@@ -4809,12 +4809,15 @@
   function updateLobbyQR(roomId){
     const img = document.getElementById('lobby-qr-img');
     if(!img || !roomId) return;
-    const url = `${location.origin}${location.pathname}?room=${roomId}`;
+    const url = S_pRefId
+      ? `${location.origin}${location.pathname}?room=${roomId}&ref=${S_pRefId}`
+      : `${location.origin}${location.pathname}?room=${roomId}`;
     img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=111120&margin=4`;
     img.style.display = 'block';
   }
   function shareLink(){
-    const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    const base=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    const url=S_pRefId ? base+`&ref=${S_pRefId}` : base;
     // Always show share panel with both options
     showSharePanel(url,'הצטרף למשחק ארץ עיר! 🌍',S.roomId);
   }
@@ -8234,12 +8237,14 @@ const LEGENDARY_CATS = [
 
   document.getElementById('code-box').addEventListener('click',copyCode);
   document.getElementById('btn-share-link').addEventListener('click',()=>{
-    const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    const base=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    const url=S_pRefId ? base+`&ref=${S_pRefId}` : base;
     const waMsg=encodeURIComponent('הצטרף למשחק ארץ עיר! 🌍\nהצטרף לחדר: '+S.roomId+'\n'+url);
     window.open('https://wa.me/?text='+waMsg,'_blank','noopener');
   });
   document.getElementById('btn-copy-link').addEventListener('click',()=>{
-    const url=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    const base=`${location.origin}${location.pathname}?room=${S.roomId}`;
+    const url=S_pRefId ? base+`&ref=${S_pRefId}` : base;
     navigator.clipboard.writeText(url).then(()=>toast('לינק הועתק! 🔗'));
   });
   document.getElementById('start-btn').addEventListener('click',startGame);
