@@ -4015,8 +4015,8 @@
     S.bonusCatEnabled=document.getElementById('tog-bonus-cat-el').classList.contains('on');
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
 
-    // Generate room ID without async collision check (8-char ID is collision-safe enough)
-    const roomId=gid(8);
+    // Generate room ID without async collision check
+    const roomId=gid(6);
     S.roomId=roomId;
 
     const roomData={
