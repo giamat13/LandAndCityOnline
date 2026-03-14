@@ -1306,8 +1306,8 @@
           <div id="req-list"></div>
         </div>
       </div>
-      <button class="btn btn-g" id="start-btn" disabled>🎯 התחל משחק</button>
-      <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">צריך לפחות 2 שחקנים</p>
+      <button class="btn btn-g" id="start-btn">🎯 התחל משחק</button>
+      <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px;">ניתן לשחק לבד — חצי ניקוד ל-leaderboard 🎮</p>
       <button id="btn-invite-tmp" class="btn btn-s" style="display:none;margin-top:10px;">📨 הזמן משתמש זמני</button>
       <button id="btn-sim-players" class="btn btn-s" style="display:none;margin-top:10px;border-color:rgba(168,85,247,.4);color:#a855f7;font-size:.85rem;">🤖 הוסף שחקנים מדומים</button>
       <!-- Space Game mini-banner for host while waiting -->
@@ -3740,6 +3740,7 @@
       S.cats=room.categories||[];
       S.rTime=room.roundTime||30;
       S.isPermanent=room.isPermanent||false;
+      S.isSolo=room.soloMode||false;
       S.currentCatIndex=room.currentCatIndex||0;
       S.isSpectator=sess.isSpectator||false;
       S.totalRounds=room.totalRounds||0;
@@ -4086,7 +4087,7 @@
       room.status='lobby';
     }
     S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
-    S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;S.isDailyChallenge=room.isDailyChallenge||false;
+    S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;S.isDailyChallenge=room.isDailyChallenge||false;S.isSolo=room.soloMode||false;
     applyRoomTheme(room.roomTheme||'default'); // FEATURE 8
     S.currentCatIndex=room.currentCatIndex||0;
     S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
@@ -4657,7 +4658,7 @@
         });
       });
             const btn=document.getElementById('start-btn');
-      if(btn)btn.disabled=Object.keys(getEligible(ps)).length<2;
+      if(btn)btn.disabled=false;
       if(S.isHost&&S.visibility!=='private'){
         update(ref(db,'publicRooms/'+S.roomId),{playerCount:activePlayers.length}).catch(()=>{});
       }
@@ -5028,9 +5029,10 @@
     const s=await get(ref(db,`rooms/${S.roomId}/players`));
     const allPs=s.val()||{};
     const activePlayers=Object.entries(getEligible(allPs));
-    if(activePlayers.length<2){toast('צריך לפחות 2 שחקנים מחוברים');return;}
+    const isSolo = activePlayers.length < 2;
+    if(isSolo) toast('🎮 מצב יחיד — חצי ניקוד ל-leaderboard, ללא הצבעות');
     const letter=S.isDailyChallenge ? getDailyChallenge().letter : LETTERS[Math.floor(Math.random()*LETTERS.length)];
-    S.letter=letter;S.rNum=1;S.currentCatIndex=0;
+    S.letter=letter;S.rNum=1;S.currentCatIndex=0;S.isSolo=isSolo;
     // 🌟 Legendary round: 25% chance even on first round
     const legendaryEnabled = S.legendaryEnabled !== false;
     const isLegendaryR1 = legendaryEnabled && (Math.random() < 0.25);
@@ -5039,7 +5041,8 @@
       status:'playing',round:1,letter,uniqueLetters:S.uniqueLetters,
       catStartedAt:Date.now(),currentCatIndex:0,
       catAnswers:null,lastActivity:Date.now(),
-      legendaryNext:999, legendaryCat:legendaryCatR1||null, isLegendary:isLegendaryR1
+      legendaryNext:999, legendaryCat:legendaryCatR1||null, isLegendary:isLegendaryR1,
+      soloMode:isSolo
     });
     // Remove from public listing once game starts
     if(S.visibility!=='private') remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});
@@ -5616,6 +5619,14 @@
     enterRoom();
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
+    // Solo mode: skip voting entirely, jump straight to results
+    if(room.soloMode){
+      if(S.isHost){
+        await update(ref(db,`rooms/${S.roomId}`),{status:'results',disqualified:{},lastActivity:Date.now()});
+      }
+      await showResults();
+      return;
+    }
     const catAnswers=room.catAnswers||{};
     const cats=getEffectiveCats(room);
     const vetoThresholdType=room.vetoThresholdType||'percent';
@@ -5775,6 +5786,12 @@
     // Read all vetoes + answers + players
     const snap=await get(ref(db,`rooms/${S.roomId}`));
     const room=snap.val();
+    // Solo mode: no vetoes, no creative vote
+    if(room.soloMode){
+      await update(ref(db,`rooms/${S.roomId}`),{status:'results',disqualified:{},lastActivity:Date.now()});
+      await showResults();
+      return;
+    }
     const catAnswers=room.catAnswers||{};
     const cats=getEffectiveCats(room);
     const vetoes=room.vetoes||{};
@@ -6432,6 +6449,10 @@
     clearInterval(S.timerInt);clearInterval(S.expiryInt);detach();clearSession();
     const snap=await get(ref(db,`rooms/${S.roomId}/players`));
     const players=snap.val()||{};
+    // In solo mode, use half the score for leaderboard purposes
+    const roomSnap=await get(ref(db,`rooms/${S.roomId}/soloMode`));
+    const isSoloMode=roomSnap.val()===true||S.isSolo===true;
+    const lbScoreFactor=isSoloMode?0.5:1;
     // Update permanent leaderboard
     if(S.isPermanent&&S.isHost){
       const lbSnap=await get(ref(db,'rooms/'+S.roomId+'/permLeaderboard'));
@@ -6439,7 +6460,7 @@
       Object.entries(players).filter(([,p])=>!p.spectator).forEach(([pid,p])=>{
         const key=p.name.replace(/[.#$/\[\]]/g,'_');
         const prev=lb[key]||{name:p.name,total:0,games:0,color:p.color,emoji:p.emoji};
-        lb[key]={name:p.name,total:(prev.total||0)+(p.score||0),games:(prev.games||0)+1,color:p.color,emoji:p.emoji};
+        lb[key]={name:p.name,total:(prev.total||0)+Math.floor((p.score||0)*lbScoreFactor),games:(prev.games||0)+1,color:p.color,emoji:p.emoji};
       });
       await set(ref(db,'rooms/'+S.roomId+'/permLeaderboard'),lb).catch(()=>{});
     }
@@ -6451,11 +6472,12 @@
         const pKey = (myP.name||'אנונימי').replace(/[.#$/\[\]]/g,'_').slice(0,30);
         const wRef = ref(db, `weeklyLeaderboard/${wk}/${pKey}`);
         const prev = (await get(wRef)).val() || {};
+        const lbScore = Math.floor((myP.score||0)*lbScoreFactor);
         await set(wRef, {
           name: myP.name||'אנונימי',
           emoji: myP.emoji||'',
           color: myP.color||'#e94560',
-          score: (prev.score||0) + (myP.score||0),
+          score: (prev.score||0) + lbScore,
           games: (prev.games||0) + 1,
           ts: Date.now()
         });
