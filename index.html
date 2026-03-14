@@ -1776,10 +1776,13 @@
   }
   function markDailyChallengeDone() {
     try {
+      const alreadyDoneToday = !!localStorage.getItem(_getDailyChallengeKey());
       localStorage.setItem(_getDailyChallengeKey(), Date.now().toString());
-      // Count total daily challenges done (for achievements)
-      const dc = parseInt(localStorage.getItem('aretz_daily_done')||'0')+1;
-      localStorage.setItem('aretz_daily_done', dc);
+      // Increment total count only once per day (not once per round/call)
+      if (!alreadyDoneToday) {
+        const dc = parseInt(localStorage.getItem('aretz_daily_done')||'0')+1;
+        localStorage.setItem('aretz_daily_done', dc);
+      }
     } catch(e) {}
   }
 
@@ -1814,16 +1817,16 @@
     tagsEl.innerHTML = dc.cats.map(c => `<span class="dcc-cat-tag">${c}</span>`).join('');
 
     const btn = document.getElementById('dcc-start-btn');
+    btn.style.display = 'block';
+    btn.disabled = false;
     if (done) {
-      btn.style.display = 'none';
+      btn.textContent = '🔁 שחק שוב — XP ×2';
       card.classList.add('done');
     } else {
-      btn.style.display = 'block';
-      btn.disabled = false;
       btn.textContent = '🎯 שחק את אתגר היום — XP ×2';
       card.classList.remove('done');
-      btn.onclick = () => _launchDailyChallenge(dc);
     }
+    btn.onclick = () => _launchDailyChallenge(dc);
 
     card.style.display = 'block';
     lacTrack('daily_challenge_card_shown', { letter: dc.letter, done });
@@ -2336,7 +2339,7 @@
     // Best word from history (saved since last update)
     const bestWord = (() => { try { return localStorage.getItem('aretz_best_word') || null; } catch(e) { return null; } })();
     // All-time high score
-    const highScore = (() => { try { return parseInt(localStorage.getItem('aretz_high_score')||'0') || null; } catch(e) { return null; } })();
+    const hs = localStorage.getItem('aretz_high_score'); const highScore = (hs !== null && hs !== '') ? (parseInt(hs) || 0) : null;
     return { totalGames, wins, topThree, avgScore, winRate, catScores, bestWord, highScore };
   }
   function renderProfileStats() {
@@ -4139,6 +4142,8 @@
     }
     S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
     S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;S.isDailyChallenge=room.isDailyChallenge||false;S.isSolo=room.soloMode||false;
+    // Mark daily done on join (counts once per session, not per round)
+    if (room.isDailyChallenge && !asSpectator) { markDailyChallengeDone(); renderDailyChallengeCard(); }
     applyRoomTheme(room.roomTheme||'default'); // FEATURE 8
     S.currentCatIndex=room.currentCatIndex||0;
     S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
