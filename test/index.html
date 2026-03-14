@@ -6615,21 +6615,25 @@
         rounds_played:         S.rNum,
       });
     });
-    // Increment games played counter for achievements
-    const gp = parseInt(localStorage.getItem('aretz_games_played')||'0')+1;
-    localStorage.setItem('aretz_games_played', gp);
-    // Track solo games
-    if (isSoloMode) { const sg=parseInt(localStorage.getItem('aretz_solo_games')||'0')+1; localStorage.setItem('aretz_solo_games',sg); }
-    // Track high score
-    const myScore = players[S.pId]?.score || 0;
-    const prevHigh = parseInt(localStorage.getItem('aretz_high_score')||'0');
-    if (myScore > prevHigh) localStorage.setItem('aretz_high_score', myScore);
-    // Track wins + win streak
-    if(myPlace === 1){
-      const w=parseInt(localStorage.getItem('aretz_wins')||'0')+1; localStorage.setItem('aretz_wins',w);
-      const ws=parseInt(localStorage.getItem('aretz_win_streak')||'0')+1; localStorage.setItem('aretz_win_streak',ws);
-    } else { localStorage.setItem('aretz_win_streak','0'); }
-    if(myPlace <= 3){ const t3=parseInt(localStorage.getItem('aretz_top3')||'0')+1; localStorage.setItem('aretz_top3',t3); }
+    // Increment games played counter for achievements (not for spectators)
+    if (!S.isSpectator) {
+      const gp = parseInt(localStorage.getItem('aretz_games_played')||'0')+1;
+      localStorage.setItem('aretz_games_played', gp);
+      // Track solo games
+      if (isSoloMode) { const sg=parseInt(localStorage.getItem('aretz_solo_games')||'0')+1; localStorage.setItem('aretz_solo_games',sg); }
+      // Track high score
+      const myScore = players[S.pId]?.score || 0;
+      const prevHigh = parseInt(localStorage.getItem('aretz_high_score')||'0');
+      if (myScore > prevHigh) localStorage.setItem('aretz_high_score', myScore);
+      // Track wins + win streak (bug1: only reset streak if actually played, not spectating)
+      if(myPlace === 1){
+        const w=parseInt(localStorage.getItem('aretz_wins')||'0')+1; localStorage.setItem('aretz_wins',w);
+        const ws=parseInt(localStorage.getItem('aretz_win_streak')||'0')+1; localStorage.setItem('aretz_win_streak',ws);
+      } else { localStorage.setItem('aretz_win_streak','0'); }
+      if(myPlace <= 3){ const t3=parseInt(localStorage.getItem('aretz_top3')||'0')+1; localStorage.setItem('aretz_top3',t3); }
+      // Bug 4: check achievements immediately after updating counters
+      checkAchievementGuards();
+    }
     // FEATURE 2: Save best unique word from this game (tracked in shareResults/earlier)
     try {
       const pending = localStorage.getItem('aretz_pending_best_word');
