@@ -1180,7 +1180,7 @@
     </div>
     <div class="card">
       <h3>🏠 שם החדר</h3>
-      <input type="text" id="room-name-inp" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30" style="margin-top:8px;" oninput="roomNameManuallyChanged=true">
+      <input type="text" id="room-name-inp" placeholder='לדוגמה: "החדר של דן" ...' maxlength="30" style="margin-top:8px;">
       <div id="room-public-hint" style="font-size:.74rem;color:var(--muted);margin-top:6px;">יוצג ברשימת החדרים הציבוריים</div>
     </div>
     <!-- FEATURE 4: Pack gallery button -->
@@ -4055,6 +4055,7 @@
     S.creativeVoteEnabled=document.getElementById('tog-creative-el').classList.contains('on');
     S.legendaryEnabled=document.getElementById('tog-legendary-el')?.classList.contains('on')!==false;
     S.bonusCatEnabled=document.getElementById('tog-bonus-cat-el').classList.contains('on');
+    S.funnyVoteEnabled=document.getElementById('tog-funny-el').classList.contains('on');
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
 
     // Generate room ID without async collision check
@@ -4063,7 +4064,7 @@
 
     const roomData={
       host:S.pId,originalHost:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,bonusCatEnabled:S.bonusCatEnabled||false,
-      uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',
+      uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',funnyVoteEnabled:S.funnyVoteEnabled||false,
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
       players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:getPrimaryDevRole(),
@@ -7215,6 +7216,9 @@
       if(rni&&n) rni.value=S_pRoomName||`החדר של ${n}`;
     }
   });
+  document.getElementById('room-name-inp').addEventListener('input',()=>{
+    roomNameManuallyChanged=true;
+  });
   document.getElementById('btn-show-create').addEventListener('click', () => { lacTrack('tap_create_room', {}); showCreate(); });
   // FEATURE 3: notif button
   document.getElementById('btn-notif-perm').addEventListener('click', requestNotifPermission);
@@ -8203,6 +8207,9 @@ const LEGENDARY_CATS = [
   });
   document.getElementById('tog-bonus-cat-mode').addEventListener('click',()=>{
     document.getElementById('tog-bonus-cat-el').classList.toggle('on');
+  });
+  document.getElementById('tog-funny-vote').addEventListener('click',()=>{
+    document.getElementById('tog-funny-el').classList.toggle('on');
   });
   // Tournament toggle
   document.getElementById('btn-save-template-pre').addEventListener('click',saveTemplate);
