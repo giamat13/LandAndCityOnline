@@ -1813,6 +1813,8 @@
       card.classList.add('done');
     } else {
       btn.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '🎯 שחק את אתגר היום — XP ×2';
       card.classList.remove('done');
       btn.onclick = () => _launchDailyChallenge(dc);
     }
@@ -1825,8 +1827,14 @@
     const n = document.getElementById('player-name').value.trim();
     if (!n) { toast('נא להזין שם שחקן קודם'); return; }
 
+    const btn = document.getElementById('dcc-start-btn');
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ יוצר חדר...';
+
     lacTrack('daily_challenge_start', { letter: dc.letter });
 
+    try {
     // Build categories from DCATS only (no invented categories)
     const dcLower = dc.cats.map(c => c.trim().toLowerCase());
     const active = DCATS.filter(c => dcLower.includes(c.name.trim().toLowerCase()))
@@ -1882,6 +1890,12 @@
     enterLobby();
     toast(`🎯 אתגר יומי — ${dc.letter} — XP ×2!`);
     lacTrack('room_created', { room_id: roomId, cat_count: active.length, daily_challenge: true });
+    } catch(e) {
+      btn.disabled = false;
+      btn.textContent = origText;
+      toast('שגיאה ביצירת החדר — נסה שוב');
+      lacTrack('room_create_error', { error: e.message || 'unknown', daily_challenge: true });
+    }
   }
 
 
@@ -3816,6 +3830,7 @@
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('screen-'+id).classList.add('active');
     window.scrollTo(0,0);
+    if(id==='home') renderDailyChallengeCard();
   }
   function toast(m){
     const t=document.getElementById('toast');
