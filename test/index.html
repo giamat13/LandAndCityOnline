@@ -1775,7 +1775,12 @@
     try { return !!localStorage.getItem(_getDailyChallengeKey()); } catch(e) { return false; }
   }
   function markDailyChallengeDone() {
-    try { localStorage.setItem(_getDailyChallengeKey(), Date.now().toString()); } catch(e) {}
+    try {
+      localStorage.setItem(_getDailyChallengeKey(), Date.now().toString());
+      // Count total daily challenges done (for achievements)
+      const dc = parseInt(localStorage.getItem('aretz_daily_done')||'0')+1;
+      localStorage.setItem('aretz_daily_done', dc);
+    } catch(e) {}
   }
 
   // Returns true if a given room's letter + cats qualify for daily ×2
@@ -1809,16 +1814,16 @@
     tagsEl.innerHTML = dc.cats.map(c => `<span class="dcc-cat-tag">${c}</span>`).join('');
 
     const btn = document.getElementById('dcc-start-btn');
-    btn.style.display = 'block';
-    btn.disabled = false;
     if (done) {
-      btn.textContent = '🔁 שחק שוב — XP ×2';
+      btn.style.display = 'none';
       card.classList.add('done');
     } else {
+      btn.style.display = 'block';
+      btn.disabled = false;
       btn.textContent = '🎯 שחק את אתגר היום — XP ×2';
       card.classList.remove('done');
+      btn.onclick = () => _launchDailyChallenge(dc);
     }
-    btn.onclick = () => _launchDailyChallenge(dc);
 
     card.style.display = 'block';
     lacTrack('daily_challenge_card_shown', { letter: dc.letter, done });
@@ -4130,8 +4135,6 @@
     }
     S.pName=n;S.pId=gid(10);S.roomId=code;S.isHost=false;S.isSpectator=asSpectator;
     S.cats=room.categories||[];S.rTime=room.roundTime||30;S.totScores={};S.isPermanent=room.isPermanent||false;S.isDailyChallenge=room.isDailyChallenge||false;S.isSolo=room.soloMode||false;
-    // Mark daily challenge done when joining a daily challenge room
-    if (room.isDailyChallenge && !asSpectator) { markDailyChallengeDone(); renderDailyChallengeCard(); }
     applyRoomTheme(room.roomTheme||'default'); // FEATURE 8
     S.currentCatIndex=room.currentCatIndex||0;
     S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
@@ -6606,9 +6609,17 @@
     // Increment games played counter for achievements
     const gp = parseInt(localStorage.getItem('aretz_games_played')||'0')+1;
     localStorage.setItem('aretz_games_played', gp);
-    // Track wins
-    if(myPlace === 1){ const w=parseInt(localStorage.getItem('aretz_wins')||'0')+1; localStorage.setItem('aretz_wins',w); }
-    // Track top-3 finishes
+    // Track solo games
+    if (isSoloMode) { const sg=parseInt(localStorage.getItem('aretz_solo_games')||'0')+1; localStorage.setItem('aretz_solo_games',sg); }
+    // Track high score
+    const myScore = players[S.pId]?.score || 0;
+    const prevHigh = parseInt(localStorage.getItem('aretz_high_score')||'0');
+    if (myScore > prevHigh) localStorage.setItem('aretz_high_score', myScore);
+    // Track wins + win streak
+    if(myPlace === 1){
+      const w=parseInt(localStorage.getItem('aretz_wins')||'0')+1; localStorage.setItem('aretz_wins',w);
+      const ws=parseInt(localStorage.getItem('aretz_win_streak')||'0')+1; localStorage.setItem('aretz_win_streak',ws);
+    } else { localStorage.setItem('aretz_win_streak','0'); }
     if(myPlace <= 3){ const t3=parseInt(localStorage.getItem('aretz_top3')||'0')+1; localStorage.setItem('aretz_top3',t3); }
     // FEATURE 2: Save best unique word from this game (tracked in shareResults/earlier)
     try {
@@ -7546,6 +7557,28 @@
     { id:'share_1',     section:'📤 שיתוף',         icon:'📤', name:'מפיץ',               desc:'שיתפת תוצאות פעם אחת',            check: ()=>parseInt(localStorage.getItem('aretz_share_count')||'0')>=1 },
     { id:'share_5',     section:'📤 שיתוף',         icon:'📣', name:'שגריר ארץ עיר',    desc:'שיתפת 5 פעמים',                   check: ()=>parseInt(localStorage.getItem('aretz_share_count')||'0')>=5 },
     { id:'ref_1',       section:'📤 שיתוף',         icon:'🔗', name:'מגייס',              desc:'הפצת קישור שהביא שחקן חדש',      check: ()=>(S_pRefCount||0)>=1 },
+    // Daily Challenge
+    { id:'daily_1',    section:'🎯 אתגר יומי',    icon:'🎯', name:'לוחם יומי',          desc:'השלמת אתגר יומי פעם ראשונה',     check: ()=>parseInt(localStorage.getItem('aretz_daily_done')||'0')>=1 },
+    { id:'daily_5',    section:'🎯 אתגר יומי',    icon:'📅', name:'שגרתן',              desc:'השלמת 5 אתגרים יומיים',           check: ()=>parseInt(localStorage.getItem('aretz_daily_done')||'0')>=5 },
+    { id:'daily_14',   section:'🎯 אתגר יומי',    icon:'🏅', name:'מחויב',              desc:'14 אתגרים יומיים',                check: ()=>parseInt(localStorage.getItem('aretz_daily_done')||'0')>=14 },
+    { id:'daily_30',   section:'🎯 אתגר יומי',    icon:'💎', name:'אלוף האתגרים',       desc:'30 אתגרים יומיים — מדהים!',      check: ()=>parseInt(localStorage.getItem('aretz_daily_done')||'0')>=30 },
+    // High Score
+    { id:'score_100',  section:'🔢 ציונים',        icon:'⭐', name:'מאה נקודות',         desc:"הגעת ל-100 נק' במשחק",           check: ()=>parseInt(localStorage.getItem('aretz_high_score')||'0')>=100 },
+    { id:'score_300',  section:'🔢 ציונים',        icon:'🌟', name:'שחקן חזק',           desc:"הגעת ל-300 נק' במשחק",           check: ()=>parseInt(localStorage.getItem('aretz_high_score')||'0')>=300 },
+    { id:'score_500',  section:'🔢 ציונים',        icon:'💎', name:'500 — מטורף!',       desc:"הגעת ל-500 נק' במשחק",           check: ()=>parseInt(localStorage.getItem('aretz_high_score')||'0')>=500 },
+    // Win streak
+    { id:'wstreak_2',  section:'🏆 ניצחונות',     icon:'⚡', name:'חייל',               desc:'2 ניצחונות עוקבים',               check: ()=>parseInt(localStorage.getItem('aretz_win_streak')||'0')>=2 },
+    { id:'wstreak_3',  section:'🏆 ניצחונות',     icon:'🔥', name:'בוער!',              desc:'3 ניצחונות עוקבים',               check: ()=>parseInt(localStorage.getItem('aretz_win_streak')||'0')>=3 },
+    { id:'wins_15',    section:'🏆 ניצחונות',     icon:'🚀', name:'רוצח',               desc:'15 ניצחונות',                      check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=15 },
+    { id:'wins_25',    section:'🏆 ניצחונות',     icon:'🌈', name:'אגדה חיה',           desc:'25 ניצחונות',                      check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=25 },
+    // Solo
+    { id:'solo_1',     section:'🧩 סולו',          icon:'🎮', name:'לבד אבל חזק',        desc:'שיחקת משחק סולו',                 check: ()=>parseInt(localStorage.getItem('aretz_solo_games')||'0')>=1 },
+    { id:'solo_5',     section:'🧩 סולו',          icon:'🦅', name:'נשר בודד',           desc:'5 משחקי סולו',                    check: ()=>parseInt(localStorage.getItem('aretz_solo_games')||'0')>=5 },
+    // Streak extended
+    { id:'streak_14',  section:'🔥 רצף יומי',     icon:'🌙', name:'שבועיים ברצף',       desc:'14 ימים ברצף — מדהים!',           check: ()=>getStreakData().count>=14 },
+    { id:'streak_30',  section:'🔥 רצף יומי',     icon:'🏆', name:'חודש שלם!',          desc:'30 ימים ברצף — בלתי נתפס!',      check: ()=>getStreakData().count>=30 },
+    // Games extended
+    { id:'games_100',  section:'🎮 משחקים',        icon:'💫', name:'שחקן מקצועי',        desc:'100+ משחקים',                     check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=100 },
   ];
 
 
@@ -7563,6 +7596,21 @@
       { id: 'sup_3',      check: ()=>(S_pSupporterLevel||0)>=3 },
       { id: 'room_5',     check: ()=>parseInt(localStorage.getItem('aretz_rooms_created')||'0')>=5 },
       { id: 'share_5',    check: ()=>parseInt(localStorage.getItem('aretz_share_count')||'0')>=5 },
+      { id: 'daily_1',    check: ()=>parseInt(localStorage.getItem('aretz_daily_done')||'0')>=1 },
+      { id: 'daily_5',    check: ()=>parseInt(localStorage.getItem('aretz_daily_done')||'0')>=5 },
+      { id: 'daily_14',   check: ()=>parseInt(localStorage.getItem('aretz_daily_done')||'0')>=14 },
+      { id: 'score_100',  check: ()=>parseInt(localStorage.getItem('aretz_high_score')||'0')>=100 },
+      { id: 'score_300',  check: ()=>parseInt(localStorage.getItem('aretz_high_score')||'0')>=300 },
+      { id: 'score_500',  check: ()=>parseInt(localStorage.getItem('aretz_high_score')||'0')>=500 },
+      { id: 'wstreak_2',  check: ()=>parseInt(localStorage.getItem('aretz_win_streak')||'0')>=2 },
+      { id: 'wstreak_3',  check: ()=>parseInt(localStorage.getItem('aretz_win_streak')||'0')>=3 },
+      { id: 'wins_15',    check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=15 },
+      { id: 'wins_25',    check: ()=>parseInt(localStorage.getItem('aretz_wins')||'0')>=25 },
+      { id: 'solo_1',     check: ()=>parseInt(localStorage.getItem('aretz_solo_games')||'0')>=1 },
+      { id: 'solo_5',     check: ()=>parseInt(localStorage.getItem('aretz_solo_games')||'0')>=5 },
+      { id: 'streak_14',  check: ()=>getStreakData().count>=14 },
+      { id: 'streak_30',  check: ()=>getStreakData().count>=30 },
+      { id: 'games_100',  check: ()=>parseInt(localStorage.getItem('aretz_games_played')||'0')>=100 },
     ];
     GUARD_ACHIEVEMENTS.forEach(a => {
       try { if (a.check()) grantAchievementGuard('ach_' + a.id); } catch(e) {}
