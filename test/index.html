@@ -1258,7 +1258,7 @@
       </div>
       <div class="tog-wrap" id="tog-legendary-mode" style="margin-bottom:16px;">
         <div class="tog on" id="tog-legendary-el"></div>
-        <span class="tog-label">✨ סיבוב אגדי — קטגוריה מפתיעה אקראית (25% סיכוי)</span>
+        <span class="tog-label">✨ סיבוב אגדי — 1 עד 3 קטגוריות מפתיעות (25% סיכוי)</span>
       </div>
       <div class="tog-wrap" id="tog-bonus-cat-mode" style="margin-bottom:16px;">
         <div class="tog" id="tog-bonus-cat-el"></div>
@@ -5061,18 +5061,18 @@
     // 🌟 Legendary round: 25% chance even on first round
     const legendaryEnabled = S.legendaryEnabled !== false;
     const isLegendaryR1 = legendaryEnabled && (Math.random() < 0.25);
-    const legendaryCatR1 = isLegendaryR1 ? pickLegendaryCat() : null;
+    const legendaryCatsR1 = isLegendaryR1 ? pickLegendaryCats() : null;
     await update(ref(db,`rooms/${S.roomId}`),{
       status:'playing',round:1,letter,uniqueLetters:S.uniqueLetters,
       catStartedAt:Date.now(),currentCatIndex:0,
       catAnswers:null,lastActivity:Date.now(),
-      legendaryNext:999, legendaryCat:legendaryCatR1||null, isLegendary:isLegendaryR1,
+      legendaryNext:999, legendaryCats:legendaryCatsR1||null, legendaryCat:legendaryCatsR1?.[0]||null, isLegendary:isLegendaryR1,
       soloMode:isSolo
     });
     // Remove from public listing once game starts
     if(S.visibility!=='private') remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});
     lacTrack('round_start', { round_number: 1, letter: letter, is_legendary: isLegendaryR1 });
-    if(isLegendaryR1) lacTrack('legendary_round', { round_number: 1, cat_name: legendaryCatR1?.name });
+    if(isLegendaryR1) lacTrack('legendary_round', { round_number: 1, cat_count: legendaryCatsR1?.length });
   };
 
   // ─── BONUS CAT PICKER ───────────────────────────────────────────
@@ -5123,20 +5123,23 @@
     S.isDailyChallenge=r.isDailyChallenge||false;
     S.catSubmitted=false;
 
-    // 🌟 Legendary round: always inject cat (not just on first cat)
-    if(r.isLegendary && r.legendaryCat){
-      const legCat = r.legendaryCat;
-      const alreadyIn = S.cats.some(c=>c.id===legCat.id);
-      if(!alreadyIn){
-        S.cats = [...S.cats, {id:legCat.id, emoji:legCat.emoji, name:legCat.name, isLegendary:true}];
+    // 🌟 Legendary round: inject all legendary cats
+    if(r.isLegendary){
+      // Support both new (array) and legacy (single object) format
+      const legCats = Array.isArray(r.legendaryCats) ? r.legendaryCats
+                    : (r.legendaryCat ? [r.legendaryCat] : []);
+      for(const legCat of legCats){
+        if(!S.cats.some(c=>c.id===legCat.id)){
+          S.cats = [...S.cats, {id:legCat.id, emoji:legCat.emoji, name:legCat.name, isLegendary:true}];
+        }
       }
       // Show overlay only on first cat of the round
-      if(S.currentCatIndex===0){
+      if(S.currentCatIndex===0 && legCats.length > 0){
         const overlayFlag = `leg_shown_${S.roomId}_r${S.rNum}`;
         if(!sessionStorage.getItem(overlayFlag)){
           sessionStorage.setItem(overlayFlag,'1');
           await new Promise(resolve=>{
-            showLegendaryOverlay(legCat, resolve);
+            showLegendaryOverlay(legCats, resolve);
           });
         }
       }
@@ -6615,21 +6618,21 @@
     const forcedLegendary = roomData2.forceLegendaryNext === true;
     const legendaryEnabled = roomData2.legendaryEnabled !== false;
     let isLegendary = legendaryEnabled && (forcedLegendary || (Math.random() < 0.25));
-    let legendaryCat = null;
+    let legendaryCats = null;
     let nextLegendaryNext = 999; // no longer used but kept for compat
     if(isLegendary){
-      legendaryCat = pickLegendaryCat();
+      legendaryCats = pickLegendaryCats();
     }
 
     await update(ref(db,`rooms/${S.roomId}`),{
       status:'playing',round:S.rNum,letter,
       catStartedAt:Date.now(),currentCatIndex:0,
       catAnswers:null,vetoes:null,disqualified:null,continueVotes:null,lastActivity:Date.now(),
-      isLegendary, legendaryCat: legendaryCat||null, legendaryNext: nextLegendaryNext,
+      isLegendary, legendaryCats: legendaryCats||null, legendaryCat: legendaryCats?.[0]||null, legendaryNext: nextLegendaryNext,
       forceLegendaryNext: null
     });
     lacTrack('round_start', { round_number: S.rNum, letter, is_legendary: isLegendary });
-    if (isLegendary) lacTrack('legendary_round', { round_number: S.rNum, cat_name: legendaryCat?.name });
+    if (isLegendary) lacTrack('legendary_round', { round_number: S.rNum, cat_count: legendaryCats?.length });
     await loadRound();
   }
 
@@ -7661,26 +7664,41 @@ const LEGENDARY_CATS = [
     {id:'leg_static', emoji:'🎤', name:'מילה שמופיעה בשיר של סטטיק ובן אל'},
   ];
 
-  // Pick a random legendary cat different from last one
-  let _lastLegCatId = null;
-  function pickLegendaryCat(){
-    const pool = LEGENDARY_CATS.filter(c=>c.id!==_lastLegCatId);
-    const cat = pool[Math.floor(Math.random()*pool.length)];
-    _lastLegCatId = cat.id;
-    return cat;
+  // Pick 1–3 random legendary cats (no repeats within the pick, different from last round)
+  let _lastLegCatIds = [];
+  function pickLegendaryCats(){
+    const count = Math.floor(Math.random() * 3) + 1; // 1, 2 or 3
+    const pool = LEGENDARY_CATS.filter(c => !_lastLegCatIds.includes(c.id));
+    const picked = [];
+    const available = pool.slice();
+    for(let i = 0; i < count && available.length > 0; i++){
+      const idx = Math.floor(Math.random() * available.length);
+      picked.push(available.splice(idx, 1)[0]);
+    }
+    _lastLegCatIds = picked.map(c => c.id);
+    return picked;
   }
+  // Legacy shim (single-cat callers)
+  function pickLegendaryCat(){ return pickLegendaryCats()[0]; }
 
-  function showLegendaryOverlay(cat, onDone){
+  function showLegendaryOverlay(cats, onDone){
+    // Accept single cat or array
+    const catArr = Array.isArray(cats) ? cats : [cats];
     const overlay = document.createElement('div');
     overlay.className = 'legendary-overlay';
-    overlay.innerHTML = `
-      <div class="legendary-star-ring">🌟</div>
-      <div class="legendary-title">סיבוב אגדי!</div>
+    const countLabel = catArr.length === 1 ? 'קטגוריה מיוחדת נוספה לסיבוב הזה'
+                     : catArr.length === 2 ? '✨ 2 קטגוריות מיוחדות נוספו לסיבוב הזה'
+                     : '✨ 3 קטגוריות מיוחדות נוספו לסיבוב הזה';
+    const catsHtml = catArr.map(cat => `
       <div class="legendary-cat-reveal">
         <div class="legendary-cat-emoji">${cat.emoji}</div>
         <div class="legendary-cat-name">${cat.name}</div>
-      </div>
-      <div class="legendary-badge">✨ קטגוריה מיוחדת נוספה לסיבוב הזה</div>
+      </div>`).join('');
+    overlay.innerHTML = `
+      <div class="legendary-star-ring">🌟</div>
+      <div class="legendary-title">סיבוב אגדי!</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">${catsHtml}</div>
+      <div class="legendary-badge">${countLabel}</div>
     `;
     document.body.appendChild(overlay);
     // Auto-dismiss after 2.8s then call onDone
@@ -7690,13 +7708,16 @@ const LEGENDARY_CATS = [
     }, 2800);
   }
 
-  // ─── Helper: get categories including legendary cat ─────────────
+  // ─── Helper: get categories including legendary cats ─────────────
   function getEffectiveCats(room){
     let cats = (room.categories || S.cats).slice();
-    if(room.isLegendary && room.legendaryCat){
-      const legCat = room.legendaryCat;
-      if(!cats.some(c=>c.id===legCat.id)){
-        cats = [...cats, {id:legCat.id, emoji:legCat.emoji, name:legCat.name, isLegendary:true}];
+    if(room.isLegendary){
+      const legCats = Array.isArray(room.legendaryCats) ? room.legendaryCats
+                    : (room.legendaryCat ? [room.legendaryCat] : []);
+      for(const legCat of legCats){
+        if(!cats.some(c=>c.id===legCat.id)){
+          cats = [...cats, {id:legCat.id, emoji:legCat.emoji, name:legCat.name, isLegendary:true}];
+        }
       }
     }
     return cats;
