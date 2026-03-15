@@ -2564,224 +2564,231 @@
     lacTrack('view_player_profile', { viewed_player: player.name });
   }
 
-  // ─── FIREBASE SYNC HELPERS ────────────────────────────────────────
-  // Keys that are synced to Firebase when user is logged in
-  // lac_s (session) is intentionally NOT synced — it's device-specific
-  const FB_SYNC_KEYS = ['profile','myrooms','theme','tut','templates','gameHistory','playDates'];
+  // ─── ACCOUNT SYNC ────────────────────────────────────────────────
+  // Single-responsibility design:
+  //   loadProfile()      → local only, called on boot
+  //   saveProfile()      → local + debounced cloud push
+  //   _onAuthReady(user) → pull cloud, merge, attach real-time listener
+  //
+  // No getIdToken() on every call — Firebase SDK handles token refresh.
+  // fbSave() kept as thin wrapper for non-profile keys (rooms, history…)
 
-  async function fbSave(key, data) {
+  let _profileListener = null;  // real-time onValue unsubscribe
+  let _pendingProfileSave = null; // debounce handle
+  const _PROFILE_DEBOUNCE = 600; // ms
+
+  // ── thin write helper for non-profile keys ──────────────────────
+  function fbSave(key, data) {
     if (!currentUser) return;
-    try {
-      await currentUser.getIdToken(true); // ensure DB has fresh auth token
-      await set(ref(db,'users/'+currentUser.uid+'/'+key), data);
-    } catch(e) { console.warn('fbSave error', e); }
-  }
-  async function fbLoad(key) {
-    if (!currentUser) return null;
-    try {
-      await currentUser.getIdToken(true);
-      const snap = await get(ref(db,'users/'+currentUser.uid+'/'+key));
-      return snap.exists() ? snap.val() : null;
-    } catch(e) { return null; }
+    set(ref(db, 'users/' + currentUser.uid + '/' + key), data).catch(e => {
+      console.warn('[Sync] fbSave ' + key + ' failed:', e.message);
+    });
   }
 
-  // Called after login — pull all user data from Firebase and apply locally
-  // Apply a cloud profile object to all local state variables + UI
-  function _applyProfile(p) {
-    // Safety 1: don't apply if profile hasn't actually changed
-    const existing = (() => { try { return JSON.parse(localStorage.getItem('lac_profile')); } catch(e) { return null; } })();
-    if (existing && existing._updatedAt === p._updatedAt && existing.name === p.name) {
-      console.log('_applyProfile: no change, skipping UI update');
-      return;
-    }
-
-    // Safety 2: don't disrupt active game screens
-    const activeScreen = document.querySelector('.screen.active')?.id || '';
-    const gameScreens = ['screen-game','screen-vote','screen-results','screen-final','screen-lobby'];
-    const inGame = gameScreens.includes(activeScreen);
-
-    // 1. Update all state variables
-    S.pName = p.name;
-    S_pColor = p.color || AVATAR_COLORS[0];
-    S_pEmoji = p.emoji || null;
-    S_pFrame = p.frame || null;
-    S_pTag = p.tag || null;
-    S_pEntry = p.entry || 'none';
-    S_pRoomName = p.roomName || '';
-    S_pDevRoles = Array.isArray(p.devRoles) ? p.devRoles : [];
-    S_pRefId = p.refId || null;
-    // Take the highest known count — cloud may not have refCount yet (old profile)
-    S_pRefCount = Math.max(p.refCount || 0, S_pRefCount);
+  // ── canonical state setter — ONE place that writes S_p* vars ────
+  function _applyProfileToState(p) {
+    if (!p || !p.name) return;
+    S.pName           = p.name;
+    S_pColor          = p.color       || AVATAR_COLORS[0];
+    S_pEmoji          = p.emoji       || null;
+    S_pFrame          = p.frame       || null;
+    S_pTag            = p.tag         || null;
+    S_pEntry          = p.entry       || 'none';
+    S_pRoomName       = p.roomName    || '';
+    // devRoles: union with current — never remove earned roles
+    const incomingRoles = Array.isArray(p.devRoles) ? p.devRoles : (p.devRole ? [p.devRole] : []);
+    S_pDevRoles       = [...new Set([...incomingRoles, ...(S_pDevRoles||[])])];
+    S_pRefId          = p.refId       || S_pRefId || null;
+    S_pRefCount       = Math.max(p.refCount || 0, S_pRefCount || 0);
     S_pSupporterLevel = Math.max(p.supporterLevel || 0, getSupporterLevel(S_pRefCount));
-    S_pActiveBadge = p.activeBadge || 'auto';
-    console.log('[DEBUG] _applyProfile: cloud refCount=', p.refCount, '| final S_pRefCount=', S_pRefCount, '| level=', S_pSupporterLevel);
-
-    // 2. Persist to localStorage
-    localStorage.setItem('lac_profile', JSON.stringify(p));
+    S_pActiveBadge    = p.activeBadge || S_pActiveBadge || 'auto';
+    const el = document.getElementById('player-name');
+    if (el) el.value = p.name;
     if (p.refId) { try { localStorage.setItem('lac_refid', p.refId); } catch(e){} }
+  }
 
-    // 3. Update hidden name input (always safe)
-    const playerNameEl = document.getElementById('player-name');
-    if (playerNameEl) playerNameEl.value = p.name;
+  // ── safe JSON parse from localStorage ───────────────────────────
+  function _lsGet(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch(e) { return fallback; }
+  }
 
-    // Safety 3: skip all visual UI updates if in active game
-    if (inGame) {
-      console.log('_applyProfile: in game, skipping UI refresh');
-      return;
+  // ── merge two arrays, dedupe by keyFn, sort by sortField, cap ───
+  function _mergeArr(local, cloud, keyFn, sortField, max) {
+    const arr = cloud ? (Array.isArray(cloud) ? cloud : Object.values(cloud)) : [];
+    const merged = [...arr, ...local];
+    const seen = new Set();
+    return merged
+      .filter(x => { const k = typeof keyFn === 'function' ? keyFn(x) : x[keyFn]; if (seen.has(k)) return false; seen.add(k); return true; })
+      .sort((a, b) => (b[sortField] || 0) - (a[sortField] || 0))
+      .slice(0, max);
+  }
+
+  // ── push profile UI changes (safe — won't touch game screens) ───
+  function _refreshProfileUI() {
+    const scr = document.querySelector('.screen.active')?.id || '';
+    const gameScreens = ['screen-game','screen-vote','screen-results','screen-final','screen-lobby'];
+    if (gameScreens.includes(scr)) return;
+    const pn = document.getElementById('prof-name'); if (pn) pn.value = S.pName || '';
+    const pr = document.getElementById('prof-room-name'); if (pr) pr.value = S_pRoomName || '';
+    const hn = document.getElementById('player-name'); if (hn) hn.value = S.pName || '';
+    if (scr === 'screen-profile') {
+      initAvPicker(); initEmojiPicker(); initFramePicker();
+      initTagInput(); initEntryPicker();
+      updateProfilePreview(); updateDevCodeStatus(); renderBadgePicker();
     }
-
-    // 4. Update profile screen inputs
-    const profNameEl = document.getElementById('prof-name');
-    if (profNameEl) profNameEl.value = p.name;
-    const profRoomEl = document.getElementById('prof-room-name');
-    if (profRoomEl) profRoomEl.value = p.roomName || '';
-
-    // Safety 4: only re-render pickers if profile screen is currently visible
-    if (activeScreen === 'screen-profile') {
-      initAvPicker();
-      initEmojiPicker();
-      initFramePicker();
-      initTagInput();
-      initEntryPicker();
-      updateProfilePreview();
-      updateDevCodeStatus();
-      renderBadgePicker();
-    }
-
-    // 5. Always update home identity bar (lightweight, no jumps)
     updateHomeIdentity();
   }
 
+  // ── called when user logs in OR when cloud profile changes ──────
+  // ── smart profile merge: never loses data from either side ────────
+  // For scalar fields: take from the profile with the newer _updatedAt.
+  // For cumulative fields (devRoles, refCount, supporterLevel): always
+  // take the union / maximum so no earned data is ever wiped.
+  function _mergeProfiles(a, b) {
+    if (!a?.name && !b?.name) return null;
+    if (!a?.name) return b;
+    if (!b?.name) return a;
+    // Pick the newer profile as the base for scalar fields
+    const base  = (a._updatedAt || 0) >= (b._updatedAt || 0) ? a : b;
+    const other = base === a ? b : a;
+    // Union devRoles — never lose a role
+    const roles = [...new Set([
+      ...(Array.isArray(base.devRoles)  ? base.devRoles  : (base.devRole  ? [base.devRole]  : [])),
+      ...(Array.isArray(other.devRoles) ? other.devRoles : (other.devRole ? [other.devRole] : []))
+    ])];
+    return {
+      ...base,
+      devRoles:       roles,
+      refId:          base.refId          || other.refId          || null,
+      refCount:       Math.max(base.refCount       || 0, other.refCount       || 0),
+      supporterLevel: Math.max(base.supporterLevel || 0, other.supporterLevel || 0),
+      activeBadge:    base.activeBadge    || other.activeBadge    || 'auto',
+      _updatedAt:     Math.max(base._updatedAt || 0, other._updatedAt || 0),
+    };
+  }
+
+  async function _onAuthReady(user) {
+    if (!user) {
+      if (_profileListener) { _profileListener(); _profileListener = null; }
+      return;
+    }
+
+    // 1. One-time pull + smart merge
+    let cloudSnap;
+    try { cloudSnap = await get(ref(db, 'users/' + user.uid + '/profile')); }
+    catch(e) { console.warn('[Sync] initial pull failed:', e.message); cloudSnap = null; }
+
+    const cloudP = cloudSnap?.exists() ? cloudSnap.val() : null;
+    const localP = _lsGet('lac_profile', null);
+    const merged = _mergeProfiles(cloudP, localP);
+
+    if (merged) {
+      _applyProfileToState(merged);
+      try { localStorage.setItem('lac_profile', JSON.stringify(merged)); } catch(e) {}
+      // Always push merged result to cloud so both sides converge
+      set(ref(db, 'users/' + user.uid + '/profile'), merged).catch(() => {});
+      console.log('[Sync] merged profile → devRoles:', merged.devRoles, 'refCount:', merged.refCount);
+    } else {
+      // No profile anywhere — onboarding will handle it
+      const raw = localStorage.getItem('lac_profile');
+      if (raw) {
+        try { set(ref(db, 'users/' + user.uid + '/profile'), JSON.parse(raw)).catch(() => {}); } catch(e) {}
+      }
+    }
+
+    // 2. Merge non-profile keys in background
+    _syncOtherData(user).catch(e => console.warn('[Sync] other data error:', e.message));
+
+    // 3. Real-time listener — merge incoming cloud changes, never overwrite blindly
+    if (_profileListener) _profileListener();
+    _profileListener = onValue(ref(db, 'users/' + user.uid + '/profile'), snap => {
+      if (!snap.exists()) return;
+      const cp = snap.val();
+      if (!cp?.name) return;
+      const currentLocal = _lsGet('lac_profile', null);
+      // Skip if this is just our own write echoing back (same ts)
+      if (currentLocal && currentLocal._updatedAt === cp._updatedAt &&
+          JSON.stringify(currentLocal.devRoles) === JSON.stringify(cp.devRoles)) return;
+      const remerged = _mergeProfiles(cp, currentLocal);
+      if (!remerged) return;
+      console.log('[Sync] real-time merge → devRoles:', remerged.devRoles);
+      _applyProfileToState(remerged);
+      try { localStorage.setItem('lac_profile', JSON.stringify(remerged)); } catch(e) {}
+      _refreshProfileUI();
+      // Push merged result back if it gained something
+      if ((remerged.refCount || 0) > (cp.refCount || 0) ||
+          (remerged.devRoles||[]).length > (cp.devRoles||[]).length) {
+        set(ref(db, 'users/' + user.uid + '/profile'), remerged).catch(() => {});
+      }
+    }, e => console.warn('[Sync] listener error:', e));
+  }
+
+  // ── merge rooms, history, templates, dates, theme, tut ──────────
+  async function _syncOtherData(user) {
+    const snap = await get(ref(db, 'users/' + user.uid));
+    const cloud = snap.exists() ? snap.val() : {};
+
+    // First-ever login — upload everything local, then return
+    if (!snap.exists()) {
+      const push = {};
+      const lr = _lsGet('lac_myrooms', []);     if (lr.length) push.myrooms = lr;
+      const lt = _lsGet('aretz_templates', []); if (lt.length) push.templates = lt;
+      const lh = _lsGet('aretz_history', []);   if (lh.length) push.gameHistory = lh;
+      const ld = _lsGet(STREAK_KEY, []);         if (ld.length) push.playDates = ld;
+      const th = localStorage.getItem('lac_theme'); if (th) push.theme = th;
+      const tu = localStorage.getItem('etz_tut_v1'); if (tu) push.tut = tu;
+      push._firstLogin = Date.now();
+      if (Object.keys(push).length > 1) set(ref(db, 'users/' + user.uid), push).catch(() => {});
+      return;
+    }
+
+    // Rooms
+    const rooms = _mergeArr(_lsGet('lac_myrooms', []), cloud.myrooms, 'id', 'savedAt', 10);
+    try { localStorage.setItem('lac_myrooms', JSON.stringify(rooms)); } catch(e) {}
+    set(ref(db, 'users/' + user.uid + '/myrooms'), rooms).catch(() => {});
+    renderMyRooms();
+
+    // Theme
+    const cloudThemeTs = cloud.themeTs || 0;
+    const localThemeTs = parseInt(localStorage.getItem('lac_theme_ts') || '0');
+    if (cloud.theme && cloudThemeTs >= localThemeTs) {
+      applyTheme(cloud.theme);
+    } else if (localStorage.getItem('lac_theme') && localThemeTs > cloudThemeTs) {
+      set(ref(db, 'users/' + user.uid + '/theme'), localStorage.getItem('lac_theme')).catch(() => {});
+      set(ref(db, 'users/' + user.uid + '/themeTs'), localThemeTs).catch(() => {});
+    }
+
+    // Tutorial
+    if (cloud.tut || localStorage.getItem('etz_tut_v1')) {
+      try { localStorage.setItem('etz_tut_v1', '1'); } catch(e) {}
+      if (!cloud.tut) set(ref(db, 'users/' + user.uid + '/tut'), '1').catch(() => {});
+    }
+
+    // Templates
+    const tpls = _mergeArr(_lsGet('aretz_templates', []), cloud.templates, t => (t.name||'')+'_'+(t.ts||0), 'ts', 10);
+    try { localStorage.setItem('aretz_templates', JSON.stringify(tpls)); } catch(e) {}
+    set(ref(db, 'users/' + user.uid + '/templates'), tpls).catch(() => {});
+
+    // Game history
+    const hist = _mergeArr(_lsGet('aretz_history', []), cloud.gameHistory, h => (h.roomId||'')+'_'+(h.ts||0), 'ts', 20);
+    try { localStorage.setItem('aretz_history', JSON.stringify(hist)); } catch(e) {}
+    set(ref(db, 'users/' + user.uid + '/gameHistory'), hist).catch(() => {});
+    loadGameHistory();
+
+    // Play dates
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    const cloudDates = cloud.playDates ? (Array.isArray(cloud.playDates) ? cloud.playDates : Object.values(cloud.playDates)) : [];
+    const dates = [...new Set([...cloudDates, ..._lsGet(STREAK_KEY, [])])].filter(d => new Date(d) >= cutoff).sort();
+    try { localStorage.setItem(STREAK_KEY, JSON.stringify(dates)); } catch(e) {}
+    if (dates.length > cloudDates.length) set(ref(db, 'users/' + user.uid + '/playDates'), dates).catch(() => {});
+    renderStreakCard();
+  }
+
+  // ── syncFromFirebase: public manual-sync trigger (☁️ button) ────
   async function syncFromFirebase() {
-    if (!currentUser) return;
-    try {
-      await currentUser.getIdToken(true);
-      const snap = await get(ref(db,'users/'+currentUser.uid));
-
-      // ── local data (with timestamps) ──
-      const localProfile  = (() => { try { return JSON.parse(localStorage.getItem('lac_profile')); }  catch(e){ return null; } })();
-      const localRooms    = (() => { try { return JSON.parse(localStorage.getItem('lac_myrooms')||'[]'); } catch(e){ return []; } })();
-      const localTheme    = (() => { try { return localStorage.getItem('lac_theme')||'dark'; } catch(e){ return 'dark'; } })();
-      const localTut      = (() => { try { return localStorage.getItem('etz_tut_v1')||null; } catch(e){ return null; } })();
-
-      if (!snap.exists()) {
-        // First ever login — upload local data to cloud
-        const pushData = { _updatedAt: Date.now() };
-        if (localProfile) pushData.profile = { ...localProfile, _updatedAt: Date.now() };
-        if (localRooms.length) pushData.myrooms = localRooms;
-        if (localTheme) pushData.theme = localTheme;
-        if (localTut) pushData.tut = localTut;
-        await set(ref(db,'users/'+currentUser.uid), pushData);
-        console.log('First sync: uploaded local data to cloud');
-        return;
-      }
-
-      const cloud = snap.val();
-
-      // ── PROFILE: last-write-wins by _updatedAt ──
-      const cloudProfile = cloud.profile || null;
-      const localTs  = localProfile?._updatedAt || 0;
-      const cloudTs  = cloudProfile?._updatedAt || 0;
-      if (cloudProfile && cloudProfile.name) {
-        if (cloudTs > localTs) {
-          // Cloud is newer → apply cloud, then push back refCount if it improved
-          _applyProfile(cloudProfile);
-          console.log('Sync: applied cloud profile (cloud ts:', cloudTs, '> local ts:', localTs, ')');
-          // Push back so cloud has the correct refCount (may have been missing)
-          saveProfile();
-        } else if (localTs > cloudTs) {
-          // Local is newer → push local to cloud
-          const updated = { ...localProfile, _updatedAt: localTs };
-          await set(ref(db,'users/'+currentUser.uid+'/profile'), updated);
-          console.log('Sync: pushed local profile to cloud (local ts:', localTs, '> cloud ts:', cloudTs, ')');
-        }
-      } else if (localProfile && localProfile.name) {
-        // No cloud profile yet → upload local
-        const updated = { ...localProfile, _updatedAt: Date.now() };
-        await set(ref(db,'users/'+currentUser.uid+'/profile'), updated);
-        console.log('Sync: no cloud profile, uploaded local');
-      }
-
-      // ── MY ROOMS: merge by savedAt, keep newest 10 ──
-      const cloudRooms = cloud.myrooms
-        ? (Array.isArray(cloud.myrooms) ? cloud.myrooms : Object.values(cloud.myrooms))
-        : [];
-      if (cloudRooms.length || localRooms.length) {
-        const merged = [...cloudRooms, ...localRooms];
-        const seen = new Set();
-        const deduped = merged
-          .filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; })
-          .sort((a,b) => (b.savedAt||0) - (a.savedAt||0))
-          .slice(0,10);
-        localStorage.setItem('lac_myrooms', JSON.stringify(deduped));
-        await set(ref(db,'users/'+currentUser.uid+'/myrooms'), deduped);
-        renderMyRooms();
-      }
-
-      // ── THEME: last-write-wins ──
-      const cloudThemeTs = cloud.themeTs || 0;
-      const localThemeTs = (() => { try { return parseInt(localStorage.getItem('lac_theme_ts')||'0'); } catch(e){ return 0; } })();
-      if (cloud.theme && cloudThemeTs >= localThemeTs) {
-        applyTheme(cloud.theme);
-      } else if (localTheme && localThemeTs > cloudThemeTs) {
-        await set(ref(db,'users/'+currentUser.uid+'/theme'), localTheme);
-        await set(ref(db,'users/'+currentUser.uid+'/themeTs'), localThemeTs);
-      }
-
-      // ── TUTORIAL FLAG: if either side has it, keep it ──
-      if (cloud.tut || localTut) {
-        try { localStorage.setItem('etz_tut_v1','1'); } catch(e){}
-        if (!cloud.tut) await set(ref(db,'users/'+currentUser.uid+'/tut'),'1');
-      }
-
-      // ── TEMPLATES: merge by name+ts, keep newest 10 ──
-      const localTemplates = (() => { try { return JSON.parse(localStorage.getItem('aretz_templates')||'[]'); } catch(e){ return []; } })();
-      const cloudTemplates = cloud.templates ? (Array.isArray(cloud.templates) ? cloud.templates : Object.values(cloud.templates)) : [];
-      if (cloudTemplates.length || localTemplates.length) {
-        const merged = [...cloudTemplates, ...localTemplates];
-        const seenT = new Set();
-        const dedupedT = merged
-          .filter(t => { const key = (t.name||'')+'_'+(t.ts||0); if(seenT.has(key)) return false; seenT.add(key); return true; })
-          .sort((a,b) => (b.ts||0)-(a.ts||0))
-          .slice(0,10);
-        try { localStorage.setItem('aretz_templates', JSON.stringify(dedupedT)); } catch(e){}
-        if (dedupedT.length > cloudTemplates.length || cloudTemplates.some((ct,i) => !dedupedT[i] || ct.ts !== dedupedT[i].ts)) {
-          await set(ref(db,'users/'+currentUser.uid+'/templates'), dedupedT).catch(()=>{});
-        }
-      }
-
-      // ── GAME HISTORY: merge by roomId+ts, keep newest 20 ──
-      const localHistory = (() => { try { return JSON.parse(localStorage.getItem('aretz_history')||'[]'); } catch(e){ return []; } })();
-      const cloudHistory = cloud.gameHistory ? (Array.isArray(cloud.gameHistory) ? cloud.gameHistory : Object.values(cloud.gameHistory)) : [];
-      if (cloudHistory.length || localHistory.length) {
-        const mergedH = [...cloudHistory, ...localHistory];
-        const seenH = new Set();
-        const dedupedH = mergedH
-          .filter(h => { const key = (h.roomId||'')+'_'+(h.ts||0); if(seenH.has(key)) return false; seenH.add(key); return true; })
-          .sort((a,b) => (b.ts||0)-(a.ts||0))
-          .slice(0,20);
-        try { localStorage.setItem('aretz_history', JSON.stringify(dedupedH)); } catch(e){}
-        if (dedupedH.length > cloudHistory.length) {
-          await set(ref(db,'users/'+currentUser.uid+'/gameHistory'), dedupedH).catch(()=>{});
-        }
-        loadGameHistory();
-      }
-
-      // ── PLAY DATES: merge, keep last 30 ──
-      const localDates = (() => { try { return JSON.parse(localStorage.getItem(STREAK_KEY)||'[]'); } catch(e){ return []; } })();
-      const cloudDates = cloud.playDates ? (Array.isArray(cloud.playDates) ? cloud.playDates : Object.values(cloud.playDates)) : [];
-      if(cloudDates.length || localDates.length){
-        const merged = [...new Set([...cloudDates, ...localDates])];
-        const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
-        const deduped = merged.filter(d=>new Date(d)>=cutoff).sort();
-        try{ localStorage.setItem(STREAK_KEY, JSON.stringify(deduped)); }catch(e){}
-        if(deduped.length > cloudDates.length){
-          await set(ref(db,'users/'+currentUser.uid+'/playDates'), deduped).catch(()=>{});
-        }
-        renderStreakCard();
-      }
-
-    } catch(e) { console.warn('Firebase sync error:', e); lacTrack('sync_error', { error_message: (e?.message||String(e)).slice(0,100) }); throw e; }
+    if (!currentUser) throw new Error('לא מחובר לחשבון');
+    await _onAuthReady(currentUser);
   }
 
   const LETTERS='אבגדהוזחטיכלמנסעפצקרשת'.split('');
@@ -3098,46 +3105,45 @@
   });
 
   // ─── PROFILE PERSISTENCE ──────────────────────────────────────────
-  function saveProfile(){
-    const _pd={name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
-      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,
-      devRoles:S_pDevRoles,
-      refId:S_pRefId,refCount:S_pRefCount,supporterLevel:S_pSupporterLevel,activeBadge:S_pActiveBadge,
-      _updatedAt:Date.now()};
-    try{localStorage.setItem('lac_profile',JSON.stringify(_pd));}catch(e){}
-    fbSave('profile',_pd);
-    // Write public referral summary for admin dashboard
-    if(currentUser && S.pName){
-      set(ref(db,'adminData/referrals/'+currentUser.uid),{
-        name:S.pName,emoji:S_pEmoji||null,refId:S_pRefId||null,
-        refCount:S_pRefCount||0,supporterLevel:S_pSupporterLevel||0,
-        _updatedAt:Date.now()
-      }).catch(()=>{});
-    }
+  function _buildProfile() {
+    return {
+      name: S.pName, color: S_pColor, emoji: S_pEmoji, frame: S_pFrame,
+      tag: S_pTag, entry: S_pEntry, roomName: S_pRoomName,
+      devRoles: S_pDevRoles, refId: S_pRefId, refCount: S_pRefCount,
+      supporterLevel: S_pSupporterLevel, activeBadge: S_pActiveBadge,
+      _updatedAt: Date.now()
+    };
   }
-  function loadProfile(){
-    try{
-      const raw=localStorage.getItem('lac_profile');
-      if(!raw)return false;
-      const p=JSON.parse(raw);
-      if(!p.name)return false;
-      S.pName=p.name;
-      S_pColor=p.color||AVATAR_COLORS[0];
-      S_pEmoji=p.emoji||null;
-      S_pFrame=p.frame||null;
-      S_pTag=p.tag||null;
-      S_pEntry=p.entry||'none';
-      S_pRoomName=p.roomName||'';
-      if(Array.isArray(p.devRoles))S_pDevRoles=p.devRoles;
-      else if(p.devRole)S_pDevRoles=[p.devRole];
-      else S_pDevRoles=[];
-      S_pRefId=p.refId||null;
-      S_pRefCount=p.refCount||0;
-      S_pSupporterLevel=p.supporterLevel||0;
-      S_pActiveBadge=p.activeBadge||'auto';
-      document.getElementById('player-name').value=p.name;
+  function saveProfile() {
+    const p = _buildProfile();
+    // 1. localStorage — always, sync, instant
+    try { localStorage.setItem('lac_profile', JSON.stringify(p)); } catch(e) {}
+    // 2. cloud — debounced so rapid edits don't spam Firebase
+    clearTimeout(_pendingProfileSave);
+    _pendingProfileSave = setTimeout(() => {
+      if (!currentUser) return;
+      set(ref(db, 'users/' + currentUser.uid + '/profile'), p).catch(e => {
+        console.warn('[Sync] saveProfile cloud push failed:', e.message);
+      });
+      if (p.name) {
+        set(ref(db, 'adminData/referrals/' + currentUser.uid), {
+          name: p.name, emoji: p.emoji || null, refId: p.refId || null,
+          refCount: p.refCount || 0, supporterLevel: p.supporterLevel || 0,
+          _updatedAt: p._updatedAt
+        }).catch(() => {});
+      }
+    }, _PROFILE_DEBOUNCE);
+  }
+  // loadProfile: reads from localStorage only — fast boot path
+  function loadProfile() {
+    try {
+      const raw = localStorage.getItem('lac_profile');
+      if (!raw) return false;
+      const p = JSON.parse(raw);
+      if (!p || !p.name) return false;
+      _applyProfileToState(p);
       return true;
-    }catch(e){return false;}
+    } catch(e) { return false; }
   }
 
   // ─── SUPPORTER / REFERRAL SYSTEM ──────────────────────────────────
@@ -7846,8 +7852,6 @@
 
   document.getElementById('btn-open-achievements').addEventListener('click', showAchievements);
   document.getElementById('btn-open-achievements-streak').addEventListener('click', showAchievements);
-  // We'll hook into syncFromFirebase by extending it below after it's defined
-
   // ═══════════════════════════════════════════════════════════════
   // ─── ENDOWED PROGRESS (#3) ─────────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
@@ -9030,20 +9034,18 @@ const LEGENDARY_CATS = [
     const statusEl = document.getElementById('sync-status');
     const btn = document.getElementById('btn-sync-cloud');
     if (!currentUser) { statusEl.style.color='var(--red)'; statusEl.textContent='לא מחובר לחשבון'; return; }
-    btn.disabled = true;
-    btn.textContent = '⏳ מסנכרן...';
-    statusEl.style.color = 'var(--muted)';
-    statusEl.textContent = '';
+    btn.disabled = true; btn.textContent = '⏳ מסנכרן...';
+    statusEl.style.color = 'var(--muted)'; statusEl.textContent = '';
     try {
-      await syncFromFirebase();
+      await _onAuthReady(currentUser);
+      _refreshProfileUI();
       statusEl.style.color = 'var(--green)';
-      statusEl.textContent = '✓ סונכרן בהצלחה — ' + new Date().toLocaleTimeString('he-IL');
+      statusEl.textContent = '✓ סונכרן — ' + new Date().toLocaleTimeString('he-IL');
     } catch(e) {
       statusEl.style.color = 'var(--red)';
-      statusEl.textContent = 'שגיאת סנכרון: ' + (e.message||e);
+      statusEl.textContent = 'שגיאה: ' + (e.message||e);
     }
-    btn.disabled = false;
-    btn.textContent = '☁️ סנכרן עכשיו';
+    btn.disabled = false; btn.textContent = '☁️ סנכרן עכשיו';
   });
 
   document.getElementById('btn-auth-logout').addEventListener('click', async () => {
@@ -9057,35 +9059,15 @@ const LEGENDARY_CATS = [
     currentUser = user;
     updateAuthUI();
     if (user) {
-      toast('מחובר: ' + (user.displayName || user.email));
       setAnalyticsUserProps();
       lacTrack('login', { method: user.providerData?.[0]?.providerId || 'unknown' });
-      // Give RTDB time to receive the auth token, retry up to 5 times
-      let synced = false;
-      for (let attempt = 0; attempt < 5 && !synced; attempt++) {
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-        try {
-          await currentUser.getIdToken(true);
-          await syncFromFirebase();
-          synced = true;
-          console.log('Sync succeeded on attempt', attempt + 1);
-          // Backfill adminData/referrals for this user (runs once per login)
-          try {
-            const profSnap = await get(ref(db, 'users/' + user.uid + '/profile'));
-            const p = profSnap.val();
-            if (p && p.name) {
-              await set(ref(db, 'adminData/referrals/' + user.uid), {
-                name: p.name, emoji: p.emoji || null, refId: p.refId || null,
-                refCount: p.refCount || 0, supporterLevel: p.supporterLevel || 0,
-                _updatedAt: Date.now()
-              });
-            }
-          } catch(e) { /* silent */ }
-        } catch(e) {
-          console.warn('sync attempt', attempt + 1, 'failed:', e.message);
-        }
-      }
-      if (!synced) toast('סנכרון נכשל — לחץ ☁️ לנסות שוב');
+      toast('מחובר: ' + (user.displayName || user.email));
+      // Small delay so Firebase RTDB receives the new auth token before first read
+      await new Promise(r => setTimeout(r, 400));
+      await _onAuthReady(user);
+      _refreshProfileUI();
+    } else {
+      _onAuthReady(null);
     }
   });
 
