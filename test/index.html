@@ -6785,10 +6785,13 @@
     modal.querySelector('#wlb-search').addEventListener('input', renderWeekly);
 
     let allEntries = [];
+    let bannedKeys = new Set();
+    const _isDevUser = S_pDevRoles.includes('main-dev') || S_pDevRoles.includes('dev');
 
     function renderWeekly() {
       const search = modal.querySelector('#wlb-search').value.trim().toLowerCase();
-      const filtered = search ? allEntries.filter(e => e.name.toLowerCase().includes(search)) : allEntries;
+      const base = allEntries.filter(e => !bannedKeys.has(e._key));
+      const filtered = search ? base.filter(e => e.name.toLowerCase().includes(search)) : base;
       if (!filtered.length) {
         modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">אין תוצאות לשבוע הזה עדיין</div>';
         return;
@@ -6799,6 +6802,9 @@
         const rank = medals[i] || `${i+1}.`;
         const pct = Math.round((e.score / topScore) * 100);
         const isMe = e.name === (S && S.pName);
+        const safeKey = (e._key||'').replace(/"/g,'&quot;');
+        const safeName = (e.name||'').replace(/"/g,'&quot;');
+        const banBtn = _isDevUser ? `<button class="wlb-ban-btn" data-key="${safeKey}" data-name="${safeName}" title="פסל מהלוח" style="background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:4px 9px;font-family:Heebo,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;flex-shrink:0;">🚫</button>` : '';
         return `<div class="wlb-row" style="${isMe ? 'background:rgba(245,166,35,.06);border-radius:10px;' : ''}">
           <span class="wlb-rank">${rank}</span>
           <div class="wlb-av" style="background:${e.color}22;color:${e.color};">${e.emoji || e.name.charAt(0)}</div>
@@ -6810,18 +6816,43 @@
             <div class="wlb-bar"><div class="wlb-bar-fill" style="width:${pct}%;"></div></div>
           </div>
           <div class="wlb-score">${e.score}<span style="font-size:.65rem;color:var(--muted);font-weight:600;"> נק'</span></div>
+          ${banBtn}
         </div>`;
       }).join('');
     }
 
+    modal.querySelector('#wlb-list').addEventListener('click', async function(ev) {
+      const btn = ev.target.closest('.wlb-ban-btn');
+      if (!btn || !_isDevUser) return;
+      const playerKey = btn.dataset.key;
+      const playerName = btn.dataset.name;
+      if (!confirm(`לפסול את "${playerName}" מלוח השבועי?`)) return;
+      btn.disabled = true; btn.textContent = '⏳';
+      try {
+        await set(ref(db, `leaderboardBanned/${playerKey}`), { name: playerName, ts: Date.now(), bannedBy: S_pDevRoles.includes('main-dev') ? 'main-dev' : 'dev' });
+        bannedKeys.add(playerKey);
+        renderWeekly();
+        toast(`🚫 ${playerName} נפסל מהלוח`);
+      } catch(e) {
+        btn.disabled = false; btn.textContent = '🚫';
+        toast('שגיאה בפסילה');
+      }
+    });
+
     async function loadWeekly() {
       modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">⏳ טוען...</div>';
       try {
-        const snap = await get(ref(db, `weeklyLeaderboard/${wk}`));
+        const [snap, bannedSnap] = await Promise.all([
+          get(ref(db, `weeklyLeaderboard/${wk}`)),
+          get(ref(db, `leaderboardBanned`))
+        ]);
         const data = snap.val() || {};
-        allEntries = Object.values(data)
+        const banned = bannedSnap.val() || {};
+        bannedKeys = new Set(Object.keys(banned));
+        allEntries = Object.entries(data)
+          .map(([k, v]) => ({ ...v, _key: k }))
           .sort((a, b) => (b.score || 0) - (a.score || 0));
-        if (!allEntries.length) {
+        if (!allEntries.filter(e => !bannedKeys.has(e._key)).length) {
           modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2rem;margin-bottom:8px;">🏅</div><div style="color:var(--muted);font-size:.9rem;">עדיין אין ניקוד השבוע</div><div style="color:var(--muted);font-size:.78rem;margin-top:4px;">שחק משחק כדי להופיע בלוח!</div></div>';
           return;
         }
