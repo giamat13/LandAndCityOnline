@@ -6819,10 +6819,12 @@
           const daysLeft = Math.ceil((BAN_DURATION - (Date.now() - bannedData[e._key].ts)) / 86400000);
           banLabel = ` <span style="font-size:.62rem;color:var(--red);border:1px solid rgba(233,69,96,.3);border-radius:100px;padding:1px 6px;font-weight:700;">עוד ${daysLeft}י'</span>`;
         }
+        const btnStyle = (bg, border, color) => `background:${bg};border:1px solid ${border};color:${color};border-radius:8px;padding:4px 9px;font-family:Heebo,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;flex-shrink:0;`;
+        const resetBtn = _isDevUser ? `<button class="wlb-reset-btn" data-key="${safeKey}" data-name="${safeName}" title="אפס נקודות" style="${btnStyle('rgba(76,201,240,.1)','rgba(76,201,240,.3)','var(--blue)')}">↺</button>` : '';
         const actionBtn = _isDevUser
           ? (banned
-            ? `<button class="wlb-unban-btn" data-key="${safeKey}" data-name="${safeName}" title="בטל פסילה" style="background:rgba(15,186,129,.12);border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:4px 9px;font-family:Heebo,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;flex-shrink:0;">✅</button>`
-            : `<button class="wlb-ban-btn" data-key="${safeKey}" data-name="${safeName}" title="פסל מהלוח" style="background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:4px 9px;font-family:Heebo,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;flex-shrink:0;">🚫</button>`)
+            ? `<button class="wlb-unban-btn" data-key="${safeKey}" data-name="${safeName}" title="בטל פסילה" style="${btnStyle('rgba(15,186,129,.12)','rgba(15,186,129,.3)','var(--green)')}">✅</button>`
+            : `${resetBtn}<button class="wlb-ban-btn" data-key="${safeKey}" data-name="${safeName}" title="פסל מהלוח" style="${btnStyle('rgba(233,69,96,.12)','rgba(233,69,96,.3)','var(--red)')}">🚫</button>`)
           : '';
         return `<div class="wlb-row" style="${isMe && !banned ? 'background:rgba(245,166,35,.06);border-radius:10px;' : ''}${banned ? 'opacity:0.4;' : ''}">
           <span class="wlb-rank">${rank}</span>
@@ -6843,8 +6845,9 @@
     modal.querySelector('#wlb-list').addEventListener('click', async function(ev) {
       const banBtn = ev.target.closest('.wlb-ban-btn');
       const unbanBtn = ev.target.closest('.wlb-unban-btn');
-      if (!_isDevUser || (!banBtn && !unbanBtn)) return;
-      const btn = banBtn || unbanBtn;
+      const resetBtn = ev.target.closest('.wlb-reset-btn');
+      if (!_isDevUser || (!banBtn && !unbanBtn && !resetBtn)) return;
+      const btn = banBtn || unbanBtn || resetBtn;
       const playerKey = btn.dataset.key;
       const playerName = btn.dataset.name;
       if (banBtn) {
@@ -6857,7 +6860,7 @@
           renderWeekly();
           toast(`🚫 ${playerName} נפסל ל-30 יום`);
         } catch(e) { btn.disabled = false; btn.textContent = '🚫'; toast('שגיאה בפסילה'); }
-      } else {
+      } else if (unbanBtn) {
         if (!confirm(`לבטל פסילת "${playerName}"?`)) return;
         btn.disabled = true; btn.textContent = '⏳';
         try {
@@ -6866,6 +6869,15 @@
           renderWeekly();
           toast(`✅ ${playerName} הוחזר ללוח`);
         } catch(e) { btn.disabled = false; btn.textContent = '✅'; toast('שגיאה בביטול'); }
+      } else if (resetBtn) {
+        if (!confirm(`לאפס את הניקוד של "${playerName}" לאפס?`)) return;
+        btn.disabled = true; btn.textContent = '⏳';
+        try {
+          await set(ref(db, `weeklyLeaderboard/${wk}/${playerKey}`), null);
+          allEntries = allEntries.filter(e => e._key !== playerKey);
+          renderWeekly();
+          toast(`↺ ניקוד ${playerName} אופס`);
+        } catch(e) { btn.disabled = false; btn.textContent = '↺'; toast('שגיאה באיפוס'); }
       }
     });
 
