@@ -6785,57 +6785,87 @@
     modal.querySelector('#wlb-search').addEventListener('input', renderWeekly);
 
     let allEntries = [];
-    let bannedKeys = new Set();
+    let bannedData = {};
     const _isDevUser = S_pDevRoles.includes('main-dev') || S_pDevRoles.includes('dev');
+    const BAN_DURATION = 30 * 24 * 60 * 60 * 1000;
+
+    function isBanned(key) {
+      const b = bannedData[key];
+      if (!b) return false;
+      return (Date.now() - (b.ts||0)) <= BAN_DURATION;
+    }
 
     function renderWeekly() {
       const search = modal.querySelector('#wlb-search').value.trim().toLowerCase();
-      const base = allEntries.filter(e => !bannedKeys.has(e._key));
-      const filtered = search ? base.filter(e => e.name.toLowerCase().includes(search)) : base;
+      const visible = allEntries.filter(e => _isDevUser || !isBanned(e._key));
+      const filtered = search ? visible.filter(e => e.name.toLowerCase().includes(search)) : visible;
       if (!filtered.length) {
         modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">אין תוצאות לשבוע הזה עדיין</div>';
         return;
       }
       const medals = ['🥇','🥈','🥉'];
-      const topScore = filtered[0]?.score || 1;
-      modal.querySelector('#wlb-list').innerHTML = filtered.map((e, i) => {
-        const rank = medals[i] || `${i+1}.`;
-        const pct = Math.round((e.score / topScore) * 100);
+      const topScore = filtered.filter(e => !isBanned(e._key))[0]?.score || 1;
+      let rankCounter = 0;
+      modal.querySelector('#wlb-list').innerHTML = filtered.map((e) => {
+        const banned = isBanned(e._key);
+        if (!banned) rankCounter++;
+        const rank = banned ? '🚫' : (medals[rankCounter-1] || `${rankCounter}.`);
+        const pct = banned ? 0 : Math.round((e.score / topScore) * 100);
         const isMe = e.name === (S && S.pName);
         const safeKey = (e._key||'').replace(/"/g,'&quot;');
         const safeName = (e.name||'').replace(/"/g,'&quot;');
-        const banBtn = _isDevUser ? `<button class="wlb-ban-btn" data-key="${safeKey}" data-name="${safeName}" title="פסל מהלוח" style="background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:4px 9px;font-family:Heebo,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;flex-shrink:0;">🚫</button>` : '';
-        return `<div class="wlb-row" style="${isMe ? 'background:rgba(245,166,35,.06);border-radius:10px;' : ''}">
+        let banLabel = '';
+        if (banned && _isDevUser) {
+          const daysLeft = Math.ceil((BAN_DURATION - (Date.now() - bannedData[e._key].ts)) / 86400000);
+          banLabel = ` <span style="font-size:.62rem;color:var(--red);border:1px solid rgba(233,69,96,.3);border-radius:100px;padding:1px 6px;font-weight:700;">עוד ${daysLeft}י'</span>`;
+        }
+        const actionBtn = _isDevUser
+          ? (banned
+            ? `<button class="wlb-unban-btn" data-key="${safeKey}" data-name="${safeName}" title="בטל פסילה" style="background:rgba(15,186,129,.12);border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:8px;padding:4px 9px;font-family:Heebo,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;flex-shrink:0;">✅</button>`
+            : `<button class="wlb-ban-btn" data-key="${safeKey}" data-name="${safeName}" title="פסל מהלוח" style="background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.3);color:var(--red);border-radius:8px;padding:4px 9px;font-family:Heebo,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;flex-shrink:0;">🚫</button>`)
+          : '';
+        return `<div class="wlb-row" style="${isMe && !banned ? 'background:rgba(245,166,35,.06);border-radius:10px;' : ''}${banned ? 'opacity:0.4;' : ''}">
           <span class="wlb-rank">${rank}</span>
           <div class="wlb-av" style="background:${e.color}22;color:${e.color};">${e.emoji || e.name.charAt(0)}</div>
           <div class="wlb-info">
-            <div class="wlb-name">${e.name}${isMe ? ' <span style="font-size:.65rem;color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;padding:1px 6px;font-weight:700;">אתה</span>' : ''}</div>
+            <div class="wlb-name" style="${banned ? 'text-decoration:line-through;color:var(--muted);' : ''}">${e.name}${isMe && !banned ? ' <span style="font-size:.65rem;color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;padding:1px 6px;font-weight:700;">אתה</span>' : ''}${banLabel}</div>
             <div class="wlb-games">${e.games} משחק${e.games !== 1 ? 'ים' : ''}</div>
           </div>
           <div class="wlb-bar-wrap">
             <div class="wlb-bar"><div class="wlb-bar-fill" style="width:${pct}%;"></div></div>
           </div>
-          <div class="wlb-score">${e.score}<span style="font-size:.65rem;color:var(--muted);font-weight:600;"> נק'</span></div>
-          ${banBtn}
+          <div class="wlb-score" style="${banned ? 'color:var(--muted);' : ''}">${e.score}<span style="font-size:.65rem;color:var(--muted);font-weight:600;"> נק'</span></div>
+          ${actionBtn}
         </div>`;
       }).join('');
     }
 
     modal.querySelector('#wlb-list').addEventListener('click', async function(ev) {
-      const btn = ev.target.closest('.wlb-ban-btn');
-      if (!btn || !_isDevUser) return;
+      const banBtn = ev.target.closest('.wlb-ban-btn');
+      const unbanBtn = ev.target.closest('.wlb-unban-btn');
+      if (!_isDevUser || (!banBtn && !unbanBtn)) return;
+      const btn = banBtn || unbanBtn;
       const playerKey = btn.dataset.key;
       const playerName = btn.dataset.name;
-      if (!confirm(`לפסול את "${playerName}" מלוח השבועי?`)) return;
-      btn.disabled = true; btn.textContent = '⏳';
-      try {
-        await set(ref(db, `leaderboardBanned/${playerKey}`), { name: playerName, ts: Date.now(), bannedBy: S_pDevRoles.includes('main-dev') ? 'main-dev' : 'dev' });
-        bannedKeys.add(playerKey);
-        renderWeekly();
-        toast(`🚫 ${playerName} נפסל מהלוח`);
-      } catch(e) {
-        btn.disabled = false; btn.textContent = '🚫';
-        toast('שגיאה בפסילה');
+      if (banBtn) {
+        if (!confirm(`לפסול את "${playerName}" ל-30 יום?`)) return;
+        btn.disabled = true; btn.textContent = '⏳';
+        try {
+          const entry = { name: playerName, ts: Date.now(), bannedBy: S_pDevRoles.includes('main-dev') ? 'main-dev' : 'dev' };
+          await set(ref(db, `leaderboardBanned/${playerKey}`), entry);
+          bannedData[playerKey] = entry;
+          renderWeekly();
+          toast(`🚫 ${playerName} נפסל ל-30 יום`);
+        } catch(e) { btn.disabled = false; btn.textContent = '🚫'; toast('שגיאה בפסילה'); }
+      } else {
+        if (!confirm(`לבטל פסילת "${playerName}"?`)) return;
+        btn.disabled = true; btn.textContent = '⏳';
+        try {
+          await set(ref(db, `leaderboardBanned/${playerKey}`), null);
+          delete bannedData[playerKey];
+          renderWeekly();
+          toast(`✅ ${playerName} הוחזר ללוח`);
+        } catch(e) { btn.disabled = false; btn.textContent = '✅'; toast('שגיאה בביטול'); }
       }
     });
 
@@ -6847,12 +6877,16 @@
           get(ref(db, `leaderboardBanned`))
         ]);
         const data = snap.val() || {};
-        const banned = bannedSnap.val() || {};
-        bannedKeys = new Set(Object.keys(banned));
+        const rawBanned = bannedSnap.val() || {};
+        bannedData = {};
+        Object.entries(rawBanned).forEach(([k, v]) => {
+          if (Date.now() - (v.ts||0) <= BAN_DURATION) bannedData[k] = v;
+        });
         allEntries = Object.entries(data)
           .map(([k, v]) => ({ ...v, _key: k }))
           .sort((a, b) => (b.score || 0) - (a.score || 0));
-        if (!allEntries.filter(e => !bannedKeys.has(e._key)).length) {
+        const hasVisible = allEntries.some(e => !isBanned(e._key));
+        if (!allEntries.length || (!hasVisible && !_isDevUser)) {
           modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2rem;margin-bottom:8px;">🏅</div><div style="color:var(--muted);font-size:.9rem;">עדיין אין ניקוד השבוע</div><div style="color:var(--muted);font-size:.78rem;margin-top:4px;">שחק משחק כדי להופיע בלוח!</div></div>';
           return;
         }
