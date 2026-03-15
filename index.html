@@ -1232,14 +1232,14 @@
 
       <h3 style="margin-bottom:10px;">🗳️ סף פסילה</h3>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button class="time-btn active" id="cr-veto-pct-btn" data-type="percent">% אחוז</button>
-        <button class="time-btn" id="cr-veto-cnt-btn" data-type="count"># מספר שחקנים</button>
+        <button class="time-btn" id="cr-veto-pct-btn" data-type="percent">% אחוז</button>
+        <button class="time-btn active" id="cr-veto-cnt-btn" data-type="count"># מספר שחקנים</button>
       </div>
-      <div id="cr-veto-pct-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div id="cr-veto-pct-row" style="display:none;align-items:center;gap:10px;margin-bottom:16px;">
         <input type="number" id="cr-veto-pct-inp" min="1" max="100" value="50" style="width:90px;text-align:center;font-size:1rem;">
         <span style="color:var(--muted);font-size:.85rem;">% מהשחקנים (ברירת מחדל: 50%)</span>
       </div>
-      <div id="cr-veto-cnt-row" style="display:none;align-items:center;gap:10px;margin-bottom:16px;">
+      <div id="cr-veto-cnt-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
         <input type="number" id="cr-veto-cnt-inp" min="1" value="2" style="width:90px;text-align:center;font-size:1rem;">
         <span style="color:var(--muted);font-size:.85rem;">שחקנים לפחות</span>
       </div>
@@ -2886,8 +2886,8 @@
     warnedExpiry:false,
     isPermanent:false,
     pendingAdvance:null,
-    vetoThresholdType:'percent',
-    vetoThresholdValue:50,
+    vetoThresholdType:'count',
+    vetoThresholdValue:2,
     raceMode:false,
     creativeVoteEnabled:true,
     funnyVoteEnabled:false,
@@ -4058,7 +4058,7 @@
       }).catch(()=>{});
     }
     // Read veto threshold from create screen
-    const crVetoType=document.getElementById('cr-veto-pct-btn').classList.contains('active')?'percent':'count';
+    const crVetoType=document.getElementById('cr-veto-cnt-btn').classList.contains('active')?'count':'percent';
     const crVetoValue=crVetoType==='percent'
       ?Math.min(100,Math.max(1,parseInt(document.getElementById('cr-veto-pct-inp').value)||50))
       :Math.max(1,parseInt(document.getElementById('cr-veto-cnt-inp').value)||2);
@@ -5784,8 +5784,14 @@
         anyAnswer=true;
         ansArr.forEach((answer,ai)=>{
           const vetoKey=`${pid}_${ai}`;
-          const vetoCount=vetoes[catId]?Object.values(vetoes[catId]).filter(v=>v===vetoKey).length:0;
-          const myVote=vetoes[catId]&&vetoes[catId][S.pId]===vetoKey;
+          // Support both old format (pid→vkey string) and new multi-vote format (pid→{vkey:true})
+          const catVotesRender=vetoes[catId]||{};
+          const vetoCount=Object.values(catVotesRender).reduce((n,v)=>{
+            if(typeof v==='object'&&v!==null) return n+(v[vetoKey]?1:0);
+            return n+(v===vetoKey?1:0);
+          },0);
+          const myVoteData=catVotesRender[S.pId];
+          const myVote=myVoteData?(typeof myVoteData==='object'?!!myVoteData[vetoKey]:myVoteData===vetoKey):false;
           const othersCount=totalPlayers-1;
           const isDisq=isDisqualified(vetoCount,totalPlayers);
 
@@ -5838,12 +5844,13 @@
         btn.addEventListener('click',async()=>{
           const cId=btn.dataset.cat;
           const vKey=btn.dataset.vkey;
-          const voteRef=ref(db,`rooms/${S.roomId}/vetoes/${cId}/${S.pId}`);
-          const currentTarget=vetoes[cId]&&vetoes[cId][S.pId];
-          if(currentTarget===vKey){
+          const voteRef=ref(db,`rooms/${S.roomId}/vetoes/${cId}/${S.pId}/${vKey}`);
+          const myVoteData2=vetoes[cId]&&vetoes[cId][S.pId];
+          const alreadyVoted=myVoteData2?(typeof myVoteData2==='object'?!!myVoteData2[vKey]:myVoteData2===vKey):false;
+          if(alreadyVoted){
             await remove(voteRef);
           }else{
-            await set(voteRef,vKey);
+            await set(voteRef,true);
             lacTrack('veto_cast', { cat_id: cId, vetoed_answer: (vKey||'').slice(0,40), round_number: S.rNum });
           }
           touchActivity();
@@ -5919,7 +5926,10 @@
         ansArr.forEach((answer,ai)=>{
           if(!answer)return;
           const vKey=`${pid}_${ai}`;
-          const vetoCount=Object.values(catVetoes).filter(v=>v===vKey).length;
+          const vetoCount=Object.values(catVetoes).reduce((n,v)=>{
+            if(typeof v==='object'&&v!==null) return n+(v[vKey]?1:0);
+            return n+(v===vKey?1:0);
+          },0);
           if(commitIsDisq(vetoCount)){
             disqAnswers[cat.id].add(answer.toLowerCase());
           }
