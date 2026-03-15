@@ -917,8 +917,7 @@
 
       <h3 style="margin-bottom:10px;">😎 אימוג'י אווטאר</h3>
       <div id="prof-emoji-grid" class="prof-emoji-grid"></div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:4px;">
-        <button id="btn-use-letter" type="button" class="prof-emoji-btn" title="השתמש באות הראשונה" style="font-size:1.4rem;font-weight:900;">א</button>
+      <div style="display:flex;justify-content:center;margin-top:6px;">
         <button id="btn-use-photo" type="button" class="btn btn-s btn-sm" style="width:auto;font-size:.78rem;display:none;">📷 תמונת גוגל</button>
       </div>
 
@@ -2999,7 +2998,25 @@
     const grid=document.getElementById('prof-emoji-grid');
     if(!grid)return;
     grid.innerHTML='';
-    if(!S_pEmoji){ const lb=document.getElementById('btn-use-letter'); if(lb) lb.classList.add('sel'); }
+    // Create/re-use letter button inside the grid
+    let _lb=document.getElementById('btn-use-letter');
+    if(!_lb){
+      _lb=document.createElement('button');
+      _lb.id='btn-use-letter';
+      _lb.type='button';
+      _lb.title='השתמש באות הראשונה';
+      _lb.style.cssText='font-size:1.4rem;font-weight:900;line-height:1;overflow:hidden;';
+      _lb.addEventListener('click',()=>{
+        S_pEmoji=null; S_pUsePhoto=false;
+        grid.querySelectorAll('.prof-emoji-btn').forEach(b=>b.classList.remove('sel'));
+        _lb.classList.add('sel');
+        updateProfilePreview();
+      });
+    }
+    _lb.className='prof-emoji-btn'+((!S_pEmoji&&!S_pUsePhoto)?' sel':'');
+    const _nameNow=((document.getElementById('prof-name')||{}).value||'').replace(/\n/g,'').trim();
+
+    _lb.textContent=_nameNow.charAt(0)||'א';
     PROF_EMOJIS.forEach(em=>{
       const btn=document.createElement('button');
       btn.type='button';
@@ -3014,6 +3031,7 @@
       });
       grid.appendChild(btn);
     });
+    grid.appendChild(_lb);
   }
 
   function initFramePicker(){
@@ -3116,9 +3134,9 @@
   }
 
   function updateProfilePreview(){
-    const name=(document.getElementById('prof-name')||{}).value||'';
+    const name=((document.getElementById('prof-name')||{}).value||'').replace(/\n/g,'').trim();
     const letterBtn=document.getElementById('btn-use-letter');
-    if(letterBtn) letterBtn.textContent=name.trim().charAt(0)||'א';
+    if(letterBtn){ const ch=(name.charAt(0)||'א'); if(letterBtn.textContent.trim()!==ch) letterBtn.textContent=ch; }
     const prev=document.getElementById('prof-av-preview');
     if(prev){
       prev.style.background=S_pColor+'33';
@@ -3132,13 +3150,7 @@
     }
   }
 
-  document.getElementById('btn-use-letter').addEventListener('click',()=>{
-    S_pEmoji=null;
-    S_pUsePhoto=false;
-    document.querySelectorAll('.prof-emoji-btn').forEach(b=>b.classList.remove('sel'));
-    document.getElementById('btn-use-letter').classList.add('sel');
-    updateProfilePreview();
-  });
+  // btn-use-letter click handled in initEmojiPicker
   document.getElementById('btn-use-photo').addEventListener('click',()=>{
     S_pEmoji=null;
     S_pUsePhoto=true;
@@ -3495,7 +3507,7 @@
   document.getElementById('prof-name').addEventListener('input',()=>{
     updateProfilePreview();
     if(!profRoomNameManuallyChanged){
-      const n=document.getElementById('prof-name').value.trim();
+      const n=document.getElementById('prof-name').value.replace(/\n/g,'').trim();
       document.getElementById('prof-room-name').value=n?`החדר של ${n}`:'';
     }
   });
@@ -3504,7 +3516,7 @@
   });
 
   document.getElementById('btn-profile-continue').addEventListener('click',()=>{
-    const n=document.getElementById('prof-name').value.trim();
+    const n=document.getElementById('prof-name').value.replace(/\n/g,'').trim();
     if(!n){toast('נא להזין שם שחקן');return;}
     const isFirstTime = !localStorage.getItem('aretz_ep_shown') && !S.pName;
     S.pName=n;
