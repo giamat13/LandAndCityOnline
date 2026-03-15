@@ -4433,6 +4433,7 @@
     startExpiryWatcher();
     setupPresence();
     startUndefinedPlayerWatcher();
+    startHostWatchdog();
   }
 
   // undefined player watcher - kicks players with undefined/empty names every second
@@ -4469,6 +4470,61 @@
     set(presRef,true).catch(()=>{});
     onDisconnect(presRef).set(false).catch(()=>{});
   }
+  // ─── HOST WATCHDOG ───────────────────────────────────────────────
+  // Detects when the host has gone silent during a round and promotes
+  // the oldest remaining player to host so the game can continue.
+  function startHostWatchdog(){
+    clearInterval(S.hostWatchdogInt);
+    S.hostWatchdogInt = setInterval(async()=>{
+      // Only run when a round is in progress and we're not the host
+      if(!S.roomId || S.isHost || S.isSpectator) return;
+      let room;
+      try { room = (await get(ref(db, `rooms/${S.roomId}`))).val(); } catch(e){ return; }
+      if(!room || room.status !== 'playing') return;
+
+      // Check if host is online
+      const players = room.players || {};
+      const hostId = room.host;
+      const hostOnline = hostId && players[hostId]?.online;
+      if(hostOnline) return; // host is fine
+
+      // Host is offline — check if time has truly expired
+      const rTime = room.roundTime || 30;
+      if(rTime === 0) return; // infinity mode, no watchdog needed
+      const catStartedAt = room.catStartedAt || 0;
+      const elapsed = (Date.now() - catStartedAt) / 1000;
+      const overdue = elapsed > rTime + 8; // 8s grace beyond round time
+      if(!overdue) return;
+
+      // Elect new host: pick the player with earliest joinedAt (excluding bots)
+      const candidates = Object.entries(players)
+        .filter(([pid, p]) => p.online && !p.isBot && !p.spectator && pid !== hostId)
+        .sort((a, b) => (a[1].joinedAt||0) - (b[1].joinedAt||0));
+      if(!candidates.length) return;
+      const [electedId] = candidates[0];
+      if(electedId !== S.pId) return; // not our turn to act
+
+      // We are the elected new host — take over
+      console.warn('[Watchdog] Host gone, taking over as host');
+      try {
+        await update(ref(db, `rooms/${S.roomId}`), { host: S.pId, lastActivity: Date.now() });
+        await set(ref(db, `rooms/${S.roomId}/players/${S.pId}/isHost`), true);
+        if(hostId) await set(ref(db, `rooms/${S.roomId}/players/${hostId}/isHost`), false).catch(()=>{});
+        S.isHost = true;
+        document.getElementById('host-ctrl') && (document.getElementById('host-ctrl').style.display = 'block');
+        document.getElementById('guest-wait') && (document.getElementById('guest-wait').style.display = 'none');
+        toast('👑 המארח יצא — ממשיכים!');
+        // Now act as host: force-advance if time is up
+        clearInterval(S.timerInt);
+        if(S.pendingAdvance){ clearTimeout(S.pendingAdvance); S.pendingAdvance = null; }
+        await advanceCat();
+      } catch(e) {
+        console.error('[Watchdog] takeover error', e);
+        S.isHost = false;
+      }
+    }, 5000); // check every 5s
+  }
+
   // ─── EXPIRY WATCHER ───────────────────────────────────────────────
   function startExpiryWatcher(){
     clearInterval(S.expiryInt);
@@ -4520,6 +4576,7 @@
     clearInterval(S.timerInt);
     detach();detachChat();clearSession();
     S.roomId='';S.isHost=false;S.warnedExpiry=false;
+    clearInterval(S.hostWatchdogInt);S.hostWatchdogInt=null;
     showChatFab(false);
     showScreen('home');
     // Show prominent full-screen notice
