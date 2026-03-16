@@ -2764,7 +2764,8 @@
       const lh = _lsGet('aretz_history', []);   if (lh.length) push.gameHistory = lh;
       const ld = _lsGet(STREAK_KEY, []);         if (ld.length) push.playDates = ld;
       const th = localStorage.getItem('lac_theme'); if (th) push.theme = th;
-      const tu = localStorage.getItem('etz_tut_v1'); if (tu) push.tut = tu;
+      const tu = localStorage.getItem('etz_tut_v1');
+      if (tu) { const ts={v1:tu}; Object.entries(TUT_SCREEN_KEYS).forEach(([k,lsKey])=>{ if(localStorage.getItem(lsKey)) ts[k]='1'; }); push.tut=ts; }
       push._firstLogin = Date.now();
       if (Object.keys(push).length > 1) set(ref(db, 'users/' + user.uid), push).catch(() => {});
       return;
@@ -2786,11 +2787,11 @@
       set(ref(db, 'users/' + user.uid + '/themeTs'), localThemeTs).catch(() => {});
     }
 
-    // Tutorial
-    if (cloud.tut || localStorage.getItem('etz_tut_v1')) {
-      try { localStorage.setItem('etz_tut_v1', '1'); } catch(e) {}
-      if (!cloud.tut) set(ref(db, 'users/' + user.uid + '/tut'), '1').catch(() => {});
-    }
+    // Tutorial — restore all per-screen keys from cloud, then push local if richer
+    _restoreTutState(cloud.tut || null);
+    const localTutDone = !!localStorage.getItem(TUT_KEY);
+    const localScreensDone = Object.values(TUT_SCREEN_KEYS).some(k => localStorage.getItem(k));
+    if (localTutDone || localScreensDone) _saveTutState();
 
     // Templates
     const tpls = _mergeArr(_lsGet('aretz_templates', []), cloud.templates, t => (t.name||'')+'_'+(t.ts||0), 'ts', 10);
@@ -8793,7 +8794,7 @@ const LEGENDARY_CATS = [
   let tutTooltipEl = null;
 
   function isTutDone() { return !!localStorage.getItem(TUT_KEY); }
-  function markTutDone() { localStorage.setItem(TUT_KEY, '1'); fbSave('tut','1'); }
+  function markTutDone() { localStorage.setItem(TUT_KEY, '1'); _saveTutState(); }
   // Per-screen keys so new screens show even for users who finished the old tutorial
   const TUT_SCREEN_KEYS = { lobby: 'etz_tut_lobby', home: 'etz_tut_home', final: 'etz_tut_final' };
   function isScreenTutDone(screen) {
@@ -8803,6 +8804,23 @@ const LEGENDARY_CATS = [
   function markScreenTutDone(screen) {
     if (TUT_SCREEN_KEYS[screen]) localStorage.setItem(TUT_SCREEN_KEYS[screen], '1');
     if (screen === 'results') markTutDone();
+    _saveTutState();
+  }
+  function _saveTutState() {
+    const state = { v1: localStorage.getItem(TUT_KEY)||null };
+    Object.entries(TUT_SCREEN_KEYS).forEach(([k,lsKey]) => {
+      if (localStorage.getItem(lsKey)) state[k] = '1';
+    });
+    fbSave('tut', state);
+  }
+  function _restoreTutState(cloud) {
+    if (!cloud) return;
+    // Support old format (string '1') and new format (object)
+    const obj = typeof cloud === 'object' ? cloud : { v1: cloud };
+    if (obj.v1) try { localStorage.setItem(TUT_KEY, '1'); } catch(e) {}
+    Object.entries(TUT_SCREEN_KEYS).forEach(([k, lsKey]) => {
+      if (obj[k]) try { localStorage.setItem(lsKey, '1'); } catch(e) {}
+    });
   }
 
   function tryStartTut(screen) {
