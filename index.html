@@ -169,6 +169,8 @@
   /* time selector buttons */
   .time-btn{background:var(--s2);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;padding:8px 16px;font-family:'Heebo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s}
   .time-btn.active{border-color:var(--blue);color:var(--blue);background:rgba(76,201,240,.1)}
+  .lang-btn{background:var(--s2);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;padding:8px 16px;font-family:'Heebo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s}
+  .lang-btn.active{border-color:var(--blue);color:var(--blue);background:rgba(76,201,240,.1)}
   /* category progress dots */
   .cat-prog-wrap{display:flex;align-items:center;gap:8px;margin-bottom:14px}
   .cat-prog-bar{display:flex;gap:4px;flex:1}
@@ -1227,9 +1229,17 @@
         <div class="tog on" id="tog-sb-el"></div>
         <span class="tog-label">לוח ניקוד מצטבר (כבוי = כל סיבוב בנפרד)</span>
       </div>
-      <div class="tog-wrap" id="tog-unique-letters" style="margin-bottom:16px;">
+      <div class="tog-wrap" id="tog-unique-letters" style="margin-bottom:14px;">
         <div class="tog" id="tog-ul-el"></div>
         <span class="tog-label">אות שונה לכל קטגוריה</span>
+      </div>
+      <div id="tog-language" style="margin-bottom:16px;">
+        <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px;">🔤 שפת אותיות</div>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="lang-btn active" data-lang="he">🇮🇱 עברית</button>
+          <button type="button" class="lang-btn" data-lang="en">🇬🇧 אנגלית</button>
+          <button type="button" class="lang-btn" data-lang="both">🌐 שניהם</button>
+        </div>
       </div>
 
       <h3 style="margin-bottom:10px;">🗳️ סף פסילה</h3>
@@ -2020,6 +2030,7 @@
     if (t.creativeVote != null) document.getElementById('tog-creative-el').classList.toggle('on', t.creativeVote !== false);
     if (t.legendaryEnabled != null) document.getElementById('tog-legendary-el').classList.toggle('on', t.legendaryEnabled !== false);
     if (t.uniqueLetters != null) document.getElementById('tog-ul-el').classList.toggle('on', !!t.uniqueLetters);
+    if (t.language != null) { S.language=t.language||'he'; document.querySelectorAll('#tog-language .lang-btn').forEach(b=>{b.classList.toggle('active',b.dataset.lang===S.language);}); }
     toast('✅ ' + (t.name ? `"${t.name}" הוחל!` : 'הגדרות הוחלו!'));
   }
 
@@ -2808,6 +2819,12 @@
   }
 
   const LETTERS='אבגדהוזחטיכלמנסעפצקרשת'.split('');
+  const LETTERS_EN='ABCDEFGHIJKLMNOPRSTW'.split('');
+  function getLetters(){
+    if(S.language==='en') return LETTERS_EN;
+    if(S.language==='both') return [...LETTERS,...LETTERS_EN];
+    return LETTERS;
+  }
   const AVATAR_COLORS=['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#f97316','#06b6d4','#84cc16','#ef4444'];
 
   // ─── SOUND SYSTEM ─────────────────────────────────────────────────
@@ -2900,6 +2917,7 @@
     totalRounds:0,
     isSpectator:false,
     uniqueLetters:false,
+    language:'he',
     chatOpen:false,
     chatUnread:0,
     chatListener:null,
@@ -4138,6 +4156,7 @@
     S.legendaryEnabled=document.getElementById('tog-legendary-el')?.classList.contains('on')!==false;
     S.bonusCatEnabled=document.getElementById('tog-bonus-cat-el').classList.contains('on');
     S.funnyVoteEnabled=document.getElementById('tog-funny-el').classList.contains('on');
+    S.language=document.querySelector('#tog-language .lang-btn.active')?.dataset.lang||'he';
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
 
     // Generate room ID without async collision check
@@ -4146,7 +4165,7 @@
 
     const roomData={
       host:S.pId,originalHost:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,bonusCatEnabled:S.bonusCatEnabled||false,
-      uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',funnyVoteEnabled:S.funnyVoteEnabled||false,
+      uniqueLetters:S.uniqueLetters,language:S.language||'he',cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',funnyVoteEnabled:S.funnyVoteEnabled||false,
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
       players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:getPrimaryDevRole(),
@@ -4181,7 +4200,8 @@
     const rc = parseInt(localStorage.getItem('aretz_rooms_created')||'0')+1;
     localStorage.setItem('aretz_rooms_created', rc);
     }catch(e){
-      toast('שגיאה ביצירת חדר, נסה שוב');
+      console.error('createRoom error:', e);
+      toast('שגיאה ביצירת חדר: ' + (e?.message||e));
       btn.disabled=false;
       btn.innerHTML=origText;
     }
@@ -4219,6 +4239,7 @@
     S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
     S.cumulativeSB=room.cumulativeSB!==false;
     S.uniqueLetters=room.uniqueLetters||false;
+    S.language=room.language||'he';
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
       name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:getPrimaryDevRole(),
@@ -4318,6 +4339,16 @@
           <div class="tog${curUL?' on':''}" id="smc-tog-ul"></div>
           <span class="tog-label">אות שונה לכל קטגוריה</span>
         </div>
+                <div style="margin-bottom:14px;">
+          <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px;">🔤 שפת אותיות</div>
+          <div style="display:flex;gap:6px;" id="smc-lang-btns">
+            <button type="button" class="smc-lang-btn${(room.language||'he')==='he'?' active':''}" data-lang="he">🇮🇱 עברית</button>
+            <button type="button" class="smc-lang-btn${(room.language||'he')==='en'?' active':''}" data-lang="en">🇬🇧 אנגלית</button>
+            <button type="button" class="smc-lang-btn${(room.language||'he')==='both'?' active':''}" data-lang="both">🌐 שניהם</button>
+          </div>
+        </div>
+          <span class="tog-label">🇬🇧 אותיות באנגלית</span>
+        </div>
         <h3 style="margin-bottom:10px;">🌐 נראות</h3>
         <div class="vis-opts" id="smc-vis-opts">
           <div class="vis-opt${curVis==='private'?' sel':''}" data-v="private"><div class="vo-radio"></div><div><div class="vo-label">🔒 פרטי</div></div></div>
@@ -4364,6 +4395,7 @@
     backdrop.querySelector('#smc-tog-voters').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelector('#smc-tog-sb').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelector('#smc-tog-ul').addEventListener('click',function(){this.classList.toggle('on');});
+    backdrop.querySelector('#smc-lang-btns')?.addEventListener('click',function(e){const b=e.target.closest('.smc-lang-btn');if(!b)return;backdrop.querySelectorAll('.smc-lang-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');});
     backdrop.querySelector('#smc-veto-pct-btn').addEventListener('click',function(){
       this.classList.add('active');
       backdrop.querySelector('#smc-veto-cnt-btn').classList.remove('active');
@@ -4396,12 +4428,13 @@
       const newShowVoters=backdrop.querySelector('#smc-tog-voters').classList.contains('on');
       const newSB=backdrop.querySelector('#smc-tog-sb').classList.contains('on');
       const newUL=backdrop.querySelector('#smc-tog-ul').classList.contains('on');
+      const newLang=backdrop.querySelector('.smc-lang-btn.active')?.dataset.lang||'he';
       const newVetoType=backdrop.querySelector('#smc-veto-pct-btn').classList.contains('active')?'percent':'count';
       const newVetoValue=newVetoType==='percent'
         ?Math.min(100,Math.max(1,parseInt(backdrop.querySelector('#smc-veto-pct-inp').value)||50))
         :Math.max(1,parseInt(backdrop.querySelector('#smc-veto-cnt-inp').value)||2);
-      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.uniqueLetters=newUL;S.visibility=newVis;S.vetoThresholdType=newVetoType;S.vetoThresholdValue=newVetoValue;
-      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,uniqueLetters:newUL,visibility:newVis,roomName:newName,vetoThresholdType:newVetoType,vetoThresholdValue:newVetoValue});
+      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.uniqueLetters=newUL;S.language=newLang;S.visibility=newVis;S.vetoThresholdType=newVetoType;S.vetoThresholdValue=newVetoValue;
+      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,uniqueLetters:newUL,language:newLang,visibility:newVis,roomName:newName,vetoThresholdType:newVetoType,vetoThresholdValue:newVetoValue});
       if(newVis!=='private'){
         await set(ref(db,'publicRooms/'+S.roomId),{hostName:S.pName,visibility:newVis,roomName:newName,cats:active.slice(0,5).map(c=>({emoji:c.emoji,name:c.name})),roundTime:smcTime,playerCount:Object.keys(room.players||{}).length,status:'lobby',createdAt:room.createdAt||Date.now()});
       }else{remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});}
@@ -5218,7 +5251,7 @@
     const activePlayers=Object.entries(getEligible(allPs));
     const isSolo = activePlayers.length < 2;
     if(isSolo) toast('🎮 מצב יחיד — חצי ניקוד ל-leaderboard, ללא הצבעות');
-    const letter=S.isDailyChallenge ? getDailyChallenge().letter : LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    const letter=S.isDailyChallenge ? getDailyChallenge().letter : getLetters()[Math.floor(Math.random()*getLetters().length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;S.isSolo=isSolo;
     // 🌟 Legendary round: 25% chance even on first round
     const legendaryEnabled = S.legendaryEnabled !== false;
@@ -5285,6 +5318,7 @@
     S.currentCatIndex=r.currentCatIndex||0;
     S.totalRounds=r.totalRounds||0;
     S.uniqueLetters=r.uniqueLetters||false;
+    S.language=r.language||'he';
     S.raceMode=r.raceMode||false;
     S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
     S.bonusCatEnabled=r.bonusCatEnabled||false;
@@ -5369,7 +5403,7 @@
               let tickDelay=55;
               let tickTimer=null;
               function doTick(){
-                const rndLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+                const rndLetter=getLetters()[Math.floor(Math.random()*getLetters().length)];
                 olLetter.textContent=rndLetter;
                 SFX.play('slotTick');
                 spinCount++;
@@ -5409,7 +5443,7 @@
 
     // Category card
     document.getElementById('cat-emoji-name').textContent=`${cat.emoji} ${cat.name}`;
-    document.getElementById('cat-hint').textContent=`כתוב ${cat.name} שמתחיל/ה ב-${S.letter}`;
+    document.getElementById('cat-hint').textContent=(S.language==='en'||S.language==='both')&&S.letter.match(/[A-Z]/)?`Write a ${cat.name} starting with ${S.letter}`:`כתוב ${cat.name} שמתחיל/ה ב-${S.letter}`;
 
     const inp=document.getElementById('cat-answer');
     inp.value='';inp.disabled=S.catSubmitted;
@@ -5781,7 +5815,7 @@
         if(S.uniqueLetters){
           // Pick a new letter different from the current one
           let newLetter;
-          do{newLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];}while(newLetter===S.letter);
+          do{newLetter=getLetters()[Math.floor(Math.random()*getLetters().length)];}while(newLetter===S.letter);
           S.letter=newLetter;
           catUpdate.letter=newLetter;
         }
@@ -5816,7 +5850,7 @@
       updates[`rooms/${S.roomId}/lastActivity`]=Date.now();
       if(S.uniqueLetters){
         let newLetter;
-        do{newLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];}while(newLetter===S.letter);
+        do{newLetter=getLetters()[Math.floor(Math.random()*getLetters().length)];}while(newLetter===S.letter);
         S.letter=newLetter;
         updates[`rooms/${S.roomId}/letter`]=newLetter;
       }
@@ -6217,6 +6251,7 @@
     const creativeWinner=room.creativeWinner||null;
 
     document.getElementById('res-rnd').textContent=room.round;
+    S.language=room.language||'he';
     document.getElementById('res-letter').textContent=room.letter;
 
 
@@ -6801,7 +6836,7 @@
     if(S.totalRounds>0&&S.rNum>=S.totalRounds){
       await endGame();return;
     }
-    const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    const letter=getLetters()[Math.floor(Math.random()*getLetters().length)];
     S.rNum++;S.letter=letter;S.currentCatIndex=0;
 
     // 🌟 Legendary: 25% chance, or forced by dev button
@@ -8563,6 +8598,13 @@ const LEGENDARY_CATS = [
   document.getElementById('tog-unique-letters').addEventListener('click',()=>{
     S.uniqueLetters=!S.uniqueLetters;
     document.getElementById('tog-ul-el').classList.toggle('on',S.uniqueLetters);
+  });
+  document.getElementById('tog-language').addEventListener('click',(e)=>{
+    const btn=e.target.closest('.lang-btn');
+    if(!btn)return;
+    document.querySelectorAll('#tog-language .lang-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    S.language=btn.dataset.lang;
   });
   // Veto threshold toggles on create screen
   document.getElementById('cr-veto-pct-btn').addEventListener('click',()=>{
