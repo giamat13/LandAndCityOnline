@@ -169,6 +169,8 @@
   /* time selector buttons */
   .time-btn{background:var(--s2);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;padding:8px 16px;font-family:'Heebo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s}
   .time-btn.active{border-color:var(--blue);color:var(--blue);background:rgba(76,201,240,.1)}
+  .lang-btn{background:var(--s2);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;padding:8px 16px;font-family:'Heebo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s}
+  .lang-btn.active{border-color:var(--blue);color:var(--blue);background:rgba(76,201,240,.1)}
   /* category progress dots */
   .cat-prog-wrap{display:flex;align-items:center;gap:8px;margin-bottom:14px}
   .cat-prog-bar{display:flex;gap:4px;flex:1}
@@ -917,7 +919,9 @@
 
       <h3 style="margin-bottom:10px;">😎 אימוג'י אווטאר</h3>
       <div id="prof-emoji-grid" class="prof-emoji-grid"></div>
-      <button id="btn-use-letter" class="btn btn-s btn-sm" style="width:auto;margin:0 auto 4px;display:block;font-size:.78rem;">← השתמש באות הראשונה</button>
+      <div style="display:flex;justify-content:center;margin-top:6px;">
+        <button id="btn-use-photo" type="button" class="btn btn-s btn-sm" style="width:auto;font-size:.78rem;display:none;">📷 תמונת גוגל</button>
+      </div>
 
       <h3 style="margin-bottom:10px;margin-top:20px;">🖼️ פריים</h3>
       <div id="prof-frame-row" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:4px;"></div>
@@ -1225,21 +1229,29 @@
         <div class="tog on" id="tog-sb-el"></div>
         <span class="tog-label">לוח ניקוד מצטבר (כבוי = כל סיבוב בנפרד)</span>
       </div>
-      <div class="tog-wrap" id="tog-unique-letters" style="margin-bottom:16px;">
+      <div class="tog-wrap" id="tog-unique-letters" style="margin-bottom:14px;">
         <div class="tog" id="tog-ul-el"></div>
         <span class="tog-label">אות שונה לכל קטגוריה</span>
+      </div>
+      <div id="tog-language" style="margin-bottom:16px;">
+        <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px;">🔤 שפת אותיות</div>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="lang-btn active" data-lang="he">🇮🇱 עברית</button>
+          <button type="button" class="lang-btn" data-lang="en">🇬🇧 אנגלית</button>
+          <button type="button" class="lang-btn" data-lang="both">🌐 שניהם</button>
+        </div>
       </div>
 
       <h3 style="margin-bottom:10px;">🗳️ סף פסילה</h3>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button class="time-btn active" id="cr-veto-pct-btn" data-type="percent">% אחוז</button>
-        <button class="time-btn" id="cr-veto-cnt-btn" data-type="count"># מספר שחקנים</button>
+        <button class="time-btn" id="cr-veto-pct-btn" data-type="percent">% אחוז</button>
+        <button class="time-btn active" id="cr-veto-cnt-btn" data-type="count"># מספר שחקנים</button>
       </div>
-      <div id="cr-veto-pct-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div id="cr-veto-pct-row" style="display:none;align-items:center;gap:10px;margin-bottom:16px;">
         <input type="number" id="cr-veto-pct-inp" min="1" max="100" value="50" style="width:90px;text-align:center;font-size:1rem;">
         <span style="color:var(--muted);font-size:.85rem;">% מהשחקנים (ברירת מחדל: 50%)</span>
       </div>
-      <div id="cr-veto-cnt-row" style="display:none;align-items:center;gap:10px;margin-bottom:16px;">
+      <div id="cr-veto-cnt-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
         <input type="number" id="cr-veto-cnt-inp" min="1" value="2" style="width:90px;text-align:center;font-size:1rem;">
         <span style="color:var(--muted);font-size:.85rem;">שחקנים לפחות</span>
       </div>
@@ -1595,6 +1607,9 @@
     createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,
     sendPasswordResetEmail
   } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import {
+    getStorage, ref as sref, uploadBytes, getDownloadURL, deleteObject
+  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-storage.js";
 
   const fb = initializeApp({
     apiKey:"AIzaSyAnUco7dP5UlbIQLzDXaGO1rEeu1LiLvEc",
@@ -1609,6 +1624,7 @@
   getAnalytics(fb);
   const db = getDatabase(fb);
   const auth = getAuth(fb);
+  const storage = getStorage(fb);
   let currentUser = null;
   window._dbg = { getAuth:()=>auth, getUser:()=>currentUser, getDb:()=>db };
 
@@ -2014,6 +2030,7 @@
     if (t.creativeVote != null) document.getElementById('tog-creative-el').classList.toggle('on', t.creativeVote !== false);
     if (t.legendaryEnabled != null) document.getElementById('tog-legendary-el').classList.toggle('on', t.legendaryEnabled !== false);
     if (t.uniqueLetters != null) document.getElementById('tog-ul-el').classList.toggle('on', !!t.uniqueLetters);
+    if (t.language != null) { S.language=t.language||'he'; document.querySelectorAll('#tog-language .lang-btn').forEach(b=>{b.classList.toggle('active',b.dataset.lang===S.language);}); }
     toast('✅ ' + (t.name ? `"${t.name}" הוחל!` : 'הגדרות הוחלו!'));
   }
 
@@ -2424,7 +2441,7 @@
     document.getElementById('ppm-modal')?.remove();
 
     const c = avc(player.name, player.color);
-    const avatarContent = player.emoji || player.name?.charAt(0) || '?';
+    const avatarContent = avHTML(player);
     const frameClass = (player.devRole === 'main-dev') ? 'av-frame-main-dev' : (player.frame ? 'av-frame-' + player.frame : '');
 
     // Load permLeaderboard if in a room
@@ -2564,227 +2581,251 @@
     lacTrack('view_player_profile', { viewed_player: player.name });
   }
 
-  // ─── FIREBASE SYNC HELPERS ────────────────────────────────────────
-  // Keys that are synced to Firebase when user is logged in
-  // lac_s (session) is intentionally NOT synced — it's device-specific
-  const FB_SYNC_KEYS = ['profile','myrooms','theme','tut','templates','gameHistory','playDates'];
+  // ─── ACCOUNT SYNC ────────────────────────────────────────────────
+  // Single-responsibility design:
+  //   loadProfile()      → local only, called on boot
+  //   saveProfile()      → local + debounced cloud push
+  //   _onAuthReady(user) → pull cloud, merge, attach real-time listener
+  //
+  // No getIdToken() on every call — Firebase SDK handles token refresh.
+  // fbSave() kept as thin wrapper for non-profile keys (rooms, history…)
 
-  async function fbSave(key, data) {
+  let _profileListener = null;  // real-time onValue unsubscribe
+  let _pendingProfileSave = null; // debounce handle
+  const _PROFILE_DEBOUNCE = 600; // ms
+
+  // ── thin write helper for non-profile keys ──────────────────────
+  function fbSave(key, data) {
     if (!currentUser) return;
-    try {
-      await currentUser.getIdToken(true); // ensure DB has fresh auth token
-      await set(ref(db,'users/'+currentUser.uid+'/'+key), data);
-    } catch(e) { console.warn('fbSave error', e); }
-  }
-  async function fbLoad(key) {
-    if (!currentUser) return null;
-    try {
-      await currentUser.getIdToken(true);
-      const snap = await get(ref(db,'users/'+currentUser.uid+'/'+key));
-      return snap.exists() ? snap.val() : null;
-    } catch(e) { return null; }
+    set(ref(db, 'users/' + currentUser.uid + '/' + key), data).catch(e => {
+      console.warn('[Sync] fbSave ' + key + ' failed:', e.message);
+    });
   }
 
-  // Called after login — pull all user data from Firebase and apply locally
-  // Apply a cloud profile object to all local state variables + UI
-  function _applyProfile(p) {
-    // Safety 1: don't apply if profile hasn't actually changed
-    const existing = (() => { try { return JSON.parse(localStorage.getItem('lac_profile')); } catch(e) { return null; } })();
-    if (existing && existing._updatedAt === p._updatedAt && existing.name === p.name) {
-      console.log('_applyProfile: no change, skipping UI update');
-      return;
-    }
-
-    // Safety 2: don't disrupt active game screens
-    const activeScreen = document.querySelector('.screen.active')?.id || '';
-    const gameScreens = ['screen-game','screen-vote','screen-results','screen-final','screen-lobby'];
-    const inGame = gameScreens.includes(activeScreen);
-
-    // 1. Update all state variables
-    S.pName = p.name;
-    S_pColor = p.color || AVATAR_COLORS[0];
-    S_pEmoji = p.emoji || null;
-    S_pFrame = p.frame || null;
-    S_pTag = p.tag || null;
-    S_pEntry = p.entry || 'none';
-    S_pRoomName = p.roomName || '';
-    S_pDevRoles = Array.isArray(p.devRoles) ? p.devRoles : [];
-    S_pRefId = p.refId || null;
-    // Take the highest known count — cloud may not have refCount yet (old profile)
-    S_pRefCount = Math.max(p.refCount || 0, S_pRefCount);
+  // ── canonical state setter — ONE place that writes S_p* vars ────
+  function _applyProfileToState(p) {
+    if (!p || !p.name) return;
+    S.pName           = p.name;
+    S_pColor          = p.color       || AVATAR_COLORS[0];
+    S_pEmoji          = p.emoji       || null;
+    S_pFrame          = p.frame       || null;
+    S_pTag            = p.tag         || null;
+    S_pEntry          = p.entry       || 'none';
+    S_pRoomName       = p.roomName    || '';
+    // devRoles: union with current — never remove earned roles
+    const incomingRoles = Array.isArray(p.devRoles) ? p.devRoles : (p.devRole ? [p.devRole] : []);
+    S_pDevRoles       = [...new Set([...incomingRoles, ...(S_pDevRoles||[])])];
+    S_pRefId          = p.refId       || S_pRefId || null;
+    S_pRefCount       = Math.max(p.refCount || 0, S_pRefCount || 0);
     S_pSupporterLevel = Math.max(p.supporterLevel || 0, getSupporterLevel(S_pRefCount));
-    S_pActiveBadge = p.activeBadge || 'auto';
-    console.log('[DEBUG] _applyProfile: cloud refCount=', p.refCount, '| final S_pRefCount=', S_pRefCount, '| level=', S_pSupporterLevel);
-
-    // 2. Persist to localStorage
-    localStorage.setItem('lac_profile', JSON.stringify(p));
+    S_pActiveBadge    = p.activeBadge || S_pActiveBadge || 'auto';
+    S_pPhoto          = p.photo || (currentUser?.photoURL || null);
+    S_pUsePhoto       = p.usePhoto || false;
+    const el = document.getElementById('player-name');
+    if (el) el.value = p.name;
     if (p.refId) { try { localStorage.setItem('lac_refid', p.refId); } catch(e){} }
+  }
 
-    // 3. Update hidden name input (always safe)
-    const playerNameEl = document.getElementById('player-name');
-    if (playerNameEl) playerNameEl.value = p.name;
+  // ── safe JSON parse from localStorage ───────────────────────────
+  function _lsGet(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch(e) { return fallback; }
+  }
 
-    // Safety 3: skip all visual UI updates if in active game
-    if (inGame) {
-      console.log('_applyProfile: in game, skipping UI refresh');
-      return;
+  // ── merge two arrays, dedupe by keyFn, sort by sortField, cap ───
+  function _mergeArr(local, cloud, keyFn, sortField, max) {
+    const arr = cloud ? (Array.isArray(cloud) ? cloud : Object.values(cloud)) : [];
+    const merged = [...arr, ...local];
+    const seen = new Set();
+    return merged
+      .filter(x => { const k = typeof keyFn === 'function' ? keyFn(x) : x[keyFn]; if (seen.has(k)) return false; seen.add(k); return true; })
+      .sort((a, b) => (b[sortField] || 0) - (a[sortField] || 0))
+      .slice(0, max);
+  }
+
+  // ── push profile UI changes (safe — won't touch game screens) ───
+  function _refreshProfileUI() {
+    const scr = document.querySelector('.screen.active')?.id || '';
+    const gameScreens = ['screen-game','screen-vote','screen-results','screen-final','screen-lobby'];
+    if (gameScreens.includes(scr)) return;
+    const pn = document.getElementById('prof-name'); if (pn) pn.value = S.pName || '';
+    const pr = document.getElementById('prof-room-name'); if (pr) pr.value = S_pRoomName || '';
+    const hn = document.getElementById('player-name'); if (hn) hn.value = S.pName || '';
+    // Update home avatar with photo if available
+    const homeAv = document.getElementById('home-av');
+    if (homeAv) {
+      if (S_pPhoto && S_pUsePhoto) { homeAv.innerHTML = '<img src="' + S_pPhoto + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'; }
+      else { homeAv.textContent = S_pEmoji || (S.pName||'?').charAt(0); }
     }
-
-    // 4. Update profile screen inputs
-    const profNameEl = document.getElementById('prof-name');
-    if (profNameEl) profNameEl.value = p.name;
-    const profRoomEl = document.getElementById('prof-room-name');
-    if (profRoomEl) profRoomEl.value = p.roomName || '';
-
-    // Safety 4: only re-render pickers if profile screen is currently visible
-    if (activeScreen === 'screen-profile') {
-      initAvPicker();
-      initEmojiPicker();
-      initFramePicker();
-      initTagInput();
-      initEntryPicker();
-      updateProfilePreview();
-      updateDevCodeStatus();
-      renderBadgePicker();
+    if (scr === 'screen-profile') {
+      initAvPicker(); initEmojiPicker(); initFramePicker();
+      initTagInput(); initEntryPicker();
+      updateProfilePreview(); updateDevCodeStatus(); renderBadgePicker();
     }
-
-    // 5. Always update home identity bar (lightweight, no jumps)
     updateHomeIdentity();
   }
 
+  // ── called when user logs in OR when cloud profile changes ──────
+  // ── smart profile merge: never loses data from either side ────────
+  // For scalar fields: take from the profile with the newer _updatedAt.
+  // For cumulative fields (devRoles, refCount, supporterLevel): always
+  // take the union / maximum so no earned data is ever wiped.
+  function _mergeProfiles(a, b) {
+    if (!a?.name && !b?.name) return null;
+    if (!a?.name) return b;
+    if (!b?.name) return a;
+    // Pick the newer profile as the base for scalar fields
+    const base  = (a._updatedAt || 0) >= (b._updatedAt || 0) ? a : b;
+    const other = base === a ? b : a;
+    // Union devRoles — never lose a role
+    const roles = [...new Set([
+      ...(Array.isArray(base.devRoles)  ? base.devRoles  : (base.devRole  ? [base.devRole]  : [])),
+      ...(Array.isArray(other.devRoles) ? other.devRoles : (other.devRole ? [other.devRole] : []))
+    ])];
+    return {
+      ...base,
+      devRoles:       roles,
+      refId:          base.refId          || other.refId          || null,
+      refCount:       Math.max(base.refCount       || 0, other.refCount       || 0),
+      supporterLevel: Math.max(base.supporterLevel || 0, other.supporterLevel || 0),
+      activeBadge:    base.activeBadge    || other.activeBadge    || 'auto',
+      photo:          base.photo          || other.photo          || null,
+      usePhoto:       base.usePhoto       || other.usePhoto       || false,
+      _updatedAt:     Math.max(base._updatedAt || 0, other._updatedAt || 0),
+    };
+  }
+
+  async function _onAuthReady(user) {
+    if (!user) {
+      if (_profileListener) { _profileListener(); _profileListener = null; }
+      return;
+    }
+
+    // 1. One-time pull + smart merge
+    let cloudSnap;
+    try { cloudSnap = await get(ref(db, 'users/' + user.uid + '/profile')); }
+    catch(e) { console.warn('[Sync] initial pull failed:', e.message); cloudSnap = null; }
+
+    const cloudP = cloudSnap?.exists() ? cloudSnap.val() : null;
+    const localP = _lsGet('lac_profile', null);
+    const merged = _mergeProfiles(cloudP, localP);
+
+    if (merged) {
+      _applyProfileToState(merged);
+      try { localStorage.setItem('lac_profile', JSON.stringify(merged)); } catch(e) {}
+      // Always push merged result to cloud so both sides converge
+      set(ref(db, 'users/' + user.uid + '/profile'), merged).catch(() => {});
+      console.log('[Sync] merged profile → devRoles:', merged.devRoles, 'refCount:', merged.refCount);
+    } else {
+      // No profile anywhere — onboarding will handle it
+      const raw = localStorage.getItem('lac_profile');
+      if (raw) {
+        try { set(ref(db, 'users/' + user.uid + '/profile'), JSON.parse(raw)).catch(() => {}); } catch(e) {}
+      }
+    }
+
+    // 2. Merge non-profile keys in background
+    _syncOtherData(user).catch(e => console.warn('[Sync] other data error:', e.message));
+
+    // 3. Real-time listener — merge incoming cloud changes, never overwrite blindly
+    if (_profileListener) _profileListener();
+    _profileListener = onValue(ref(db, 'users/' + user.uid + '/profile'), snap => {
+      if (!snap.exists()) return;
+      const cp = snap.val();
+      if (!cp?.name) return;
+      const currentLocal = _lsGet('lac_profile', null);
+      // Skip if this is just our own write echoing back (same ts)
+      if (currentLocal && currentLocal._updatedAt === cp._updatedAt &&
+          JSON.stringify(currentLocal.devRoles) === JSON.stringify(cp.devRoles)) return;
+      const remerged = _mergeProfiles(cp, currentLocal);
+      if (!remerged) return;
+      console.log('[Sync] real-time merge → devRoles:', remerged.devRoles);
+      _applyProfileToState(remerged);
+      try { localStorage.setItem('lac_profile', JSON.stringify(remerged)); } catch(e) {}
+      _refreshProfileUI();
+      // Push merged result back if it gained something
+      if ((remerged.refCount || 0) > (cp.refCount || 0) ||
+          (remerged.devRoles||[]).length > (cp.devRoles||[]).length) {
+        set(ref(db, 'users/' + user.uid + '/profile'), remerged).catch(() => {});
+      }
+    }, e => console.warn('[Sync] listener error:', e));
+  }
+
+  // ── merge rooms, history, templates, dates, theme, tut ──────────
+  async function _syncOtherData(user) {
+    const snap = await get(ref(db, 'users/' + user.uid));
+    const cloud = snap.exists() ? snap.val() : {};
+
+    // First-ever login — upload everything local, then return
+    if (!snap.exists()) {
+      const push = {};
+      const lr = _lsGet('lac_myrooms', []);     if (lr.length) push.myrooms = lr;
+      const lt = _lsGet('aretz_templates', []); if (lt.length) push.templates = lt;
+      const lh = _lsGet('aretz_history', []);   if (lh.length) push.gameHistory = lh;
+      const ld = _lsGet(STREAK_KEY, []);         if (ld.length) push.playDates = ld;
+      const th = localStorage.getItem('lac_theme'); if (th) push.theme = th;
+      const tu = localStorage.getItem('etz_tut_v1');
+      if (tu) { const ts={v1:tu}; Object.entries(TUT_SCREEN_KEYS).forEach(([k,lsKey])=>{ if(localStorage.getItem(lsKey)) ts[k]='1'; }); push.tut=ts; }
+      push._firstLogin = Date.now();
+      if (Object.keys(push).length > 1) set(ref(db, 'users/' + user.uid), push).catch(() => {});
+      return;
+    }
+
+    // Rooms
+    const rooms = _mergeArr(_lsGet('lac_myrooms', []), cloud.myrooms, 'id', 'savedAt', 10);
+    try { localStorage.setItem('lac_myrooms', JSON.stringify(rooms)); } catch(e) {}
+    set(ref(db, 'users/' + user.uid + '/myrooms'), rooms).catch(() => {});
+    renderMyRooms();
+
+    // Theme
+    const cloudThemeTs = cloud.themeTs || 0;
+    const localThemeTs = parseInt(localStorage.getItem('lac_theme_ts') || '0');
+    if (cloud.theme && cloudThemeTs >= localThemeTs) {
+      applyTheme(cloud.theme);
+    } else if (localStorage.getItem('lac_theme') && localThemeTs > cloudThemeTs) {
+      set(ref(db, 'users/' + user.uid + '/theme'), localStorage.getItem('lac_theme')).catch(() => {});
+      set(ref(db, 'users/' + user.uid + '/themeTs'), localThemeTs).catch(() => {});
+    }
+
+    // Tutorial — restore all per-screen keys from cloud, then push local if richer
+    _restoreTutState(cloud.tut || null);
+    const localTutDone = !!localStorage.getItem(TUT_KEY);
+    const localScreensDone = Object.values(TUT_SCREEN_KEYS).some(k => localStorage.getItem(k));
+    if (localTutDone || localScreensDone) _saveTutState();
+
+    // Templates
+    const tpls = _mergeArr(_lsGet('aretz_templates', []), cloud.templates, t => (t.name||'')+'_'+(t.ts||0), 'ts', 10);
+    try { localStorage.setItem('aretz_templates', JSON.stringify(tpls)); } catch(e) {}
+    set(ref(db, 'users/' + user.uid + '/templates'), tpls).catch(() => {});
+
+    // Game history
+    const hist = _mergeArr(_lsGet('aretz_history', []), cloud.gameHistory, h => (h.roomId||'')+'_'+(h.ts||0), 'ts', 20);
+    try { localStorage.setItem('aretz_history', JSON.stringify(hist)); } catch(e) {}
+    set(ref(db, 'users/' + user.uid + '/gameHistory'), hist).catch(() => {});
+    loadGameHistory();
+
+    // Play dates
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    const cloudDates = cloud.playDates ? (Array.isArray(cloud.playDates) ? cloud.playDates : Object.values(cloud.playDates)) : [];
+    const dates = [...new Set([...cloudDates, ..._lsGet(STREAK_KEY, [])])].filter(d => new Date(d) >= cutoff).sort();
+    try { localStorage.setItem(STREAK_KEY, JSON.stringify(dates)); } catch(e) {}
+    if (dates.length > cloudDates.length) set(ref(db, 'users/' + user.uid + '/playDates'), dates).catch(() => {});
+    renderStreakCard();
+  }
+
+  // ── syncFromFirebase: public manual-sync trigger (☁️ button) ────
   async function syncFromFirebase() {
-    if (!currentUser) return;
-    try {
-      await currentUser.getIdToken(true);
-      const snap = await get(ref(db,'users/'+currentUser.uid));
-
-      // ── local data (with timestamps) ──
-      const localProfile  = (() => { try { return JSON.parse(localStorage.getItem('lac_profile')); }  catch(e){ return null; } })();
-      const localRooms    = (() => { try { return JSON.parse(localStorage.getItem('lac_myrooms')||'[]'); } catch(e){ return []; } })();
-      const localTheme    = (() => { try { return localStorage.getItem('lac_theme')||'dark'; } catch(e){ return 'dark'; } })();
-      const localTut      = (() => { try { return localStorage.getItem('etz_tut_v1')||null; } catch(e){ return null; } })();
-
-      if (!snap.exists()) {
-        // First ever login — upload local data to cloud
-        const pushData = { _updatedAt: Date.now() };
-        if (localProfile) pushData.profile = { ...localProfile, _updatedAt: Date.now() };
-        if (localRooms.length) pushData.myrooms = localRooms;
-        if (localTheme) pushData.theme = localTheme;
-        if (localTut) pushData.tut = localTut;
-        await set(ref(db,'users/'+currentUser.uid), pushData);
-        console.log('First sync: uploaded local data to cloud');
-        return;
-      }
-
-      const cloud = snap.val();
-
-      // ── PROFILE: last-write-wins by _updatedAt ──
-      const cloudProfile = cloud.profile || null;
-      const localTs  = localProfile?._updatedAt || 0;
-      const cloudTs  = cloudProfile?._updatedAt || 0;
-      if (cloudProfile && cloudProfile.name) {
-        if (cloudTs > localTs) {
-          // Cloud is newer → apply cloud, then push back refCount if it improved
-          _applyProfile(cloudProfile);
-          console.log('Sync: applied cloud profile (cloud ts:', cloudTs, '> local ts:', localTs, ')');
-          // Push back so cloud has the correct refCount (may have been missing)
-          saveProfile();
-        } else if (localTs > cloudTs) {
-          // Local is newer → push local to cloud
-          const updated = { ...localProfile, _updatedAt: localTs };
-          await set(ref(db,'users/'+currentUser.uid+'/profile'), updated);
-          console.log('Sync: pushed local profile to cloud (local ts:', localTs, '> cloud ts:', cloudTs, ')');
-        }
-      } else if (localProfile && localProfile.name) {
-        // No cloud profile yet → upload local
-        const updated = { ...localProfile, _updatedAt: Date.now() };
-        await set(ref(db,'users/'+currentUser.uid+'/profile'), updated);
-        console.log('Sync: no cloud profile, uploaded local');
-      }
-
-      // ── MY ROOMS: merge by savedAt, keep newest 10 ──
-      const cloudRooms = cloud.myrooms
-        ? (Array.isArray(cloud.myrooms) ? cloud.myrooms : Object.values(cloud.myrooms))
-        : [];
-      if (cloudRooms.length || localRooms.length) {
-        const merged = [...cloudRooms, ...localRooms];
-        const seen = new Set();
-        const deduped = merged
-          .filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; })
-          .sort((a,b) => (b.savedAt||0) - (a.savedAt||0))
-          .slice(0,10);
-        localStorage.setItem('lac_myrooms', JSON.stringify(deduped));
-        await set(ref(db,'users/'+currentUser.uid+'/myrooms'), deduped);
-        renderMyRooms();
-      }
-
-      // ── THEME: last-write-wins ──
-      const cloudThemeTs = cloud.themeTs || 0;
-      const localThemeTs = (() => { try { return parseInt(localStorage.getItem('lac_theme_ts')||'0'); } catch(e){ return 0; } })();
-      if (cloud.theme && cloudThemeTs >= localThemeTs) {
-        applyTheme(cloud.theme);
-      } else if (localTheme && localThemeTs > cloudThemeTs) {
-        await set(ref(db,'users/'+currentUser.uid+'/theme'), localTheme);
-        await set(ref(db,'users/'+currentUser.uid+'/themeTs'), localThemeTs);
-      }
-
-      // ── TUTORIAL FLAG: if either side has it, keep it ──
-      if (cloud.tut || localTut) {
-        try { localStorage.setItem('etz_tut_v1','1'); } catch(e){}
-        if (!cloud.tut) await set(ref(db,'users/'+currentUser.uid+'/tut'),'1');
-      }
-
-      // ── TEMPLATES: merge by name+ts, keep newest 10 ──
-      const localTemplates = (() => { try { return JSON.parse(localStorage.getItem('aretz_templates')||'[]'); } catch(e){ return []; } })();
-      const cloudTemplates = cloud.templates ? (Array.isArray(cloud.templates) ? cloud.templates : Object.values(cloud.templates)) : [];
-      if (cloudTemplates.length || localTemplates.length) {
-        const merged = [...cloudTemplates, ...localTemplates];
-        const seenT = new Set();
-        const dedupedT = merged
-          .filter(t => { const key = (t.name||'')+'_'+(t.ts||0); if(seenT.has(key)) return false; seenT.add(key); return true; })
-          .sort((a,b) => (b.ts||0)-(a.ts||0))
-          .slice(0,10);
-        try { localStorage.setItem('aretz_templates', JSON.stringify(dedupedT)); } catch(e){}
-        if (dedupedT.length > cloudTemplates.length || cloudTemplates.some((ct,i) => !dedupedT[i] || ct.ts !== dedupedT[i].ts)) {
-          await set(ref(db,'users/'+currentUser.uid+'/templates'), dedupedT).catch(()=>{});
-        }
-      }
-
-      // ── GAME HISTORY: merge by roomId+ts, keep newest 20 ──
-      const localHistory = (() => { try { return JSON.parse(localStorage.getItem('aretz_history')||'[]'); } catch(e){ return []; } })();
-      const cloudHistory = cloud.gameHistory ? (Array.isArray(cloud.gameHistory) ? cloud.gameHistory : Object.values(cloud.gameHistory)) : [];
-      if (cloudHistory.length || localHistory.length) {
-        const mergedH = [...cloudHistory, ...localHistory];
-        const seenH = new Set();
-        const dedupedH = mergedH
-          .filter(h => { const key = (h.roomId||'')+'_'+(h.ts||0); if(seenH.has(key)) return false; seenH.add(key); return true; })
-          .sort((a,b) => (b.ts||0)-(a.ts||0))
-          .slice(0,20);
-        try { localStorage.setItem('aretz_history', JSON.stringify(dedupedH)); } catch(e){}
-        if (dedupedH.length > cloudHistory.length) {
-          await set(ref(db,'users/'+currentUser.uid+'/gameHistory'), dedupedH).catch(()=>{});
-        }
-        loadGameHistory();
-      }
-
-      // ── PLAY DATES: merge, keep last 30 ──
-      const localDates = (() => { try { return JSON.parse(localStorage.getItem(STREAK_KEY)||'[]'); } catch(e){ return []; } })();
-      const cloudDates = cloud.playDates ? (Array.isArray(cloud.playDates) ? cloud.playDates : Object.values(cloud.playDates)) : [];
-      if(cloudDates.length || localDates.length){
-        const merged = [...new Set([...cloudDates, ...localDates])];
-        const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
-        const deduped = merged.filter(d=>new Date(d)>=cutoff).sort();
-        try{ localStorage.setItem(STREAK_KEY, JSON.stringify(deduped)); }catch(e){}
-        if(deduped.length > cloudDates.length){
-          await set(ref(db,'users/'+currentUser.uid+'/playDates'), deduped).catch(()=>{});
-        }
-        renderStreakCard();
-      }
-
-    } catch(e) { console.warn('Firebase sync error:', e); lacTrack('sync_error', { error_message: (e?.message||String(e)).slice(0,100) }); throw e; }
+    if (!currentUser) throw new Error('לא מחובר לחשבון');
+    await _onAuthReady(currentUser);
   }
 
   const LETTERS='אבגדהוזחטיכלמנסעפצקרשת'.split('');
+  const LETTERS_EN='ABCDEFGHIJKLMNOPRSTW'.split('');
+  function getLetters(){
+    if(S.language==='en') return LETTERS_EN;
+    if(S.language==='both') return [...LETTERS,...LETTERS_EN];
+    return LETTERS;
+  }
   const AVATAR_COLORS=['#e94560','#4cc9f0','#f5a623','#0fba81','#a855f7','#ec4899','#f97316','#06b6d4','#84cc16','#ef4444'];
 
   // ─── SOUND SYSTEM ─────────────────────────────────────────────────
@@ -2877,6 +2918,7 @@
     totalRounds:0,
     isSpectator:false,
     uniqueLetters:false,
+    language:'he',
     chatOpen:false,
     chatUnread:0,
     chatListener:null,
@@ -2886,8 +2928,8 @@
     warnedExpiry:false,
     isPermanent:false,
     pendingAdvance:null,
-    vetoThresholdType:'percent',
-    vetoThresholdValue:50,
+    vetoThresholdType:'count',
+    vetoThresholdValue:2,
     raceMode:false,
     creativeVoteEnabled:true,
     funnyVoteEnabled:false,
@@ -2907,6 +2949,18 @@
   let S_pRefCount=0;   // actual referral count (saved so progress is preserved)
   let S_pSupporterLevel=0; // 0=none, 1-6
   let S_pActiveBadge='auto'; // 'auto'=show all / 'none' / 'main-dev' / 'dev' / 'debugger' / 'supporter' / 'sup-1'..'sup-6'
+  let S_pPhoto=null;   // Google photo URL or null
+  let S_pUsePhoto=false; // true only when user explicitly chose photo avatar
+
+  // ── avatar HTML helper — used everywhere a player avatar appears ──
+  // Returns inner HTML for a round avatar div.
+  // If player has a photo URL, shows <img>; otherwise emoji or first letter.
+  function avHTML(player) {
+    if (player && player.photo && player.usePhoto) {
+      return '<img src="' + player.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" loading="lazy">';
+    }
+    return player ? (player.emoji || (player.name || '?').charAt(0)) : '?';
+  }
 
   const PROF_EMOJIS=['😎','🔥','👑','💀','🎯','🤓','🎲','💪','🦁','🐺','🦊','🐸','👻','🤖','👽','🎃'];
   const PROF_FRAMES=[
@@ -2963,18 +3017,40 @@
     const grid=document.getElementById('prof-emoji-grid');
     if(!grid)return;
     grid.innerHTML='';
+    // Create/re-use letter button inside the grid
+    let _lb=document.getElementById('btn-use-letter');
+    if(!_lb){
+      _lb=document.createElement('button');
+      _lb.id='btn-use-letter';
+      _lb.type='button';
+      _lb.title='השתמש באות הראשונה';
+      _lb.style.cssText='font-size:1.4rem;font-weight:900;line-height:1;overflow:hidden;';
+      _lb.addEventListener('click',()=>{
+        S_pEmoji=null; S_pUsePhoto=false;
+        grid.querySelectorAll('.prof-emoji-btn').forEach(b=>b.classList.remove('sel'));
+        _lb.classList.add('sel');
+        updateProfilePreview();
+      });
+    }
+    _lb.className='prof-emoji-btn'+((!S_pEmoji&&!S_pUsePhoto)?' sel':'');
+    const _nameNow=((document.getElementById('prof-name')||{}).value||'').replace(/\n/g,'').trim();
+
+    _lb.textContent=_nameNow.charAt(0)||'א';
     PROF_EMOJIS.forEach(em=>{
       const btn=document.createElement('button');
+      btn.type='button';
       btn.className='prof-emoji-btn'+(S_pEmoji===em?' sel':'');
       btn.textContent=em;
       btn.addEventListener('click',()=>{
         S_pEmoji=em;
         grid.querySelectorAll('.prof-emoji-btn').forEach(b=>b.classList.remove('sel'));
+        document.getElementById('btn-use-letter')?.classList.remove('sel');
         btn.classList.add('sel');
         updateProfilePreview();
       });
       grid.appendChild(btn);
     });
+    grid.appendChild(_lb);
   }
 
   function initFramePicker(){
@@ -3016,7 +3092,7 @@
     if(effectId==='none')return;
     const name=document.getElementById('prof-name')?.value?.trim()||S.pName||'השם שלך';
     const c=S_pColor;
-    const avatarContent=S_pEmoji||(name.charAt(0)||'?');
+    const avatarContent=avHTML({photo:S_pPhoto,emoji:S_pEmoji,name,usePhoto:S_pUsePhoto});
     const frameClass=S_pFrame?'av-frame-'+S_pFrame:'';
     // Remove any existing preview overlay
     document.getElementById('entry-preview-overlay')?.remove();
@@ -3033,7 +3109,7 @@
       display:flex;align-items:center;justify-content:center;
       font-weight:900;font-size:3rem;
       box-shadow:0 0 40px ${c}55;`;
-    avatarEl.textContent=avatarContent;
+    if(S_pPhoto&&S_pUsePhoto){avatarEl.innerHTML='<img src="'+S_pPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';}else{avatarEl.textContent=avatarContent;}
     const nameEl=document.createElement('div');
     nameEl.style.cssText=`font-size:1.6rem;font-weight:900;color:#fff;
       text-shadow:0 2px 12px rgba(0,0,0,.8);text-align:center;`;
@@ -3077,12 +3153,14 @@
   }
 
   function updateProfilePreview(){
-    const name=(document.getElementById('prof-name')||{}).value||'';
+    const name=((document.getElementById('prof-name')||{}).value||'').replace(/\n/g,'').trim();
+    const letterBtn=document.getElementById('btn-use-letter');
+    if(letterBtn){ const ch=(name.charAt(0)||'א'); if(letterBtn.textContent.trim()!==ch) letterBtn.textContent=ch; }
     const prev=document.getElementById('prof-av-preview');
     if(prev){
       prev.style.background=S_pColor+'33';
       prev.style.color=S_pColor;
-      prev.textContent=S_pEmoji||(name.trim().charAt(0)||'?');
+      if(S_pPhoto&&S_pUsePhoto){prev.innerHTML='<img src="'+S_pPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';}else{prev.textContent=S_pEmoji||(name.trim().charAt(0)||'?');}
       // reset then apply frame class, preserve entry anim classes
       const entryClasses=ALL_ENTRY_CLASSES.filter(c=>prev.classList.contains(c));
       prev.className='profile-avatar-preview';
@@ -3091,53 +3169,63 @@
     }
   }
 
-  document.getElementById('btn-use-letter').addEventListener('click',()=>{
+  // btn-use-letter click handled in initEmojiPicker
+  document.getElementById('btn-use-photo').addEventListener('click',()=>{
     S_pEmoji=null;
+    S_pUsePhoto=true;
     document.querySelectorAll('.prof-emoji-btn').forEach(b=>b.classList.remove('sel'));
+    document.getElementById('btn-use-letter').classList.remove('sel');
     updateProfilePreview();
   });
+  // Show photo button only when logged in with Google photo
+  function _updatePhotoBtn(){
+    const btn=document.getElementById('btn-use-photo');
+    if(!btn)return;
+    btn.style.display=(currentUser&&currentUser.photoURL)?'block':'none';
+  }
 
   // ─── PROFILE PERSISTENCE ──────────────────────────────────────────
-  function saveProfile(){
-    const _pd={name:S.pName,color:S_pColor,emoji:S_pEmoji,frame:S_pFrame,
-      tag:S_pTag,entry:S_pEntry,roomName:S_pRoomName,
-      devRoles:S_pDevRoles,
-      refId:S_pRefId,refCount:S_pRefCount,supporterLevel:S_pSupporterLevel,activeBadge:S_pActiveBadge,
-      _updatedAt:Date.now()};
-    try{localStorage.setItem('lac_profile',JSON.stringify(_pd));}catch(e){}
-    fbSave('profile',_pd);
-    // Write public referral summary for admin dashboard
-    if(currentUser && S.pName){
-      set(ref(db,'adminData/referrals/'+currentUser.uid),{
-        name:S.pName,emoji:S_pEmoji||null,refId:S_pRefId||null,
-        refCount:S_pRefCount||0,supporterLevel:S_pSupporterLevel||0,
-        _updatedAt:Date.now()
-      }).catch(()=>{});
-    }
+  function _buildProfile() {
+    return {
+      name: S.pName, color: S_pColor, emoji: S_pEmoji, frame: S_pFrame,
+      tag: S_pTag, entry: S_pEntry, roomName: S_pRoomName,
+      devRoles: S_pDevRoles, refId: S_pRefId, refCount: S_pRefCount,
+      supporterLevel: S_pSupporterLevel, activeBadge: S_pActiveBadge,
+      photo: S_pPhoto || null,
+      usePhoto: S_pUsePhoto || false,
+      _updatedAt: Date.now()
+    };
   }
-  function loadProfile(){
-    try{
-      const raw=localStorage.getItem('lac_profile');
-      if(!raw)return false;
-      const p=JSON.parse(raw);
-      if(!p.name)return false;
-      S.pName=p.name;
-      S_pColor=p.color||AVATAR_COLORS[0];
-      S_pEmoji=p.emoji||null;
-      S_pFrame=p.frame||null;
-      S_pTag=p.tag||null;
-      S_pEntry=p.entry||'none';
-      S_pRoomName=p.roomName||'';
-      if(Array.isArray(p.devRoles))S_pDevRoles=p.devRoles;
-      else if(p.devRole)S_pDevRoles=[p.devRole];
-      else S_pDevRoles=[];
-      S_pRefId=p.refId||null;
-      S_pRefCount=p.refCount||0;
-      S_pSupporterLevel=p.supporterLevel||0;
-      S_pActiveBadge=p.activeBadge||'auto';
-      document.getElementById('player-name').value=p.name;
+  function saveProfile() {
+    const p = _buildProfile();
+    // 1. localStorage — always, sync, instant
+    try { localStorage.setItem('lac_profile', JSON.stringify(p)); } catch(e) {}
+    // 2. cloud — debounced so rapid edits don't spam Firebase
+    clearTimeout(_pendingProfileSave);
+    _pendingProfileSave = setTimeout(() => {
+      if (!currentUser) return;
+      set(ref(db, 'users/' + currentUser.uid + '/profile'), p).catch(e => {
+        console.warn('[Sync] saveProfile cloud push failed:', e.message);
+      });
+      if (p.name) {
+        set(ref(db, 'adminData/referrals/' + currentUser.uid), {
+          name: p.name, emoji: p.emoji || null, refId: p.refId || null,
+          refCount: p.refCount || 0, supporterLevel: p.supporterLevel || 0,
+          _updatedAt: p._updatedAt
+        }).catch(() => {});
+      }
+    }, _PROFILE_DEBOUNCE);
+  }
+  // loadProfile: reads from localStorage only — fast boot path
+  function loadProfile() {
+    try {
+      const raw = localStorage.getItem('lac_profile');
+      if (!raw) return false;
+      const p = JSON.parse(raw);
+      if (!p || !p.name) return false;
+      _applyProfileToState(p);
       return true;
-    }catch(e){return false;}
+    } catch(e) { return false; }
   }
 
   // ─── SUPPORTER / REFERRAL SYSTEM ──────────────────────────────────
@@ -3316,7 +3404,7 @@
     if(av){
       av.style.background=S_pColor+'33';
       av.style.color=S_pColor;
-      av.textContent=S_pEmoji||(S.pName||'?').charAt(0);
+      if(S_pPhoto&&S_pUsePhoto){av.innerHTML='<img src="'+S_pPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';}else{av.textContent=S_pEmoji||(S.pName||'?').charAt(0);}
       av.style.cssText+=';width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;';
       // clear old frame classes
       av.className='';
@@ -3353,6 +3441,7 @@
     renderBadgePicker();
     renderProfileStats();
     updateNotifButton();
+    _updatePhotoBtn();
     // Show admin panel button for main-dev only
 
   }
@@ -3437,7 +3526,7 @@
   document.getElementById('prof-name').addEventListener('input',()=>{
     updateProfilePreview();
     if(!profRoomNameManuallyChanged){
-      const n=document.getElementById('prof-name').value.trim();
+      const n=document.getElementById('prof-name').value.replace(/\n/g,'').trim();
       document.getElementById('prof-room-name').value=n?`החדר של ${n}`:'';
     }
   });
@@ -3446,7 +3535,7 @@
   });
 
   document.getElementById('btn-profile-continue').addEventListener('click',()=>{
-    const n=document.getElementById('prof-name').value.trim();
+    const n=document.getElementById('prof-name').value.replace(/\n/g,'').trim();
     if(!n){toast('נא להזין שם שחקן');return;}
     const isFirstTime = !localStorage.getItem('aretz_ep_shown') && !S.pName;
     S.pName=n;
@@ -4058,7 +4147,7 @@
       }).catch(()=>{});
     }
     // Read veto threshold from create screen
-    const crVetoType=document.getElementById('cr-veto-pct-btn').classList.contains('active')?'percent':'count';
+    const crVetoType=document.getElementById('cr-veto-cnt-btn').classList.contains('active')?'count':'percent';
     const crVetoValue=crVetoType==='percent'
       ?Math.min(100,Math.max(1,parseInt(document.getElementById('cr-veto-pct-inp').value)||50))
       :Math.max(1,parseInt(document.getElementById('cr-veto-cnt-inp').value)||2);
@@ -4068,6 +4157,7 @@
     S.legendaryEnabled=document.getElementById('tog-legendary-el')?.classList.contains('on')!==false;
     S.bonusCatEnabled=document.getElementById('tog-bonus-cat-el').classList.contains('on');
     S.funnyVoteEnabled=document.getElementById('tog-funny-el').classList.contains('on');
+    S.language=document.querySelector('#tog-language .lang-btn.active')?.dataset.lang||'he';
     const roomName=document.getElementById('room-name-inp').value.trim()||S_pRoomName||`החדר של ${S.pName}`;
 
     // Generate room ID without async collision check
@@ -4076,11 +4166,11 @@
 
     const roomData={
       host:S.pId,originalHost:S.pId,status:'lobby',roundTime:S.rTime,categories:active,showVoters:S.showVoters,raceMode:S.raceMode,creativeVoteEnabled:S.creativeVoteEnabled,legendaryEnabled:S.legendaryEnabled!==false,bonusCatEnabled:S.bonusCatEnabled||false,
-      uniqueLetters:S.uniqueLetters,cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',funnyVoteEnabled:S.funnyVoteEnabled||false,
+      uniqueLetters:S.uniqueLetters,language:S.language||'he',cumulativeSB:S.cumulativeSB,visibility:S.visibility,roomTheme:S_roomTheme||'default',funnyVoteEnabled:S.funnyVoteEnabled||false,
       totalRounds:S.totalRounds,roomName,vetoThresholdType:S.vetoThresholdType,vetoThresholdValue:S.vetoThresholdValue,
       round:0,letter:'',createdAt:Date.now(),lastActivity:Date.now(),currentCatIndex:0,
       players:{[S.pId]:{name:S.pName,score:0,joinedAt:Date.now(),isHost:true,color:S_pColor,devRole:getPrimaryDevRole(),
-        emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'}}
+        emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto',photo:S_pPhoto||null,usePhoto:S_pUsePhoto}}
     };
 
     // Build all writes in parallel
@@ -4111,7 +4201,8 @@
     const rc = parseInt(localStorage.getItem('aretz_rooms_created')||'0')+1;
     localStorage.setItem('aretz_rooms_created', rc);
     }catch(e){
-      toast('שגיאה ביצירת חדר, נסה שוב');
+      console.error('createRoom error:', e);
+      toast('שגיאה ביצירת חדר: ' + (e?.message||e));
       btn.disabled=false;
       btn.innerHTML=origText;
     }
@@ -4149,10 +4240,11 @@
     S.showVoters=room.showVoters||false;S.totalRounds=room.totalRounds||0;
     S.cumulativeSB=room.cumulativeSB!==false;
     S.uniqueLetters=room.uniqueLetters||false;
+    S.language=room.language||'he';
     S.visibility=room.visibility||'private';
     await set(ref(db,`rooms/${code}/players/${S.pId}`),{
       name:n,score:0,joinedAt:Date.now(),spectator:asSpectator||false,color:S_pColor,devRole:getPrimaryDevRole(),
-      emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto'
+      emoji:S_pEmoji||null,frame:S_pFrame||null,tag:S_pTag||null,entryEffect:S_pEntry||'none',supporterLevel:S_pSupporterLevel||0,activeBadge:S_pActiveBadge||'auto',photo:S_pPhoto||null,usePhoto:S_pUsePhoto
     });
     touchActivity();saveSession();
 
@@ -4248,6 +4340,16 @@
           <div class="tog${curUL?' on':''}" id="smc-tog-ul"></div>
           <span class="tog-label">אות שונה לכל קטגוריה</span>
         </div>
+                <div style="margin-bottom:14px;">
+          <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px;">🔤 שפת אותיות</div>
+          <div style="display:flex;gap:6px;" id="smc-lang-btns">
+            <button type="button" class="smc-lang-btn${(room.language||'he')==='he'?' active':''}" data-lang="he">🇮🇱 עברית</button>
+            <button type="button" class="smc-lang-btn${(room.language||'he')==='en'?' active':''}" data-lang="en">🇬🇧 אנגלית</button>
+            <button type="button" class="smc-lang-btn${(room.language||'he')==='both'?' active':''}" data-lang="both">🌐 שניהם</button>
+          </div>
+        </div>
+          <span class="tog-label">🇬🇧 אותיות באנגלית</span>
+        </div>
         <h3 style="margin-bottom:10px;">🌐 נראות</h3>
         <div class="vis-opts" id="smc-vis-opts">
           <div class="vis-opt${curVis==='private'?' sel':''}" data-v="private"><div class="vo-radio"></div><div><div class="vo-label">🔒 פרטי</div></div></div>
@@ -4294,6 +4396,7 @@
     backdrop.querySelector('#smc-tog-voters').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelector('#smc-tog-sb').addEventListener('click',function(){this.classList.toggle('on');});
     backdrop.querySelector('#smc-tog-ul').addEventListener('click',function(){this.classList.toggle('on');});
+    backdrop.querySelector('#smc-lang-btns')?.addEventListener('click',function(e){const b=e.target.closest('.smc-lang-btn');if(!b)return;backdrop.querySelectorAll('.smc-lang-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');});
     backdrop.querySelector('#smc-veto-pct-btn').addEventListener('click',function(){
       this.classList.add('active');
       backdrop.querySelector('#smc-veto-cnt-btn').classList.remove('active');
@@ -4326,12 +4429,13 @@
       const newShowVoters=backdrop.querySelector('#smc-tog-voters').classList.contains('on');
       const newSB=backdrop.querySelector('#smc-tog-sb').classList.contains('on');
       const newUL=backdrop.querySelector('#smc-tog-ul').classList.contains('on');
+      const newLang=backdrop.querySelector('.smc-lang-btn.active')?.dataset.lang||'he';
       const newVetoType=backdrop.querySelector('#smc-veto-pct-btn').classList.contains('active')?'percent':'count';
       const newVetoValue=newVetoType==='percent'
         ?Math.min(100,Math.max(1,parseInt(backdrop.querySelector('#smc-veto-pct-inp').value)||50))
         :Math.max(1,parseInt(backdrop.querySelector('#smc-veto-cnt-inp').value)||2);
-      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.uniqueLetters=newUL;S.visibility=newVis;S.vetoThresholdType=newVetoType;S.vetoThresholdValue=newVetoValue;
-      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,uniqueLetters:newUL,visibility:newVis,roomName:newName,vetoThresholdType:newVetoType,vetoThresholdValue:newVetoValue});
+      S.cats=active;S.rTime=smcTime;S.showVoters=newShowVoters;S.cumulativeSB=newSB;S.uniqueLetters=newUL;S.language=newLang;S.visibility=newVis;S.vetoThresholdType=newVetoType;S.vetoThresholdValue=newVetoValue;
+      await update(ref(db,'rooms/'+S.roomId),{categories:active,roundTime:smcTime,showVoters:newShowVoters,cumulativeSB:newSB,uniqueLetters:newUL,language:newLang,visibility:newVis,roomName:newName,vetoThresholdType:newVetoType,vetoThresholdValue:newVetoValue});
       if(newVis!=='private'){
         await set(ref(db,'publicRooms/'+S.roomId),{hostName:S.pName,visibility:newVis,roomName:newName,cats:active.slice(0,5).map(c=>({emoji:c.emoji,name:c.name})),roundTime:smcTime,playerCount:Object.keys(room.players||{}).length,status:'lobby',createdAt:room.createdAt||Date.now()});
       }else{remove(ref(db,'publicRooms/'+S.roomId)).catch(()=>{});}
@@ -4433,6 +4537,7 @@
     startExpiryWatcher();
     setupPresence();
     startUndefinedPlayerWatcher();
+    startHostWatchdog();
   }
 
   // undefined player watcher - kicks players with undefined/empty names every second
@@ -4469,6 +4574,61 @@
     set(presRef,true).catch(()=>{});
     onDisconnect(presRef).set(false).catch(()=>{});
   }
+  // ─── HOST WATCHDOG ───────────────────────────────────────────────
+  // Detects when the host has gone silent during a round and promotes
+  // the oldest remaining player to host so the game can continue.
+  function startHostWatchdog(){
+    clearInterval(S.hostWatchdogInt);
+    S.hostWatchdogInt = setInterval(async()=>{
+      // Only run when a round is in progress and we're not the host
+      if(!S.roomId || S.isHost || S.isSpectator) return;
+      let room;
+      try { room = (await get(ref(db, `rooms/${S.roomId}`))).val(); } catch(e){ return; }
+      if(!room || room.status !== 'playing') return;
+
+      // Check if host is online
+      const players = room.players || {};
+      const hostId = room.host;
+      const hostOnline = hostId && players[hostId]?.online;
+      if(hostOnline) return; // host is fine
+
+      // Host is offline — check if time has truly expired
+      const rTime = room.roundTime || 30;
+      if(rTime === 0) return; // infinity mode, no watchdog needed
+      const catStartedAt = room.catStartedAt || 0;
+      const elapsed = (Date.now() - catStartedAt) / 1000;
+      const overdue = elapsed > rTime + 8; // 8s grace beyond round time
+      if(!overdue) return;
+
+      // Elect new host: pick the player with earliest joinedAt (excluding bots)
+      const candidates = Object.entries(players)
+        .filter(([pid, p]) => p.online && !p.isBot && !p.spectator && pid !== hostId)
+        .sort((a, b) => (a[1].joinedAt||0) - (b[1].joinedAt||0));
+      if(!candidates.length) return;
+      const [electedId] = candidates[0];
+      if(electedId !== S.pId) return; // not our turn to act
+
+      // We are the elected new host — take over
+      console.warn('[Watchdog] Host gone, taking over as host');
+      try {
+        await update(ref(db, `rooms/${S.roomId}`), { host: S.pId, lastActivity: Date.now() });
+        await set(ref(db, `rooms/${S.roomId}/players/${S.pId}/isHost`), true);
+        if(hostId) await set(ref(db, `rooms/${S.roomId}/players/${hostId}/isHost`), false).catch(()=>{});
+        S.isHost = true;
+        document.getElementById('host-ctrl') && (document.getElementById('host-ctrl').style.display = 'block');
+        document.getElementById('guest-wait') && (document.getElementById('guest-wait').style.display = 'none');
+        toast('👑 המארח יצא — ממשיכים!');
+        // Now act as host: force-advance if time is up
+        clearInterval(S.timerInt);
+        if(S.pendingAdvance){ clearTimeout(S.pendingAdvance); S.pendingAdvance = null; }
+        await advanceCat();
+      } catch(e) {
+        console.error('[Watchdog] takeover error', e);
+        S.isHost = false;
+      }
+    }, 5000); // check every 5s
+  }
+
   // ─── EXPIRY WATCHER ───────────────────────────────────────────────
   function startExpiryWatcher(){
     clearInterval(S.expiryInt);
@@ -4520,6 +4680,7 @@
     clearInterval(S.timerInt);
     detach();detachChat();clearSession();
     S.roomId='';S.isHost=false;S.warnedExpiry=false;
+    clearInterval(S.hostWatchdogInt);S.hostWatchdogInt=null;
     showChatFab(false);
     showScreen('home');
     // Show prominent full-screen notice
@@ -4546,7 +4707,7 @@
   function showEntryEffect(player, pid){
     const effect=player.entryEffect||'none';
     const c=avc(player.name,player.color);
-    const avatarContent=player.emoji||(player.name||'?').charAt(0);
+    const avatarContent=avHTML(player);
     const isMainDev=player.devRole==='main-dev';
     const frameClass=isMainDev?'av-frame-main-dev':(player.frame?'av-frame-'+player.frame:'');
 
@@ -4580,7 +4741,7 @@
       display:flex;align-items:center;justify-content:center;
       font-weight:900;font-size:${isMainDev?'3.5':'3'}rem;
       box-shadow:0 0 ${isMainDev?60:40}px ${c}${isMainDev?'88':'55'};`;
-    avatarEl.textContent=avatarContent;
+    if(player.photo){avatarEl.innerHTML='<img src="'+player.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';}else{avatarEl.textContent=avatarContent;}
 
     const nameEl=document.createElement('div');
     nameEl.className=isMainDev?'main-dev-name':'';
@@ -4681,14 +4842,14 @@
         const c=avc(p.name,p.color);
         const el=document.createElement('div');
         el.className='pl-item';
-        const avatarContent=p.emoji||(p.name||'?').charAt(0);
+        const avatarContent=avHTML(p);
         const frameClass=(p.devRole==='main-dev')?'av-frame-main-dev':(p.frame?'av-frame-'+p.frame:'');
         const badges=[];
         if(pid===S.pId)badges.push('<span class="you-b">אתה</span>');
         if(pid===currentHost)badges.push('<span class="host-b">👑 מארח</span>');
         if(p.spectator)badges.push('<span class="spec-b">👁 צופה</span>');
         if(p.devRole||p.supporterLevel)badges.push(devBadge(p.devRole,p.supporterLevel,p.activeBadge));
-        el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c}">${avatarContent}</div>
+        el.innerHTML=`<div class="pl-av ${frameClass}" style="background:${c}22;color:${c};overflow:hidden;">${avatarContent}</div>
           <div style="flex:1;min-width:0;">
             <div class="pl-name ${p.devRole==='main-dev'?'main-dev-name':''}">${p.name}</div>
             ${p.tag?`<div style="font-size:.68rem;color:var(--muted);margin-top:1px;">${p.tag}</div>`:''}
@@ -5091,7 +5252,7 @@
     const activePlayers=Object.entries(getEligible(allPs));
     const isSolo = activePlayers.length < 2;
     if(isSolo) toast('🎮 מצב יחיד — חצי ניקוד ל-leaderboard, ללא הצבעות');
-    const letter=S.isDailyChallenge ? getDailyChallenge().letter : LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    const letter=S.isDailyChallenge ? getDailyChallenge().letter : getLetters()[Math.floor(Math.random()*getLetters().length)];
     S.letter=letter;S.rNum=1;S.currentCatIndex=0;S.isSolo=isSolo;
     // 🌟 Legendary round: 25% chance even on first round
     const legendaryEnabled = S.legendaryEnabled !== false;
@@ -5158,6 +5319,7 @@
     S.currentCatIndex=r.currentCatIndex||0;
     S.totalRounds=r.totalRounds||0;
     S.uniqueLetters=r.uniqueLetters||false;
+    S.language=r.language||'he';
     S.raceMode=r.raceMode||false;
     S.creativeVoteEnabled=r.creativeVoteEnabled!==false;
     S.bonusCatEnabled=r.bonusCatEnabled||false;
@@ -5242,7 +5404,7 @@
               let tickDelay=55;
               let tickTimer=null;
               function doTick(){
-                const rndLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+                const rndLetter=getLetters()[Math.floor(Math.random()*getLetters().length)];
                 olLetter.textContent=rndLetter;
                 SFX.play('slotTick');
                 spinCount++;
@@ -5282,7 +5444,7 @@
 
     // Category card
     document.getElementById('cat-emoji-name').textContent=`${cat.emoji} ${cat.name}`;
-    document.getElementById('cat-hint').textContent=`כתוב ${cat.name} שמתחיל/ה ב-${S.letter}`;
+    document.getElementById('cat-hint').textContent=(S.language==='en'||S.language==='both')&&S.letter.match(/[A-Z]/)?`Write a ${cat.name} starting with ${S.letter}`:`כתוב ${cat.name} שמתחיל/ה ב-${S.letter}`;
 
     const inp=document.getElementById('cat-answer');
     inp.value='';inp.disabled=S.catSubmitted;
@@ -5654,7 +5816,7 @@
         if(S.uniqueLetters){
           // Pick a new letter different from the current one
           let newLetter;
-          do{newLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];}while(newLetter===S.letter);
+          do{newLetter=getLetters()[Math.floor(Math.random()*getLetters().length)];}while(newLetter===S.letter);
           S.letter=newLetter;
           catUpdate.letter=newLetter;
         }
@@ -5689,7 +5851,7 @@
       updates[`rooms/${S.roomId}/lastActivity`]=Date.now();
       if(S.uniqueLetters){
         let newLetter;
-        do{newLetter=LETTERS[Math.floor(Math.random()*LETTERS.length)];}while(newLetter===S.letter);
+        do{newLetter=getLetters()[Math.floor(Math.random()*getLetters().length)];}while(newLetter===S.letter);
         S.letter=newLetter;
         updates[`rooms/${S.roomId}/letter`]=newLetter;
       }
@@ -5784,8 +5946,14 @@
         anyAnswer=true;
         ansArr.forEach((answer,ai)=>{
           const vetoKey=`${pid}_${ai}`;
-          const vetoCount=vetoes[catId]?Object.values(vetoes[catId]).filter(v=>v===vetoKey).length:0;
-          const myVote=vetoes[catId]&&vetoes[catId][S.pId]===vetoKey;
+          // Support both old format (pid→vkey string) and new multi-vote format (pid→{vkey:true})
+          const catVotesRender=vetoes[catId]||{};
+          const vetoCount=Object.values(catVotesRender).reduce((n,v)=>{
+            if(typeof v==='object'&&v!==null) return n+(v[vetoKey]?1:0);
+            return n+(v===vetoKey?1:0);
+          },0);
+          const myVoteData=catVotesRender[S.pId];
+          const myVote=myVoteData?(typeof myVoteData==='object'?!!myVoteData[vetoKey]:myVoteData===vetoKey):false;
           const othersCount=totalPlayers-1;
           const isDisq=isDisqualified(vetoCount,totalPlayers);
 
@@ -5838,12 +6006,13 @@
         btn.addEventListener('click',async()=>{
           const cId=btn.dataset.cat;
           const vKey=btn.dataset.vkey;
-          const voteRef=ref(db,`rooms/${S.roomId}/vetoes/${cId}/${S.pId}`);
-          const currentTarget=vetoes[cId]&&vetoes[cId][S.pId];
-          if(currentTarget===vKey){
+          const voteRef=ref(db,`rooms/${S.roomId}/vetoes/${cId}/${S.pId}/${vKey}`);
+          const myVoteData2=vetoes[cId]&&vetoes[cId][S.pId];
+          const alreadyVoted=myVoteData2?(typeof myVoteData2==='object'?!!myVoteData2[vKey]:myVoteData2===vKey):false;
+          if(alreadyVoted){
             await remove(voteRef);
           }else{
-            await set(voteRef,vKey);
+            await set(voteRef,true);
             lacTrack('veto_cast', { cat_id: cId, vetoed_answer: (vKey||'').slice(0,40), round_number: S.rNum });
           }
           touchActivity();
@@ -5919,7 +6088,10 @@
         ansArr.forEach((answer,ai)=>{
           if(!answer)return;
           const vKey=`${pid}_${ai}`;
-          const vetoCount=Object.values(catVetoes).filter(v=>v===vKey).length;
+          const vetoCount=Object.values(catVetoes).reduce((n,v)=>{
+            if(typeof v==='object'&&v!==null) return n+(v[vKey]?1:0);
+            return n+(v===vKey?1:0);
+          },0);
           if(commitIsDisq(vetoCount)){
             disqAnswers[cat.id].add(answer.toLowerCase());
           }
@@ -6080,6 +6252,7 @@
     const creativeWinner=room.creativeWinner||null;
 
     document.getElementById('res-rnd').textContent=room.round;
+    S.language=room.language||'he';
     document.getElementById('res-letter').textContent=room.letter;
 
 
@@ -6530,7 +6703,7 @@
         const avg=p.games>0?Math.round(p.total/p.games):0;
         return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
           <div style="width:24px;text-align:center;font-size:1rem;">${medals[i]||'#'+(i+1)}</div>
-          <div style="width:34px;height:34px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">${p.emoji||(p.name||'?').charAt(0)}</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:${c}22;color:${c};display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">${avHTML(p)}</div>
           <div style="flex:1;">
             <div style="font-weight:800;font-size:.9rem;">${p.name}</div>
             <div style="font-size:.72rem;color:var(--muted);">${p.games} משחקים · ממוצע ${avg} נק'</div>
@@ -6664,7 +6837,7 @@
     if(S.totalRounds>0&&S.rNum>=S.totalRounds){
       await endGame();return;
     }
-    const letter=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    const letter=getLetters()[Math.floor(Math.random()*getLetters().length)];
     S.rNum++;S.letter=letter;S.currentCatIndex=0;
 
     // 🌟 Legendary: 25% chance, or forced by dev button
@@ -6785,43 +6958,120 @@
     modal.querySelector('#wlb-search').addEventListener('input', renderWeekly);
 
     let allEntries = [];
+    let bannedData = {};
+    const _isDevUser = S_pDevRoles.includes('main-dev') || S_pDevRoles.includes('dev');
+    const BAN_DURATION = 30 * 24 * 60 * 60 * 1000;
+
+    function isBanned(key) {
+      const b = bannedData[key];
+      if (!b) return false;
+      return (Date.now() - (b.ts||0)) <= BAN_DURATION;
+    }
 
     function renderWeekly() {
       const search = modal.querySelector('#wlb-search').value.trim().toLowerCase();
-      const filtered = search ? allEntries.filter(e => e.name.toLowerCase().includes(search)) : allEntries;
+      const visible = allEntries.filter(e => _isDevUser || !isBanned(e._key));
+      const filtered = search ? visible.filter(e => e.name.toLowerCase().includes(search)) : visible;
       if (!filtered.length) {
         modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">אין תוצאות לשבוע הזה עדיין</div>';
         return;
       }
       const medals = ['🥇','🥈','🥉'];
-      const topScore = filtered[0]?.score || 1;
-      modal.querySelector('#wlb-list').innerHTML = filtered.map((e, i) => {
-        const rank = medals[i] || `${i+1}.`;
-        const pct = Math.round((e.score / topScore) * 100);
+      const topScore = filtered.filter(e => !isBanned(e._key))[0]?.score || 1;
+      let rankCounter = 0;
+      modal.querySelector('#wlb-list').innerHTML = filtered.map((e) => {
+        const banned = isBanned(e._key);
+        if (!banned) rankCounter++;
+        const rank = banned ? '🚫' : (medals[rankCounter-1] || `${rankCounter}.`);
+        const pct = banned ? 0 : Math.round((e.score / topScore) * 100);
         const isMe = e.name === (S && S.pName);
-        return `<div class="wlb-row" style="${isMe ? 'background:rgba(245,166,35,.06);border-radius:10px;' : ''}">
+        const safeKey = (e._key||'').replace(/"/g,'&quot;');
+        const safeName = (e.name||'').replace(/"/g,'&quot;');
+        let banLabel = '';
+        if (banned && _isDevUser) {
+          const daysLeft = Math.ceil((BAN_DURATION - (Date.now() - bannedData[e._key].ts)) / 86400000);
+          banLabel = ` <span style="font-size:.62rem;color:var(--red);border:1px solid rgba(233,69,96,.3);border-radius:100px;padding:1px 6px;font-weight:700;">עוד ${daysLeft}י'</span>`;
+        }
+        const btnStyle = (bg, border, color) => `background:${bg};border:1px solid ${border};color:${color};border-radius:8px;padding:4px 9px;font-family:Heebo,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;flex-shrink:0;`;
+        const resetBtn = _isDevUser ? `<button class="wlb-reset-btn" data-key="${safeKey}" data-name="${safeName}" title="אפס נקודות" style="${btnStyle('rgba(76,201,240,.1)','rgba(76,201,240,.3)','var(--blue)')}">↺</button>` : '';
+        const actionBtn = _isDevUser
+          ? (banned
+            ? `<button class="wlb-unban-btn" data-key="${safeKey}" data-name="${safeName}" title="בטל פסילה" style="${btnStyle('rgba(15,186,129,.12)','rgba(15,186,129,.3)','var(--green)')}">✅</button>`
+            : `${resetBtn}<button class="wlb-ban-btn" data-key="${safeKey}" data-name="${safeName}" title="פסל מהלוח" style="${btnStyle('rgba(233,69,96,.12)','rgba(233,69,96,.3)','var(--red)')}">🚫</button>`)
+          : '';
+        return `<div class="wlb-row" style="${isMe && !banned ? 'background:rgba(245,166,35,.06);border-radius:10px;' : ''}${banned ? 'opacity:0.4;' : ''}">
           <span class="wlb-rank">${rank}</span>
-          <div class="wlb-av" style="background:${e.color}22;color:${e.color};">${e.emoji || e.name.charAt(0)}</div>
+          <div class="wlb-av" style="background:${e.color}22;color:${e.color};">${avHTML(e)}</div>
           <div class="wlb-info">
-            <div class="wlb-name">${e.name}${isMe ? ' <span style="font-size:.65rem;color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;padding:1px 6px;font-weight:700;">אתה</span>' : ''}</div>
+            <div class="wlb-name" style="${banned ? 'text-decoration:line-through;color:var(--muted);' : ''}">${e.name}${isMe && !banned ? ' <span style="font-size:.65rem;color:var(--orange);border:1px solid rgba(245,166,35,.4);border-radius:100px;padding:1px 6px;font-weight:700;">אתה</span>' : ''}${banLabel}</div>
             <div class="wlb-games">${e.games} משחק${e.games !== 1 ? 'ים' : ''}</div>
           </div>
           <div class="wlb-bar-wrap">
             <div class="wlb-bar"><div class="wlb-bar-fill" style="width:${pct}%;"></div></div>
           </div>
-          <div class="wlb-score">${e.score}<span style="font-size:.65rem;color:var(--muted);font-weight:600;"> נק'</span></div>
+          <div class="wlb-score" style="${banned ? 'color:var(--muted);' : ''}">${e.score}<span style="font-size:.65rem;color:var(--muted);font-weight:600;"> נק'</span></div>
+          ${actionBtn}
         </div>`;
       }).join('');
     }
 
+    modal.querySelector('#wlb-list').addEventListener('click', async function(ev) {
+      const banBtn = ev.target.closest('.wlb-ban-btn');
+      const unbanBtn = ev.target.closest('.wlb-unban-btn');
+      const resetBtn = ev.target.closest('.wlb-reset-btn');
+      if (!_isDevUser || (!banBtn && !unbanBtn && !resetBtn)) return;
+      const btn = banBtn || unbanBtn || resetBtn;
+      const playerKey = btn.dataset.key;
+      const playerName = btn.dataset.name;
+      if (banBtn) {
+        if (!confirm(`לפסול את "${playerName}" ל-30 יום?`)) return;
+        btn.disabled = true; btn.textContent = '⏳';
+        try {
+          const entry = { name: playerName, ts: Date.now(), bannedBy: S_pDevRoles.includes('main-dev') ? 'main-dev' : 'dev' };
+          await set(ref(db, `leaderboardBanned/${playerKey}`), entry);
+          bannedData[playerKey] = entry;
+          renderWeekly();
+          toast(`🚫 ${playerName} נפסל ל-30 יום`);
+        } catch(e) { btn.disabled = false; btn.textContent = '🚫'; toast('שגיאה בפסילה'); }
+      } else if (unbanBtn) {
+        if (!confirm(`לבטל פסילת "${playerName}"?`)) return;
+        btn.disabled = true; btn.textContent = '⏳';
+        try {
+          await set(ref(db, `leaderboardBanned/${playerKey}`), null);
+          delete bannedData[playerKey];
+          renderWeekly();
+          toast(`✅ ${playerName} הוחזר ללוח`);
+        } catch(e) { btn.disabled = false; btn.textContent = '✅'; toast('שגיאה בביטול'); }
+      } else if (resetBtn) {
+        if (!confirm(`לאפס את הניקוד של "${playerName}" לאפס?`)) return;
+        btn.disabled = true; btn.textContent = '⏳';
+        try {
+          await set(ref(db, `weeklyLeaderboard/${wk}/${playerKey}`), null);
+          allEntries = allEntries.filter(e => e._key !== playerKey);
+          renderWeekly();
+          toast(`↺ ניקוד ${playerName} אופס`);
+        } catch(e) { btn.disabled = false; btn.textContent = '↺'; toast('שגיאה באיפוס'); }
+      }
+    });
+
     async function loadWeekly() {
       modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">⏳ טוען...</div>';
       try {
-        const snap = await get(ref(db, `weeklyLeaderboard/${wk}`));
+        const [snap, bannedSnap] = await Promise.all([
+          get(ref(db, `weeklyLeaderboard/${wk}`)),
+          get(ref(db, `leaderboardBanned`))
+        ]);
         const data = snap.val() || {};
-        allEntries = Object.values(data)
+        const rawBanned = bannedSnap.val() || {};
+        bannedData = {};
+        Object.entries(rawBanned).forEach(([k, v]) => {
+          if (Date.now() - (v.ts||0) <= BAN_DURATION) bannedData[k] = v;
+        });
+        allEntries = Object.entries(data)
+          .map(([k, v]) => ({ ...v, _key: k }))
           .sort((a, b) => (b.score || 0) - (a.score || 0));
-        if (!allEntries.length) {
+        const hasVisible = allEntries.some(e => !isBanned(e._key));
+        if (!allEntries.length || (!hasVisible && !_isDevUser)) {
           modal.querySelector('#wlb-list').innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2rem;margin-bottom:8px;">🏅</div><div style="color:var(--muted);font-size:.9rem;">עדיין אין ניקוד השבוע</div><div style="color:var(--muted);font-size:.78rem;margin-top:4px;">שחק משחק כדי להופיע בלוח!</div></div>';
           return;
         }
@@ -7702,8 +7952,6 @@
 
   document.getElementById('btn-open-achievements').addEventListener('click', showAchievements);
   document.getElementById('btn-open-achievements-streak').addEventListener('click', showAchievements);
-  // We'll hook into syncFromFirebase by extending it below after it's defined
-
   // ═══════════════════════════════════════════════════════════════
   // ─── ENDOWED PROGRESS (#3) ─────────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
@@ -8352,6 +8600,13 @@ const LEGENDARY_CATS = [
     S.uniqueLetters=!S.uniqueLetters;
     document.getElementById('tog-ul-el').classList.toggle('on',S.uniqueLetters);
   });
+  document.getElementById('tog-language').addEventListener('click',(e)=>{
+    const btn=e.target.closest('.lang-btn');
+    if(!btn)return;
+    document.querySelectorAll('#tog-language .lang-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    S.language=btn.dataset.lang;
+  });
   // Veto threshold toggles on create screen
   document.getElementById('cr-veto-pct-btn').addEventListener('click',()=>{
     document.getElementById('cr-veto-pct-btn').classList.add('active');
@@ -8539,7 +8794,7 @@ const LEGENDARY_CATS = [
   let tutTooltipEl = null;
 
   function isTutDone() { return !!localStorage.getItem(TUT_KEY); }
-  function markTutDone() { localStorage.setItem(TUT_KEY, '1'); fbSave('tut','1'); }
+  function markTutDone() { localStorage.setItem(TUT_KEY, '1'); _saveTutState(); }
   // Per-screen keys so new screens show even for users who finished the old tutorial
   const TUT_SCREEN_KEYS = { lobby: 'etz_tut_lobby', home: 'etz_tut_home', final: 'etz_tut_final' };
   function isScreenTutDone(screen) {
@@ -8549,6 +8804,23 @@ const LEGENDARY_CATS = [
   function markScreenTutDone(screen) {
     if (TUT_SCREEN_KEYS[screen]) localStorage.setItem(TUT_SCREEN_KEYS[screen], '1');
     if (screen === 'results') markTutDone();
+    _saveTutState();
+  }
+  function _saveTutState() {
+    const state = { v1: localStorage.getItem(TUT_KEY)||null };
+    Object.entries(TUT_SCREEN_KEYS).forEach(([k,lsKey]) => {
+      if (localStorage.getItem(lsKey)) state[k] = '1';
+    });
+    fbSave('tut', state);
+  }
+  function _restoreTutState(cloud) {
+    if (!cloud) return;
+    // Support old format (string '1') and new format (object)
+    const obj = typeof cloud === 'object' ? cloud : { v1: cloud };
+    if (obj.v1) try { localStorage.setItem(TUT_KEY, '1'); } catch(e) {}
+    Object.entries(TUT_SCREEN_KEYS).forEach(([k, lsKey]) => {
+      if (obj[k]) try { localStorage.setItem(lsKey, '1'); } catch(e) {}
+    });
   }
 
   function tryStartTut(screen) {
@@ -8886,20 +9158,18 @@ const LEGENDARY_CATS = [
     const statusEl = document.getElementById('sync-status');
     const btn = document.getElementById('btn-sync-cloud');
     if (!currentUser) { statusEl.style.color='var(--red)'; statusEl.textContent='לא מחובר לחשבון'; return; }
-    btn.disabled = true;
-    btn.textContent = '⏳ מסנכרן...';
-    statusEl.style.color = 'var(--muted)';
-    statusEl.textContent = '';
+    btn.disabled = true; btn.textContent = '⏳ מסנכרן...';
+    statusEl.style.color = 'var(--muted)'; statusEl.textContent = '';
     try {
-      await syncFromFirebase();
+      await _onAuthReady(currentUser);
+      _refreshProfileUI();
       statusEl.style.color = 'var(--green)';
-      statusEl.textContent = '✓ סונכרן בהצלחה — ' + new Date().toLocaleTimeString('he-IL');
+      statusEl.textContent = '✓ סונכרן — ' + new Date().toLocaleTimeString('he-IL');
     } catch(e) {
       statusEl.style.color = 'var(--red)';
-      statusEl.textContent = 'שגיאת סנכרון: ' + (e.message||e);
+      statusEl.textContent = 'שגיאה: ' + (e.message||e);
     }
-    btn.disabled = false;
-    btn.textContent = '☁️ סנכרן עכשיו';
+    btn.disabled = false; btn.textContent = '☁️ סנכרן עכשיו';
   });
 
   document.getElementById('btn-auth-logout').addEventListener('click', async () => {
@@ -8913,35 +9183,22 @@ const LEGENDARY_CATS = [
     currentUser = user;
     updateAuthUI();
     if (user) {
-      toast('מחובר: ' + (user.displayName || user.email));
       setAnalyticsUserProps();
       lacTrack('login', { method: user.providerData?.[0]?.providerId || 'unknown' });
-      // Give RTDB time to receive the auth token, retry up to 5 times
-      let synced = false;
-      for (let attempt = 0; attempt < 5 && !synced; attempt++) {
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-        try {
-          await currentUser.getIdToken(true);
-          await syncFromFirebase();
-          synced = true;
-          console.log('Sync succeeded on attempt', attempt + 1);
-          // Backfill adminData/referrals for this user (runs once per login)
-          try {
-            const profSnap = await get(ref(db, 'users/' + user.uid + '/profile'));
-            const p = profSnap.val();
-            if (p && p.name) {
-              await set(ref(db, 'adminData/referrals/' + user.uid), {
-                name: p.name, emoji: p.emoji || null, refId: p.refId || null,
-                refCount: p.refCount || 0, supporterLevel: p.supporterLevel || 0,
-                _updatedAt: Date.now()
-              });
-            }
-          } catch(e) { /* silent */ }
-        } catch(e) {
-          console.warn('sync attempt', attempt + 1, 'failed:', e.message);
-        }
+      toast('מחובר: ' + (user.displayName || user.email));
+      // Grab Google photo URL if available and not already set
+      _updatePhotoBtn();
+      if (user.photoURL && !S_pPhoto) {
+        S_pPhoto = user.photoURL;
       }
-      if (!synced) toast('סנכרון נכשל — לחץ ☁️ לנסות שוב');
+      // Small delay so Firebase RTDB receives the new auth token before first read
+      await new Promise(r => setTimeout(r, 400));
+      await _onAuthReady(user);
+      // After merge, ensure photo is set from Google if profile had none
+      if (user.photoURL && !S_pPhoto) S_pPhoto = user.photoURL;
+      _refreshProfileUI();
+    } else {
+      _onAuthReady(null);
     }
   });
 
