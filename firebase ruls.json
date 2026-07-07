@@ -84,6 +84,13 @@
         }
       }
     },
+    "leaderboardBanned": {
+      ".read": true,
+      "$playerKey": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['name','ts','bannedBy']) && newData.child('name').isString() && newData.child('ts').isNumber() && newData.child('bannedBy').isString()"
+      }
+    },
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",

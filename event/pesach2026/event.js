@@ -291,6 +291,18 @@
 
     function buildPopup() {
       try { if (localStorage.getItem(SEEN_KEY)) return; } catch(e) {}
+      // Also check cloud — if user dismissed forever on another device
+      if (typeof fbLoad === 'function') {
+        fbLoad('pesach2026_noseen').then(function(v) {
+          if (v) { try { localStorage.setItem(SEEN_KEY, 'forever'); } catch(e) {} return; }
+          _doBuildPopup();
+        }).catch(function() { _doBuildPopup(); });
+        return;
+      }
+      _doBuildPopup();
+    }
+    function _doBuildPopup() {
+      try { if (localStorage.getItem(SEEN_KEY)) return; } catch(e) {}
       const overlay = document.createElement('div');
       overlay.id = 'pesach-overlay';
       overlay.innerHTML =
@@ -301,7 +313,9 @@
           '<div id="pesach-subtitle">בפסח אירוע מיוחד במשחק —<br>תהיו מוכנים 🎉</div>' +
           '<div id="pesach-date">📅 &nbsp;1 באפריל – 8 באפריל 2026</div>' +
           '<button id="pesach-close">אחלה, אני מחכה! 🎊</button>' +
+          '<button id="pesach-no-show" style="margin-top:10px;background:none;border:none;color:rgba(234,234,234,0.35);font-family:Heebo,sans-serif;font-size:.75rem;cursor:pointer;text-decoration:underline;width:100%;">אל תציג לי שוב</button>' +
         '</div>';
+
       document.body.appendChild(overlay);
       function closePopup() {
         overlay.style.transition = 'opacity 0.3s ease';
@@ -312,6 +326,12 @@
       document.getElementById('pesach-close').addEventListener('click', function() {
         spawnParticles(40);
         setTimeout(closePopup, 400);
+      });
+      document.getElementById('pesach-no-show').addEventListener('click', function() {
+        try { localStorage.setItem(SEEN_KEY, 'forever'); } catch(e) {}
+        // Sync to cloud so WARP proxy reset won't bring it back
+        if (typeof fbSave === 'function') fbSave('pesach2026_noseen', '1');
+        closePopup();
       });
       overlay.addEventListener('click', function(e) { if (e.target === overlay) closePopup(); });
       setTimeout(function() { spawnParticles(20); }, 600);
