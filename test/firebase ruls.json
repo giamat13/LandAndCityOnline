@@ -107,13 +107,31 @@
       "tiles": {
         "$tileId": {
           ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous'",
-          ".validate": "newData.hasChildren(['score','uid','ts']) && newData.child('uid').val() === auth.uid && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 99999 && (!data.exists() || newData.child('score').val() > data.child('score').val())"
+          ".validate": "newData.hasChildren(['score','uid','ts']) && newData.child('uid').val() === auth.uid && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 99999 && (!data.exists() || newData.child('score').val() > data.child('score').val() || (data.child('allianceId').exists() && newData.child('allianceId').val() === data.child('allianceId').val() && newData.child('score').val() >= data.child('score').val() && root.child('conquest').child('alliances').child(data.child('allianceId').val()).child('members').child(auth.uid).val() === true))"
         }
       },
       "players": {
         "$uid": {
           ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
           ".validate": "newData.hasChildren(['name']) && newData.child('name').isString() && newData.child('name').val().length <= 40"
+        }
+      },
+      "alliances": {
+        ".read": true,
+        "$aid": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && ((!data.exists() && newData.child('owner').val() === auth.uid) || (data.exists() && data.child('owner').val() === auth.uid))",
+          ".validate": "newData.hasChildren(['name','owner','ts']) && newData.child('name').isString() && newData.child('name').val().length <= 30 && newData.child('owner').isString() && newData.child('ts').isNumber()",
+          "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
+          "tag": { ".validate": "newData.isString() && newData.val().length <= 5" },
+          "color": { ".validate": "newData.isString() && newData.val().length <= 25" },
+          "code": { ".validate": "newData.isString() && newData.val().length <= 12" },
+          "open": { ".validate": "newData.isBoolean()" },
+          "members": {
+            "$uid": {
+              ".write": "auth != null && $uid === auth.uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+              ".validate": "newData.isBoolean()"
+            }
+          }
         }
       }
     }
