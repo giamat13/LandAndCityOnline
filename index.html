@@ -8655,6 +8655,9 @@ const LEGENDARY_CATS = [
   // ─── TUTORIAL SYSTEM ────────────────────────────────────────────────
   // ════════════════════════════════════════════════════════════════════
   const TUT_KEY = 'etz_tut_v1';
+  // Global "seen the guide" flag — auto-tutorials show only on the very first
+  // entry, then never again on subsequent visits (the manual ❓ button ignores it).
+  const TUT_SEEN_KEY = 'etz_tut_seen_v1';
 
   // Steps per screen. target = element ID to spotlight.
   // pos: 'below' = tooltip below target, 'above' = tooltip above target
@@ -8845,9 +8848,11 @@ const LEGENDARY_CATS = [
   }
 
   function tryStartTut(screen) {
+    if (localStorage.getItem(TUT_SEEN_KEY)) return;   // guide already shown once — never auto-show again
     if (isScreenTutDone(screen)) return;
     if (tutShown[screen]) return;
     if (!TUT_SCREENS[screen] || !TUT_SCREENS[screen].length) return;
+    try { localStorage.setItem(TUT_SEEN_KEY, '1'); } catch(e) {}   // mark first-and-only auto guide
     tutShown[screen] = true;
     tutScreenName = screen;
     tutStep = 0;
@@ -9230,6 +9235,17 @@ const LEGENDARY_CATS = [
   const CONQ_TILE_DEG = 0.001;          // grid cell ~111m lat / ~94m lng at Israel
   const CONQ_HALF_M   = 50;             // half-side of the conquered square (±50m => ~100x100m)
   let _cmap = null, _cmapTiles = null, _cmapUnsub = null, _cmapMe = null;
+  // Live-animation + alliance state
+  let _cmapTileMap = {};                // id -> {rect, score, uid, allianceId, color}
+  let _cmapReady = false;               // false during first snapshot (no pulse on initial paint)
+  let _lastTiles = null, _lbMode = 'players';
+  let _myAlliance = null;               // {id, name, tag, color, code, open, owner, members}
+  let _alliancesCache = {};             // id -> alliance
+  let _cmapAllUnsub = null;
+  const ALLIANCE_COLORS = ['#e63946','#f77f00','#fcbf49','#06d6a0','#118ab2','#4361ee','#9d4edd','#ff70a6','#2a9d8f','#ef476f'];
+  function memCount(a){ return a && a.members ? Object.keys(a.members).length : 0; }
+  function allianceGenId(){ return 'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+  function allianceGenCode(){ let c=''; const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; for(let i=0;i<6;i++) c+=ch[Math.floor(Math.random()*ch.length)]; return c; }
 
   function conqHueColor(seed){
     let h=0; const s=String(seed||'');
@@ -9265,50 +9281,242 @@ const LEGENDARY_CATS = [
     let pos;
     try { toast('📍 מאתר מיקום לכיבוש...'); pos = await conqGetPosition(); }
     catch(e){ toast('📍 לא ניתן לקבל מיקום — הכיבוש בוטל'); return; }
+    await conqLoadMyAlliance();                          // make sure we stamp the right alliance
+    const allianceId = _myAlliance ? _myAlliance.id : null;
+    const color = (allianceId && _myAlliance.color) || S_pColor || '#0fba81';
     const cells = conqCoveredCells(pos.lat,pos.lng);
-    const color = S_pColor || '#0fba81';
-    let claimed=0;
+    let claimed=0, reinforced=0;
     for(const [la,ln] of cells){
       const id=`${la}_${ln}`;
       try{
         const snap=await get(ref(db,'conquest/tiles/'+id));
         const cur=snap.val();
-        if(!cur || score>(cur.score||0)){
-          await set(ref(db,'conquest/tiles/'+id),{score:Math.min(99999,Math.floor(score)),uid:currentUser.uid,color,ts:Date.now()});
-          claimed++;
+        const sameAlliance = cur && allianceId && cur.allianceId===allianceId;
+        if(!cur || score>(cur.score||0) || (sameAlliance && score>=(cur.score||0))){
+          const tileObj={score:Math.min(99999,Math.floor(score)),uid:currentUser.uid,color,ts:Date.now()};
+          if(allianceId) tileObj.allianceId=allianceId;
+          await set(ref(db,'conquest/tiles/'+id),tileObj);
+          if(cur && sameAlliance && score<=(cur.score||0)+0) reinforced++; else claimed++;
         }
       }catch(e){ /* rule rejection = someone already has a higher score */ }
     }
-    if(claimed>0){
-      try{ await set(ref(db,'conquest/players/'+currentUser.uid),{name:(S.pName||S_pName||'אנונימי').slice(0,40),color,ts:Date.now()}); }catch(e){}
-      toast(`🏴 כבשת ${claimed} משבצות עם ${Math.floor(score)} נק'!`);
-      lacTrack('conquest_claim',{tiles:claimed,score:Math.floor(score)});
+    if(claimed>0 || reinforced>0){
+      try{
+        const pObj={name:(S.pName||S_pName||'אנונימי').slice(0,40),color,ts:Date.now()};
+        if(allianceId) pObj.allianceId=allianceId;
+        await set(ref(db,'conquest/players/'+currentUser.uid),pObj);
+      }catch(e){}
+      const who = allianceId && _myAlliance ? ` עבור ${_myAlliance.tag?'['+_myAlliance.tag+'] ':''}${_myAlliance.name}` : '';
+      toast(`🏴 כבשת ${claimed} משבצות${who} עם ${Math.floor(score)} נק'!`);
+      lacTrack('conquest_claim',{tiles:claimed,score:Math.floor(score),alliance:!!allianceId});
     } else {
       toast('🛡️ השטח שלך מוחזק בניקוד גבוה יותר — לא נכבש');
     }
   }
 
+  // Flash a tile that was just conquered / changed + emit an expanding ripple
+  function conqPulse(rect, t){
+    try{
+      const el = rect.getElement && rect.getElement();
+      if(el){ el.classList.remove('conq-pulse'); void el.getBBox(); el.classList.add('conq-pulse');
+        setTimeout(()=>{ try{ el.classList.remove('conq-pulse'); }catch(e){} }, 1400); }
+    }catch(e){}
+    try{
+      const c=rect.getBounds().getCenter();
+      const col=(t&&t.color)||'#fff';
+      const rip=L.circleMarker(c,{radius:5,color:'#fff',weight:2,fillColor:col,fillOpacity:.5}).addTo(_cmapTiles);
+      let r=5; const iv=setInterval(()=>{
+        r+=4;
+        try{ rip.setRadius(r); rip.setStyle({opacity:Math.max(0,1-(r-5)/38),fillOpacity:Math.max(0,.5-(r-5)/50)}); }catch(e){}
+        if(r>42){ clearInterval(iv); try{ _cmapTiles.removeLayer(rip); }catch(e){} }
+      },40);
+    }catch(e){}
+  }
+  // Diff-based render: only add/update/remove changed tiles so the map animates live
   function conqDrawTiles(tiles){
-    if(!_cmap||!_cmapTiles) return;
-    _cmapTiles.clearLayers();
-    const entries=Object.entries(tiles||{});
-    const bounds=[];
-    entries.forEach(([id,t])=>{
+    if(!_cmap||!_cmapTiles) return [];
+    const bounds=[]; const seen={};
+    Object.entries(tiles||{}).forEach(([id,t])=>{
       const m=id.match(/^(-?\d+)_(-?\d+)$/); if(!m) return;
+      seen[id]=true;
       const la=parseInt(m[1],10), ln=parseInt(m[2],10);
       const s=[la*CONQ_TILE_DEG,ln*CONQ_TILE_DEG];
       const n=[(la+1)*CONQ_TILE_DEG,(ln+1)*CONQ_TILE_DEG];
-      const col=t.color||conqHueColor(t.uid);
-      const rect=L.rectangle([s,n],{color:col,weight:1,fillColor:col,fillOpacity:.38});
-      rect.bindTooltip(String(t.score||0),{permanent:true,direction:'center',className:'conq-label',opacity:1});
-      rect.addTo(_cmapTiles);
+      const col=t.color||conqHueColor(t.allianceId||t.uid);
       bounds.push(s,n);
+      const prev=_cmapTileMap[id];
+      if(!prev){
+        const rect=L.rectangle([s,n],{color:col,weight:1,fillColor:col,fillOpacity:.38});
+        rect.bindTooltip(String(t.score||0),{permanent:true,direction:'center',className:'conq-label',opacity:1});
+        rect.addTo(_cmapTiles);
+        _cmapTileMap[id]={rect,score:t.score,uid:t.uid,allianceId:t.allianceId||null,color:col};
+        if(_cmapReady) conqPulse(rect,t);
+      } else if(prev.score!==t.score || prev.uid!==t.uid || prev.color!==col){
+        try{ prev.rect.setStyle({color:col,fillColor:col}); prev.rect.setTooltipContent(String(t.score||0)); }catch(e){}
+        prev.score=t.score; prev.uid=t.uid; prev.allianceId=t.allianceId||null; prev.color=col;
+        if(_cmapReady) conqPulse(prev.rect,t);
+      }
+    });
+    // remove tiles that no longer exist
+    Object.keys(_cmapTileMap).forEach(id=>{
+      if(!seen[id]){ try{ _cmapTiles.removeLayer(_cmapTileMap[id].rect); }catch(e){} delete _cmapTileMap[id]; }
     });
     return bounds;
   }
 
+  // ─── ALLIANCES ───────────────────────────────────────────────────
+  async function conqLoadMyAlliance(){
+    if(!currentUser || currentUser.isAnonymous){ _myAlliance=null; return; }
+    try{
+      const pSnap=await get(ref(db,'conquest/players/'+currentUser.uid));
+      const aid=pSnap.val() && pSnap.val().allianceId;
+      if(aid){
+        const aSnap=await get(ref(db,'conquest/alliances/'+aid));
+        const a=aSnap.val();
+        if(a && a.members && a.members[currentUser.uid]) _myAlliance=Object.assign({id:aid},a);
+        else _myAlliance=null;
+      } else _myAlliance=null;
+    }catch(e){ _myAlliance=null; }
+  }
+  function conqLoadAlliances(){
+    if(_cmapAllUnsub){ try{_cmapAllUnsub();}catch(e){} }
+    _cmapAllUnsub=onValue(ref(db,'conquest/alliances'),snap=>{
+      _alliancesCache=snap.val()||{};
+      if(_myAlliance){
+        if(_alliancesCache[_myAlliance.id]) _myAlliance=Object.assign({id:_myAlliance.id},_alliancesCache[_myAlliance.id]);
+        else _myAlliance=null;
+      }
+      conqRenderAlliancePanel();
+      if(_lbMode==='alliances' && _lastTiles) conqRenderLeaderboard(_lastTiles);
+    });
+  }
+  async function allianceCreate(name,tag,open){
+    if(!currentUser || currentUser.isAnonymous){ toast('🔒 חובה חשבון כדי ליצור ברית'); return; }
+    name=(name||'').trim().slice(0,30); tag=(tag||'').trim().slice(0,5).toUpperCase();
+    if(name.length<2){ toast('שם ברית קצר מדי'); return; }
+    const id=allianceGenId(), code=allianceGenCode();
+    const color=ALLIANCE_COLORS[Math.floor(Math.random()*ALLIANCE_COLORS.length)];
+    const obj={name,tag,color,code,open:!!open,owner:currentUser.uid,ts:Date.now(),members:{[currentUser.uid]:true}};
+    try{
+      await set(ref(db,'conquest/alliances/'+id),obj);
+      await set(ref(db,'conquest/players/'+currentUser.uid),{name:(S.pName||S_pName||'אנונימי').slice(0,40),color,ts:Date.now(),allianceId:id});
+      _myAlliance=Object.assign({id},obj);
+      toast('🛡️ הברית "'+name+'" נוצרה! קוד הזמנה: '+code);
+      lacTrack('alliance_create',{});
+      conqRenderAlliancePanel();
+    }catch(e){ toast('❌ יצירת הברית נכשלה'); }
+  }
+  async function allianceJoin(aid,codeInput){
+    if(!currentUser || currentUser.isAnonymous){ toast('🔒 חובה חשבון'); return; }
+    const a=_alliancesCache[aid]; if(!a){ toast('ברית לא נמצאה'); return; }
+    if(!a.open){
+      if(!codeInput || String(codeInput).trim().toUpperCase()!==String(a.code||'').toUpperCase()){ toast('🔑 קוד שגוי'); return; }
+    }
+    try{
+      await set(ref(db,'conquest/alliances/'+aid+'/members/'+currentUser.uid),true);
+      await set(ref(db,'conquest/players/'+currentUser.uid),{name:(S.pName||S_pName||'אנונימי').slice(0,40),color:a.color||S_pColor||'#0fba81',ts:Date.now(),allianceId:aid});
+      _myAlliance=Object.assign({id:aid},a);
+      toast('🛡️ הצטרפת לברית "'+a.name+'"!');
+      lacTrack('alliance_join',{});
+      conqRenderAlliancePanel();
+    }catch(e){ toast('❌ הצטרפות נכשלה'); }
+  }
+  function allianceJoinByCode(code){
+    code=(code||'').trim().toUpperCase(); if(!code){ toast('הזן קוד'); return; }
+    const hit=Object.entries(_alliancesCache).find(([id,a])=>a && String(a.code||'').toUpperCase()===code);
+    if(!hit){ toast('🔑 לא נמצאה ברית עם הקוד הזה'); return; }
+    allianceJoin(hit[0],code);
+  }
+  async function allianceLeave(){
+    if(!_myAlliance || !currentUser) return;
+    const aid=_myAlliance.id;
+    try{
+      await remove(ref(db,'conquest/alliances/'+aid+'/members/'+currentUser.uid));
+      await set(ref(db,'conquest/players/'+currentUser.uid),{name:(S.pName||S_pName||'אנונימי').slice(0,40),color:S_pColor||'#0fba81',ts:Date.now()});
+      _myAlliance=null;
+      toast('👋 עזבת את הברית');
+      lacTrack('alliance_leave',{});
+      conqRenderAlliancePanel();
+    }catch(e){ toast('❌ עזיבה נכשלה'); }
+  }
+  function conqRenderAlliancePanel(){
+    const body=document.getElementById('map-alliance-body'); if(!body) return;
+    if(!currentUser || currentUser.isAnonymous){
+      body.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);">🔒 יש להתחבר לחשבון כדי ליצור או להצטרף לברית.</div>';
+      return;
+    }
+    if(_myAlliance){
+      const a=_myAlliance, cnt=memCount(a)||1, isOwner=a.owner===currentUser.uid;
+      body.innerHTML=`
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <span style="width:34px;height:34px;border-radius:9px;background:${a.color||'#0fba81'};flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,.08);"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:900;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.tag?'['+a.tag+'] ':''}${a.name}</div>
+            <div style="font-size:.72rem;color:var(--muted);">${cnt} חברים · ${a.open?'ברית פתוחה':'ברית סגורה'}${isOwner?' · אתה המנהיג 👑':''}</div>
+          </div>
+        </div>
+        <div style="background:var(--s2);border:1px dashed var(--border);border-radius:12px;padding:10px 14px;margin-bottom:14px;">
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px;">קוד הזמנה — שתפו כדי לגייס חברים:</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <code style="font-size:1.2rem;font-weight:900;letter-spacing:2px;color:var(--green);direction:ltr;">${a.code||'—'}</code>
+            <button id="al-copy-code" style="margin-inline-start:auto;background:rgba(15,186,129,.1);border:1px solid rgba(15,186,129,.35);color:var(--green);border-radius:9px;padding:6px 12px;font-family:Heebo,sans-serif;font-weight:700;cursor:pointer;font-size:.8rem;">📋 העתק</button>
+          </div>
+        </div>
+        <div style="font-size:.76rem;color:var(--muted);margin-bottom:12px;line-height:1.5;">כל שטח שאתה או חבר בברית כובשים נצבע בצבע הברית, וכל חבר יכול לחזק ולהגן על משבצות הברית. 🛡️</div>
+        <button id="al-leave" style="width:100%;background:rgba(230,57,70,.08);border:1px solid rgba(230,57,70,.35);color:var(--red);border-radius:12px;padding:11px;font-family:Heebo,sans-serif;font-weight:700;cursor:pointer;">🚪 עזוב את הברית</button>`;
+      const cp=document.getElementById('al-copy-code'); if(cp) cp.onclick=()=>{ try{ navigator.clipboard.writeText(a.code||''); toast('📋 הקוד הועתק'); }catch(e){} };
+      const lv=document.getElementById('al-leave'); if(lv) lv.onclick=()=>{ if(confirm('לעזוב את הברית?')) allianceLeave(); };
+    } else {
+      const open=Object.entries(_alliancesCache).filter(([id,a])=>a && a.open).map(([id,a])=>Object.assign({id},a)).sort((x,y)=>memCount(y)-memCount(x));
+      body.innerHTML=`
+        <div style="font-weight:800;font-size:.9rem;margin-bottom:8px;">➕ צור ברית חדשה</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input id="al-name" maxlength="30" placeholder="שם הברית" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:Heebo,sans-serif;outline:none;">
+          <input id="al-tag" maxlength="5" placeholder="תג" style="width:70px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:Heebo,sans-serif;outline:none;text-align:center;direction:ltr;">
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);margin-bottom:10px;cursor:pointer;"><input type="checkbox" id="al-open" checked style="width:16px;height:16px;"> ברית פתוחה (כל אחד יכול להצטרף מהרשימה)</label>
+        <button id="al-create" style="width:100%;background:var(--green);border:none;color:#04120c;border-radius:12px;padding:11px;font-family:Heebo,sans-serif;font-weight:900;cursor:pointer;margin-bottom:18px;">צור ברית 🛡️</button>
+        <div style="font-weight:800;font-size:.9rem;margin-bottom:8px;">🔑 הצטרף עם קוד</div>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          <input id="al-code-in" maxlength="12" placeholder="קוד הזמנה" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:Heebo,sans-serif;outline:none;text-align:center;direction:ltr;letter-spacing:2px;text-transform:uppercase;">
+          <button id="al-join-code" style="background:rgba(67,97,238,.12);border:1px solid rgba(67,97,238,.4);color:#7f9bff;border-radius:10px;padding:10px 16px;font-family:Heebo,sans-serif;font-weight:800;cursor:pointer;">הצטרף</button>
+        </div>
+        <div style="font-weight:800;font-size:.9rem;margin-bottom:8px;">🌍 בריתות פתוחות (${open.length})</div>
+        <div id="al-open-list"></div>`;
+      const listEl=document.getElementById('al-open-list');
+      if(!open.length) listEl.innerHTML='<div style="color:var(--muted);font-size:.82rem;padding:8px 0;">אין עדיין בריתות פתוחות — צור אתה את הראשונה! 🏴</div>';
+      else listEl.innerHTML=open.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);">
+          <span style="width:16px;height:16px;border-radius:4px;background:${a.color||'#0fba81'};flex-shrink:0;"></span>
+          <span style="flex:1;font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.tag?'['+a.tag+'] ':''}${a.name}</span>
+          <span style="font-size:.72rem;color:var(--muted);">${memCount(a)} 👥</span>
+          <button data-aid="${a.id}" class="al-join-btn" style="background:rgba(15,186,129,.1);border:1px solid rgba(15,186,129,.35);color:var(--green);border-radius:9px;padding:5px 12px;font-family:Heebo,sans-serif;font-weight:700;cursor:pointer;font-size:.8rem;">הצטרף</button>
+        </div>`).join('');
+      const cr=document.getElementById('al-create'); if(cr) cr.onclick=()=>allianceCreate(document.getElementById('al-name').value,document.getElementById('al-tag').value,document.getElementById('al-open').checked);
+      const jc=document.getElementById('al-join-code'); if(jc) jc.onclick=()=>allianceJoinByCode(document.getElementById('al-code-in').value);
+      listEl.querySelectorAll('.al-join-btn').forEach(b=>b.onclick=()=>allianceJoin(b.getAttribute('data-aid')));
+    }
+  }
+  function conqRenderAllianceLeaderboard(tiles,listEl){
+    const counts={};
+    Object.values(tiles||{}).forEach(t=>{ if(t&&t.allianceId){ counts[t.allianceId]=(counts[t.allianceId]||0)+1; } });
+    const rows=Object.entries(counts).map(([aid,c])=>{ const a=_alliancesCache[aid]||{}; return {aid,tiles:c,color:a.color||conqHueColor(aid),name:a.name||'ברית אלמונית',tag:a.tag||'',members:memCount(a)}; }).sort((a,b)=>b.tiles-a.tiles);
+    if(!rows.length){ listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);">עוד אף ברית לא כבשה שטח 🛡️</div>'; return; }
+    const medals=['🥇','🥈','🥉'];
+    listEl.innerHTML=rows.map((r,i)=>{
+      const mine=_myAlliance && r.aid===_myAlliance.id;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);${mine?'background:rgba(15,186,129,.07);border-radius:8px;':''}">
+        <span style="width:28px;text-align:center;font-weight:900;">${medals[i]||(i+1)+'.'}</span>
+        <span style="width:16px;height:16px;border-radius:4px;background:${r.color};flex-shrink:0;"></span>
+        <span style="flex:1;font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.tag?'['+r.tag+'] ':''}${r.name}${mine?' <span style="font-size:.62rem;color:var(--green);">(שלך)</span>':''} <span style="font-size:.66rem;color:var(--muted);font-weight:600;">${r.members}👥</span></span>
+        <span style="font-weight:900;color:var(--green);">${r.tiles} <span style="font-size:.68rem;color:var(--muted);font-weight:600;">משבצות</span></span>
+      </div>`;
+    }).join('');
+  }
+
   function conqRenderLeaderboard(tiles){
+    _lastTiles=tiles;
     const listEl=document.getElementById('map-lb-list'); if(!listEl) return;
+    if(_lbMode==='alliances') return conqRenderAllianceLeaderboard(tiles,listEl);
     const counts={};
     Object.values(tiles||{}).forEach(t=>{ if(t&&t.uid){ counts[t.uid]=counts[t.uid]||{tiles:0,color:t.color}; counts[t.uid].tiles++; } });
     get(ref(db,'conquest/players')).then(snap=>{
@@ -9335,7 +9543,9 @@ const LEGENDARY_CATS = [
     if(!window.L){ toast('⏳ טוען מפה...'); setTimeout(openConquestMap,600); modal.style.display='none'; return; }
     if(!document.getElementById('conq-label-style')){
       const st=document.createElement('style'); st.id='conq-label-style';
-      st.textContent='.conq-label{background:rgba(0,0,0,.6);color:#fff;border:none;box-shadow:none;font-weight:900;font-size:.72rem;padding:1px 5px;border-radius:6px;}.conq-label::before{display:none;}';
+      st.textContent='.conq-label{background:rgba(0,0,0,.6);color:#fff;border:none;box-shadow:none;font-weight:900;font-size:.72rem;padding:1px 5px;border-radius:6px;}.conq-label::before{display:none;}'
+        +'.conq-pulse{animation:conqPulse 1.3s ease-out;}'
+        +'@keyframes conqPulse{0%{stroke:#fff;stroke-width:6;fill-opacity:.9;}100%{stroke-width:1;fill-opacity:.38;}}';
       document.head.appendChild(st);
     }
     if(!_cmap){
@@ -9344,14 +9554,19 @@ const LEGENDARY_CATS = [
       _cmapTiles=L.layerGroup().addTo(_cmap);
     }
     setTimeout(()=>_cmap.invalidateSize(),120);
-    // Live tiles
+    // Alliances: load mine + live cache for the panel and leaderboard
+    conqLoadMyAlliance().then(()=>{ conqRenderAlliancePanel(); });
+    conqLoadAlliances();
+    // Live tiles (diff-rendered so conquests animate in as they happen)
     if(_cmapUnsub){ try{_cmapUnsub();}catch(e){} }
+    _cmapReady=false;
     let firstFit=true;
     _cmapUnsub=onValue(ref(db,'conquest/tiles'),snap=>{
       const tiles=snap.val()||{};
       const bounds=conqDrawTiles(tiles);
       conqRenderLeaderboard(tiles);
       if(firstFit && bounds && bounds.length){ firstFit=false; try{_cmap.fitBounds(bounds,{padding:[40,40],maxZoom:16});}catch(e){} }
+      _cmapReady=true;   // subsequent snapshots pulse-animate changed tiles
     });
     // Try to center on the player
     conqGetPosition().then(p=>{
@@ -9363,6 +9578,7 @@ const LEGENDARY_CATS = [
   function closeConquestMap(){
     document.getElementById('map-modal').style.display='none';
     if(_cmapUnsub){ try{_cmapUnsub();}catch(e){} _cmapUnsub=null; }
+    if(_cmapAllUnsub){ try{_cmapAllUnsub();}catch(e){} _cmapAllUnsub=null; }
   }
   document.getElementById('btn-open-map').addEventListener('click',()=>{ lacTrack('open_conquest_map',{}); openConquestMap(); });
   document.getElementById('map-close').addEventListener('click',closeConquestMap);
@@ -9375,8 +9591,26 @@ const LEGENDARY_CATS = [
   });
   document.getElementById('map-lb-toggle').addEventListener('click',()=>{
     const lb=document.getElementById('map-leaderboard');
-    lb.style.display = lb.style.display==='none' ? 'block' : 'none';
+    const show = lb.style.display==='none';
+    lb.style.display = show ? 'block' : 'none';
+    if(show){ const al=document.getElementById('map-alliance'); if(al) al.style.display='none'; }
   });
+  document.getElementById('map-alliance-toggle').addEventListener('click',()=>{
+    const al=document.getElementById('map-alliance');
+    const show = al.style.display==='none';
+    al.style.display = show ? 'block' : 'none';
+    if(show){ const lb=document.getElementById('map-leaderboard'); if(lb) lb.style.display='none'; conqRenderAlliancePanel(); }
+  });
+  // Leaderboard mode toggle: players ⇄ alliances
+  function conqSetLbMode(mode){
+    _lbMode=mode;
+    const bp=document.getElementById('lb-mode-players'), ba=document.getElementById('lb-mode-alliances');
+    if(bp&&ba){ [bp,ba].forEach(b=>{ b.style.background='transparent'; b.style.color='var(--muted)'; });
+      const on=mode==='players'?bp:ba; on.style.background='var(--green)'; on.style.color='#04120c'; }
+    if(_lastTiles) conqRenderLeaderboard(_lastTiles);
+  }
+  document.getElementById('lb-mode-players').addEventListener('click',()=>conqSetLbMode('players'));
+  document.getElementById('lb-mode-alliances').addEventListener('click',()=>conqSetLbMode('alliances'));
 
   // ─── INIT: try restoring session on page load ─────────────────────
   restoreSession();
@@ -9416,6 +9650,7 @@ const LEGENDARY_CATS = [
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button id="map-locate" title="מרכז על המיקום שלי" style="background:rgba(15,186,129,.1);border:1px solid rgba(15,186,129,.35);color:var(--green);border-radius:10px;padding:7px 12px;font-family:Heebo,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;">📍</button>
+        <button id="map-alliance-toggle" title="בריתות" style="background:rgba(67,97,238,.12);border:1px solid rgba(67,97,238,.4);color:#7f9bff;border-radius:10px;padding:7px 12px;font-family:Heebo,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;">🛡️</button>
         <button id="map-lb-toggle" title="לוח כובשים" style="background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.35);color:var(--orange);border-radius:10px;padding:7px 12px;font-family:Heebo,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;">🏆</button>
         <button id="map-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:7px 14px;font-family:Heebo,sans-serif;cursor:pointer;">✕</button>
       </div>
@@ -9424,7 +9659,15 @@ const LEGENDARY_CATS = [
       <div id="conquest-map" style="position:absolute;inset:0;background:var(--s2);"></div>
       <div id="map-leaderboard" style="display:none;position:absolute;top:10px;left:10px;right:10px;max-width:360px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--sh);z-index:500;max-height:70%;overflow-y:auto;">
         <div style="font-size:1rem;font-weight:900;margin-bottom:10px;">🏆 לוח הכובשים</div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;background:var(--s2);border-radius:10px;padding:3px;">
+          <button id="lb-mode-players" style="flex:1;background:var(--green);color:#04120c;border:none;border-radius:8px;padding:7px;font-family:Heebo,sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;">👤 שחקנים</button>
+          <button id="lb-mode-alliances" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:8px;padding:7px;font-family:Heebo,sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;">🛡️ בריתות</button>
+        </div>
         <div id="map-lb-list"><div style="text-align:center;padding:20px;color:var(--muted);">⏳ טוען...</div></div>
+      </div>
+      <div id="map-alliance" style="display:none;position:absolute;top:10px;left:10px;right:10px;max-width:400px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--sh);z-index:500;max-height:80%;overflow-y:auto;">
+        <div style="font-size:1rem;font-weight:900;margin-bottom:12px;">🛡️ בריתות</div>
+        <div id="map-alliance-body"><div style="text-align:center;padding:20px;color:var(--muted);">⏳ טוען...</div></div>
       </div>
     </div>
   </div>
