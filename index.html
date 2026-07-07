@@ -886,6 +886,11 @@
   .notif-btn:hover{background:rgba(99,102,241,.18);}
   .notif-status{font-size:.72rem;color:var(--muted);margin-top:6px;min-height:16px;}
   </style>
+  <!-- Leaflet (מפת כיבוש) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   </head>
   <body>
   <div id="app">
@@ -1174,6 +1179,10 @@
     <div style="margin-top:8px;display:flex;gap:8px;">
       <button id="btn-open-contributors" style="flex:1;background:rgba(76,201,240,.08);border:1px solid rgba(76,201,240,.2);color:var(--blue);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">🏆 לוח תורמים</button>
       <button id="btn-open-weekly-lb" style="flex:1;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.3);color:var(--orange);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">🏅 לוח שבועי</button>
+    </div>
+    <!-- Conquest map -->
+    <div style="margin-top:8px;">
+      <button id="btn-open-map" style="width:100%;background:rgba(15,186,129,.08);border:1px solid rgba(15,186,129,.3);color:var(--green);border-radius:14px;padding:11px 16px;font-family:Heebo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">🗺️ מפת הכיבוש — כבוש את השטח שלך!</button>
     </div>
 
   </div>
@@ -6778,6 +6787,18 @@
     const myPlace=sorted.findIndex(([pid])=>pid===S.pId)+1;
     setTimeout(()=>showVictoryAnim(myPlace, sorted[0]?.[1]?.name||''),400);
 
+    // 🏴 Conquest: if I won this game, claim the tile at my real location
+    if(myPlace===1 && !S.isSpectator){
+      const myScore=players[S.pId]?.score||0;
+      if(myScore>0){
+        if(currentUser && !currentUser.isAnonymous){
+          setTimeout(()=>{ try{ conquestClaim(myScore); }catch(e){} },1600);
+        } else {
+          setTimeout(()=>toast('🔒 התחבר לחשבון כדי לכבוש את השטח שלך במפה!'),1800);
+        }
+      }
+    }
+
     // 📊 Track game_complete + session_duration
     const sessionSec = Math.round((Date.now() - _sessionStartTs) / 1000);
     lacTrack('game_complete', {
@@ -9202,6 +9223,161 @@ const LEGENDARY_CATS = [
     }
   });
 
+  // ─── CONQUEST MAP ────────────────────────────────────────────────
+  // Playing a game conquers a ~100x100m tile at the winner's real GPS
+  // location. Ownership is hidden on the map (only the winning score is
+  // shown); a leaderboard tracks who conquered the most tiles.
+  const CONQ_TILE_DEG = 0.001;          // grid cell ~111m lat / ~94m lng at Israel
+  const CONQ_HALF_M   = 50;             // half-side of the conquered square (±50m => ~100x100m)
+  let _cmap = null, _cmapTiles = null, _cmapUnsub = null, _cmapMe = null;
+
+  function conqHueColor(seed){
+    let h=0; const s=String(seed||'');
+    for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+    return `hsl(${h%360},70%,55%)`;
+  }
+  function conqGetPosition(){
+    return new Promise((resolve,reject)=>{
+      if(!navigator.geolocation) return reject(new Error('no-geo'));
+      navigator.geolocation.getCurrentPosition(
+        p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude}),
+        err=>reject(err),
+        {enableHighAccuracy:true,timeout:12000,maximumAge:60000}
+      );
+    });
+  }
+  // All grid cells overlapped by a ±CONQ_HALF_M square centred on lat/lng
+  function conqCoveredCells(lat,lng){
+    const mLat = CONQ_HALF_M/111320;
+    const mLng = CONQ_HALF_M/(111320*Math.max(0.1,Math.cos(lat*Math.PI/180)));
+    const latLo=Math.floor((lat-mLat)/CONQ_TILE_DEG), latHi=Math.floor((lat+mLat)/CONQ_TILE_DEG);
+    const lngLo=Math.floor((lng-mLng)/CONQ_TILE_DEG), lngHi=Math.floor((lng+mLng)/CONQ_TILE_DEG);
+    const cells=[];
+    for(let la=latLo;la<=latHi;la++) for(let ln=lngLo;ln<=lngHi;ln++) cells.push([la,ln]);
+    return cells;
+  }
+  // Winner conquest: claim every overlapped cell where our score beats the current owner
+  async function conquestClaim(score){
+    if(!currentUser || currentUser.isAnonymous){
+      toast('🔒 חובה חשבון כדי לכבוש שטח'); return;
+    }
+    if(!(score>0)) return;
+    let pos;
+    try { toast('📍 מאתר מיקום לכיבוש...'); pos = await conqGetPosition(); }
+    catch(e){ toast('📍 לא ניתן לקבל מיקום — הכיבוש בוטל'); return; }
+    const cells = conqCoveredCells(pos.lat,pos.lng);
+    const color = S_pColor || '#0fba81';
+    let claimed=0;
+    for(const [la,ln] of cells){
+      const id=`${la}_${ln}`;
+      try{
+        const snap=await get(ref(db,'conquest/tiles/'+id));
+        const cur=snap.val();
+        if(!cur || score>(cur.score||0)){
+          await set(ref(db,'conquest/tiles/'+id),{score:Math.min(99999,Math.floor(score)),uid:currentUser.uid,color,ts:Date.now()});
+          claimed++;
+        }
+      }catch(e){ /* rule rejection = someone already has a higher score */ }
+    }
+    if(claimed>0){
+      try{ await set(ref(db,'conquest/players/'+currentUser.uid),{name:(S.pName||S_pName||'אנונימי').slice(0,40),color,ts:Date.now()}); }catch(e){}
+      toast(`🏴 כבשת ${claimed} משבצות עם ${Math.floor(score)} נק'!`);
+      lacTrack('conquest_claim',{tiles:claimed,score:Math.floor(score)});
+    } else {
+      toast('🛡️ השטח שלך מוחזק בניקוד גבוה יותר — לא נכבש');
+    }
+  }
+
+  function conqDrawTiles(tiles){
+    if(!_cmap||!_cmapTiles) return;
+    _cmapTiles.clearLayers();
+    const entries=Object.entries(tiles||{});
+    const bounds=[];
+    entries.forEach(([id,t])=>{
+      const m=id.match(/^(-?\d+)_(-?\d+)$/); if(!m) return;
+      const la=parseInt(m[1],10), ln=parseInt(m[2],10);
+      const s=[la*CONQ_TILE_DEG,ln*CONQ_TILE_DEG];
+      const n=[(la+1)*CONQ_TILE_DEG,(ln+1)*CONQ_TILE_DEG];
+      const col=t.color||conqHueColor(t.uid);
+      const rect=L.rectangle([s,n],{color:col,weight:1,fillColor:col,fillOpacity:.38});
+      rect.bindTooltip(String(t.score||0),{permanent:true,direction:'center',className:'conq-label',opacity:1});
+      rect.addTo(_cmapTiles);
+      bounds.push(s,n);
+    });
+    return bounds;
+  }
+
+  function conqRenderLeaderboard(tiles){
+    const listEl=document.getElementById('map-lb-list'); if(!listEl) return;
+    const counts={};
+    Object.values(tiles||{}).forEach(t=>{ if(t&&t.uid){ counts[t.uid]=counts[t.uid]||{tiles:0,color:t.color}; counts[t.uid].tiles++; } });
+    get(ref(db,'conquest/players')).then(snap=>{
+      const players=snap.val()||{};
+      const rows=Object.entries(counts).map(([uid,c])=>({uid,tiles:c.tiles,color:c.color||conqHueColor(uid),name:(players[uid]&&players[uid].name)||'כובש אלמוני'}))
+        .sort((a,b)=>b.tiles-a.tiles);
+      if(!rows.length){ listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);">עוד לא נכבש שטח. שחק וכבוש ראשון! 🏴</div>'; return; }
+      const medals=['🥇','🥈','🥉'];
+      listEl.innerHTML=rows.map((r,i)=>{
+        const isMe=currentUser&&r.uid===currentUser.uid;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);${isMe?'background:rgba(15,186,129,.07);border-radius:8px;':''}">
+          <span style="width:28px;text-align:center;font-weight:900;">${medals[i]||(i+1)+'.'}</span>
+          <span style="width:16px;height:16px;border-radius:4px;background:${r.color};flex-shrink:0;"></span>
+          <span style="flex:1;font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}${isMe?' <span style="font-size:.62rem;color:var(--green);">(אתה)</span>':''}</span>
+          <span style="font-weight:900;color:var(--green);">${r.tiles} <span style="font-size:.68rem;color:var(--muted);font-weight:600;">משבצות</span></span>
+        </div>`;
+      }).join('');
+    });
+  }
+
+  function openConquestMap(){
+    const modal=document.getElementById('map-modal');
+    modal.style.display='flex';
+    if(!window.L){ toast('⏳ טוען מפה...'); setTimeout(openConquestMap,600); modal.style.display='none'; return; }
+    if(!document.getElementById('conq-label-style')){
+      const st=document.createElement('style'); st.id='conq-label-style';
+      st.textContent='.conq-label{background:rgba(0,0,0,.6);color:#fff;border:none;box-shadow:none;font-weight:900;font-size:.72rem;padding:1px 5px;border-radius:6px;}.conq-label::before{display:none;}';
+      document.head.appendChild(st);
+    }
+    if(!_cmap){
+      _cmap=L.map('conquest-map',{zoomControl:true,attributionControl:true}).setView([31.5,34.9],8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(_cmap);
+      _cmapTiles=L.layerGroup().addTo(_cmap);
+    }
+    setTimeout(()=>_cmap.invalidateSize(),120);
+    // Live tiles
+    if(_cmapUnsub){ try{_cmapUnsub();}catch(e){} }
+    let firstFit=true;
+    _cmapUnsub=onValue(ref(db,'conquest/tiles'),snap=>{
+      const tiles=snap.val()||{};
+      const bounds=conqDrawTiles(tiles);
+      conqRenderLeaderboard(tiles);
+      if(firstFit && bounds && bounds.length){ firstFit=false; try{_cmap.fitBounds(bounds,{padding:[40,40],maxZoom:16});}catch(e){} }
+    });
+    // Try to center on the player
+    conqGetPosition().then(p=>{
+      if(_cmapMe){ try{_cmap.removeLayer(_cmapMe);}catch(e){} }
+      _cmapMe=L.circleMarker([p.lat,p.lng],{radius:7,color:'#4cc9f0',fillColor:'#4cc9f0',fillOpacity:.9,weight:2}).addTo(_cmap).bindTooltip('אתה כאן');
+      _cmap.setView([p.lat,p.lng],15);
+    }).catch(()=>{});
+  }
+  function closeConquestMap(){
+    document.getElementById('map-modal').style.display='none';
+    if(_cmapUnsub){ try{_cmapUnsub();}catch(e){} _cmapUnsub=null; }
+  }
+  document.getElementById('btn-open-map').addEventListener('click',()=>{ lacTrack('open_conquest_map',{}); openConquestMap(); });
+  document.getElementById('map-close').addEventListener('click',closeConquestMap);
+  document.getElementById('map-locate').addEventListener('click',()=>{
+    conqGetPosition().then(p=>{
+      if(_cmapMe){ try{_cmap.removeLayer(_cmapMe);}catch(e){} }
+      _cmapMe=L.circleMarker([p.lat,p.lng],{radius:7,color:'#4cc9f0',fillColor:'#4cc9f0',fillOpacity:.9,weight:2}).addTo(_cmap).bindTooltip('אתה כאן');
+      _cmap.setView([p.lat,p.lng],15);
+    }).catch(()=>toast('📍 לא ניתן לקבל מיקום'));
+  });
+  document.getElementById('map-lb-toggle').addEventListener('click',()=>{
+    const lb=document.getElementById('map-leaderboard');
+    lb.style.display = lb.style.display==='none' ? 'block' : 'none';
+  });
+
   // ─── INIT: try restoring session on page load ─────────────────────
   restoreSession();
   </script>
@@ -9228,6 +9404,28 @@ const LEGENDARY_CATS = [
       <button id="auth-modal-submit" class="btn btn-p">כניסה &#8594;</button>
       <button id="auth-forgot" style="background:none;border:none;color:var(--muted);font-family:Heebo,sans-serif;font-size:.78rem;cursor:pointer;margin-top:12px;width:100%;text-align:center;">שכחתי סיסמה</button>
       <div style="margin-top:20px;font-size:.74rem;color:var(--muted);text-align:center;line-height:1.6;">ניתן לשחק ללא חשבון לחלוטין.<br>חשבון שומר את הפרופיל, הגדרות והחדרים שלך בענן.</div>
+    </div>
+  </div>
+
+  <!-- CONQUEST MAP MODAL -->
+  <div id="map-modal" style="display:none;position:fixed;inset:0;z-index:4200;background:var(--bg);flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div>
+        <div style="font-size:1.05rem;font-weight:900;">🗺️ מפת הכיבוש</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:1px;">כל ריבוע ≈ 100×100 מ׳ · המנצח במשחק כובש את מיקומו</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="map-locate" title="מרכז על המיקום שלי" style="background:rgba(15,186,129,.1);border:1px solid rgba(15,186,129,.35);color:var(--green);border-radius:10px;padding:7px 12px;font-family:Heebo,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;">📍</button>
+        <button id="map-lb-toggle" title="לוח כובשים" style="background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.35);color:var(--orange);border-radius:10px;padding:7px 12px;font-family:Heebo,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;">🏆</button>
+        <button id="map-close" style="background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:7px 14px;font-family:Heebo,sans-serif;cursor:pointer;">✕</button>
+      </div>
+    </div>
+    <div style="position:relative;flex:1;min-height:0;">
+      <div id="conquest-map" style="position:absolute;inset:0;background:var(--s2);"></div>
+      <div id="map-leaderboard" style="display:none;position:absolute;top:10px;left:10px;right:10px;max-width:360px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--sh);z-index:500;max-height:70%;overflow-y:auto;">
+        <div style="font-size:1rem;font-weight:900;margin-bottom:10px;">🏆 לוח הכובשים</div>
+        <div id="map-lb-list"><div style="text-align:center;padding:20px;color:var(--muted);">⏳ טוען...</div></div>
+      </div>
     </div>
   </div>
 
